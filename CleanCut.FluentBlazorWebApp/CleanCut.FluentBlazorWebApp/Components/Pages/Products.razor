@@ -1,0 +1,260 @@
+@page "/products"
+@page "/products/search"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject ILogger<Products> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Product Search - CleanCut</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="24">
+    
+    <!-- Page Header -->
+    <FluentCard Style="padding: 24px;">
+        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="16">
+            <FluentIcon Value="@(new Icons.Regular.Size32.Search())" Color="Color.Accent" />
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="4">
+                <FluentLabel Typo="Typography.H3">Product Search</FluentLabel>
+                <FluentLabel Typo="Typography.Body" Color="Color.Neutral">Search for products using CleanCut API</FluentLabel>
+            </FluentStack>
+        </FluentStack>
+    </FluentCard>
+
+    <!-- Search Form -->
+    <FluentCard Style="padding: 24px;">
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="20">
+            
+            <!-- API Version Selection -->
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+                <FluentLabel Typo="Typography.H6">API Version:</FluentLabel>
+                <FluentRadioGroup @bind-Value="selectedApiVersion" Orientation="Orientation.Horizontal">
+                    <FluentRadio Value="1">V1 (Simple)</FluentRadio>
+                    <FluentRadio Value="2">V2 (Enhanced)</FluentRadio>
+                </FluentRadioGroup>
+            </FluentStack>
+
+            <!-- Search Input -->
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+                <FluentLabel Typo="Typography.H6">Product ID (GUID):</FluentLabel>
+                <FluentStack Orientation="Orientation.Horizontal" VerticalGap="12">
+                    <FluentTextField @bind-Value="searchProductId" 
+                                   Placeholder="Enter product GUID (e.g., b6cc1306-75ea-45f0-902e-6cdf34260651)"
+                                   Style="flex: 1;"
+                                   Disabled="@isLoading" />
+                    <FluentButton Appearance="Appearance.Accent" 
+                                Disabled="@(isLoading || string.IsNullOrWhiteSpace(searchProductId))"
+                                OnClick="SearchProduct">
+                        @if (isLoading)
+                        {
+                            <text>Searching...</text>
+                        }
+                        else
+                        {
+                            <text>Search</text>
+                        }
+                    </FluentButton>
+                </FluentStack>
+            </FluentStack>
+
+            <!-- Sample Product IDs -->
+            <FluentMessageBar Intent="MessageIntent.Info">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+                    <FluentLabel Typo="Typography.Body">Sample Product IDs to try:</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalGap="12" Wrap="true">
+                        <FluentButton Appearance="Appearance.Stealth" 
+                                    OnClick="@(() => SetProductId(sampleProductId1))"
+                                    Style="font-family: monospace;">
+                            @sampleProductId1
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Stealth" 
+                                    OnClick="@(() => SetProductId(sampleProductId2))"
+                                    Style="font-family: monospace;">
+                            @sampleProductId2
+                        </FluentButton>
+                    </FluentStack>
+                </FluentStack>
+            </FluentMessageBar>
+
+        </FluentStack>
+    </FluentCard>
+
+    <!-- Loading Progress -->
+    @if (isLoading)
+    {
+        <FluentCard Style="padding: 40px;">
+            <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" VerticalGap="16">
+                <FluentProgressRing />
+                <FluentLabel Typo="Typography.Body">Searching for product...</FluentLabel>
+            </FluentStack>
+        </FluentCard>
+    }
+
+    <!-- Error Display -->
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <FluentMessageBar Intent="MessageIntent.Error" AllowDismiss="true" OnDismiss="@(() => errorMessage = string.Empty)">
+            <strong>Error:</strong> @errorMessage
+        </FluentMessageBar>
+    }
+
+    <!-- Product Result -->
+    @if (searchResult != null)
+    {
+        <FluentCard Style="border-left: 4px solid var(--success-color); padding: 24px;">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="20">
+                
+                <!-- Result Header -->
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="12">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.CheckmarkCircle())" Color="Color.Success" />
+                    <FluentLabel Typo="Typography.H4">Product Found (API V@selectedApiVersion)</FluentLabel>
+                </FluentStack>
+
+                <!-- Product Details -->
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentLabel Typo="Typography.H5" Color="Color.Accent">@searchResult.Name</FluentLabel>
+                    <FluentLabel Typo="Typography.Body" Color="Color.Neutral">@searchResult.Description</FluentLabel>
+                    
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalGap="32">
+                        <FluentStack Orientation="Orientation.Vertical" VerticalGap="4">
+                            <FluentLabel Typo="Typography.Body">Price:</FluentLabel>
+                            <FluentLabel Typo="Typography.H6" Color="Color.Success">$@searchResult.Price.ToString("F2")</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Vertical" VerticalGap="4">
+                            <FluentLabel Typo="Typography.Body">Status:</FluentLabel>
+                            @if (searchResult.IsAvailable)
+                            {
+                                <FluentBadge Fill="somevalue" BackgroundColor="var(--success-color)" Color="white">Available</FluentBadge>
+                            }
+                            else
+                            {
+                                <FluentBadge Fill="somevalue" BackgroundColor="var(--error-color)" Color="white">Unavailable</FluentBadge>
+                            }
+                        </FluentStack>
+                    </FluentStack>
+
+                    <!-- Product Details -->
+                    <FluentCard Style="background-color: var(--neutral-layer-2); padding: 16px;">
+                        <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+                            <FluentLabel Typo="Typography.Body">Product Details</FluentLabel>
+                            <FluentLabel Typo="Typography.Body">ID: @searchResult.Id</FluentLabel>
+                            <FluentLabel Typo="Typography.Body">User ID: @searchResult.UserId</FluentLabel>
+                            <FluentLabel Typo="Typography.Body">Created: @searchResult.CreatedAt.ToString("MMM dd, yyyy")</FluentLabel>
+                            @if (searchResult.UpdatedAt.HasValue)
+                            {
+                                <FluentLabel Typo="Typography.Body">Updated: @searchResult.UpdatedAt.Value.ToString("MMM dd, yyyy")</FluentLabel>
+                            }
+                        </FluentStack>
+                    </FluentCard>
+                </FluentStack>
+
+            </FluentStack>
+        </FluentCard>
+    }
+
+</FluentStack>
+
+@code {
+    private string searchProductId = string.Empty;
+    private Product? searchResult = null;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+    private int selectedApiVersion = 1;
+
+    // Sample product IDs (these should match your seeded data)
+    private readonly string sampleProductId1 = "b6cc1306-75ea-45f0-902e-6cdf34260651";
+    private readonly string sampleProductId2 = "11111111-1111-1111-1111-111111111111";
+
+    private async Task SearchProduct()
+    {
+        if (string.IsNullOrWhiteSpace(searchProductId))
+            return;
+
+        isLoading = true;
+        errorMessage = string.Empty;
+        searchResult = null;
+        StateHasChanged();
+
+        try
+        {
+            if (!Guid.TryParse(searchProductId.Trim(), out var productId))
+            {
+                errorMessage = "Please enter a valid GUID format.";
+                return;
+            }
+
+            // Direct HTTP call to API based on selected version
+            var apiEndpoint = selectedApiVersion == 1 ? 
+                $"https://localhost:7142/api/v1/products/{productId}" :
+                $"https://localhost:7142/api/v2/products/{productId}";
+
+            var response = await Http.GetAsync(apiEndpoint);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                if (selectedApiVersion == 1)
+                {
+                    var product = await response.Content.ReadFromJsonAsync<Product>();
+                    searchResult = product;
+                }
+                else
+                {
+                    // V2 API returns wrapped response
+                    var v2Response = await response.Content.ReadFromJsonAsync<V2ApiResponse<Product>>();
+                    searchResult = v2Response?.Data;
+                }
+                
+                Logger.LogInformation("Product found: {Name}", searchResult?.Name);
+            }
+            else
+            {
+                errorMessage = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                Logger.LogWarning("API returned error: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Network error: {ex.Message}. Make sure API is running on https://localhost:7142";
+            Logger.LogError(ex, "HTTP request failed");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unexpected error: {ex.Message}";
+            Logger.LogError(ex, "Unexpected error in SearchProduct");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetProductId(string productId)
+    {
+        searchProductId = productId;
+        searchResult = null;
+        errorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    // Simple Product class for JSON deserialization
+    public class Product
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public bool IsAvailable { get; set; }
+        public Guid UserId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
+
+    // V2 API response wrapper
+    public class V2ApiResponse<T>
+    {
+        public T Data { get; set; } = default!;
+        public string ApiVersion { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+}

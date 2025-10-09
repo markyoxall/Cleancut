@@ -1,0 +1,174 @@
+﻿@page "/"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Navigation
+@inject ILogger<Home> Logger
+
+<PageTitle>CleanCut - Home</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="32">
+    
+    <!-- Hero Section -->
+    <FluentCard Style="padding: 40px; background: linear-gradient(135deg, var(--accent-fill-rest) 0%, var(--accent-fill-hover) 100%); color: white;">
+        <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" VerticalGap="20">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="16">
+                <FluentIcon Value="@(new Icons.Regular.Size48.Cut())" Color="Color.Neutral" />
+                <FluentLabel Typo="Typography.H1">Welcome to CleanCut</FluentLabel>
+            </FluentStack>
+            <FluentLabel Typo="Typography.H5" Style="text-align: center; max-width: 600px;">
+                A modern Fluent Blazor web application demonstrating Clean Architecture with DDD and CQRS patterns
+            </FluentLabel>
+            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="16">
+                <FluentButton Appearance="Appearance.Accent" 
+                             IconStart="@(new Icons.Regular.Size20.Search())"
+                             OnClick="NavigateToProducts">
+                    Search Products
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Outline" 
+                             IconStart="@(new Icons.Regular.Size20.Code())"
+                             OnClick="OpenApiDocs">
+                    API Documentation
+                </FluentButton>
+            </FluentStack>
+        </FluentStack>
+    </FluentCard>
+
+    <!-- Features Grid -->
+    <FluentGrid Spacing="3">
+        <FluentGridItem xs="12" md="4">
+            <FluentCard Style="height: 100%; padding: 24px;">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentIcon Value="@(new Icons.Regular.Size48.Search())" Color="Color.Accent" />
+                    <FluentLabel Typo="Typography.H4" Color="Color.Accent">Product Search</FluentLabel>
+                    <FluentLabel Typo="Typography.Body">
+                        Search and explore products using our CleanCut API. Test both V1 and V2 endpoints with real-time results.
+                    </FluentLabel>
+                    <FluentButton Appearance="Appearance.Stealth" 
+                                 IconEnd="@(new Icons.Regular.Size16.ArrowRight())"
+                                 OnClick="NavigateToProducts">
+                        Start Searching
+                    </FluentButton>
+                </FluentStack>
+            </FluentCard>
+        </FluentGridItem>
+
+        <FluentGridItem xs="12" md="4">
+            <FluentCard Style="height: 100%; padding: 24px;">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentIcon Value="@(new Icons.Regular.Size48.Desktop())" Color="Color.Success" />
+                    <FluentLabel Typo="Typography.H4" Color="Color.Success">Clean Architecture</FluentLabel>
+                    <FluentLabel Typo="Typography.Body">
+                        Built with Clean Architecture principles, featuring separate layers for Domain, Application, Infrastructure, and Presentation.
+                    </FluentLabel>
+                    <FluentBadge Fill="somevalue" BackgroundColor="var(--success-color)" Color="white">Enterprise Ready</FluentBadge>
+                </FluentStack>
+            </FluentCard>
+        </FluentGridItem>
+
+        <FluentGridItem xs="12" md="4">
+            <FluentCard Style="height: 100%; padding: 24px;">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentIcon Value="@(new Icons.Regular.Size48.Settings())" Color="Color.Info" />
+                    <FluentLabel Typo="Typography.H4" Color="Color.Info">Modern Tech</FluentLabel>
+                    <FluentLabel Typo="Typography.Body">
+                        Powered by .NET 9, Blazor WebAssembly, Entity Framework Core, MediatR, and AutoMapper for optimal performance.
+                    </FluentLabel>
+                    <FluentBadge Fill="somevalue" BackgroundColor="var(--info-color)" Color="white">.NET 9</FluentBadge>
+                </FluentStack>
+            </FluentCard>
+        </FluentGridItem>
+    </FluentGrid>
+
+    <!-- API Information -->
+    <FluentGrid Spacing="3">
+        <FluentGridItem xs="12" md="6">
+            <FluentCard Style="border-left: 4px solid var(--accent-fill-rest); padding: 24px;">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="12">
+                        <FluentIcon Value="@(new Icons.Regular.Size24.DocumentText())" Color="Color.Accent" />
+                        <FluentLabel Typo="Typography.H4">API Version 1</FluentLabel>
+                    </FluentStack>
+                    <FluentLabel Typo="Typography.Body">Simple REST API with basic CRUD operations and standard JSON responses.</FluentLabel>
+                    <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" Color="Color.Success" />
+                            <FluentLabel Typo="Typography.Body">GET /api/v1/products</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" Color="Color.Success" />
+                            <FluentLabel Typo="Typography.Body">GET /api/v1/products/{id}</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" Color="Color.Success" />
+                            <FluentLabel Typo="Typography.Body">POST /api/v1/products</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" Color="Color.Success" />
+                            <FluentLabel Typo="Typography.Body">PUT /api/v1/products/{id}</FluentLabel>
+                        </FluentStack>
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentGridItem>
+
+        <FluentGridItem xs="12" md="6">
+            <FluentCard Style="border-left: 4px solid var(--info-color); padding: 24px;">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="12">
+                        <FluentIcon Value="@(new Icons.Regular.Size24.Settings())" Color="Color.Info" />
+                        <FluentLabel Typo="Typography.H4">API Version 2</FluentLabel>
+                    </FluentStack>
+                    <FluentLabel Typo="Typography.Body">Enhanced API with pagination, rich metadata, and improved error handling.</FluentLabel>
+                    <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Star())" Color="Color.Warning" />
+                            <FluentLabel Typo="Typography.Body">Pagination support</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Star())" Color="Color.Warning" />
+                            <FluentLabel Typo="Typography.Body">Enhanced responses</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Star())" Color="Color.Warning" />
+                            <FluentLabel Typo="Typography.Body">Better error details</FluentLabel>
+                        </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                            <FluentIcon Value="@(new Icons.Regular.Size16.Star())" Color="Color.Warning" />
+                            <FluentLabel Typo="Typography.Body">Statistics endpoint</FluentLabel>
+                        </FluentStack>
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        </FluentGridItem>
+    </FluentGrid>
+
+</FluentStack>
+
+@code {
+    private void NavigateToProducts()
+    {
+        try
+        {
+            Logger.LogInformation("Navigating to products page...");
+            Navigation.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error navigating to products page");
+        }
+    }
+
+    private void OpenApiDocs()
+    {
+        try
+        {
+            Logger.LogInformation("Opening API documentation...");
+            // This would require JSInterop to open in new tab
+            // For now, we'll navigate to swagger
+            Navigation.NavigateTo("https://localhost:7142/swagger", true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error opening API documentation");
+        }
+    }
+}
