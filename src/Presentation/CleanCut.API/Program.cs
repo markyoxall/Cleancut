@@ -41,9 +41,16 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 
-// Add CORS services
+// Add CORS services for both Swagger and Blazor app
 builder.Services.AddCors(options =>
 {
+    options.AddPolicy("AllowBlazorApp", policy =>
+    {
+        policy.WithOrigins("https://localhost:5001", "http://localhost:5000") // Common Blazor ports
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+    
     options.AddPolicy("AllowSwagger", policy =>
     {
         policy.AllowAnyOrigin()
@@ -70,8 +77,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Enable CORS in development
-    app.UseCors("AllowSwagger");
+    // Enable CORS for both Blazor app and Swagger
+    app.UseCors("AllowBlazorApp");
     
     // Serve static files first (before routing)
     app.UseStaticFiles();

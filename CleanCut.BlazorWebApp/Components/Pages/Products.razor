@@ -1,0 +1,232 @@
+@page "/products"
+@page "/products/search"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject ILogger<Products> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Product Search - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        Product Search
+                    </h3>
+                    <small class="text-light">Search for products using CleanCut API</small>
+                </div>
+                <div class="card-body">
+
+                    <!-- Search Form -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <label for="productId" class="form-label fw-bold">Product ID (GUID):</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="productId" 
+                                   @bind="searchProductId" 
+                                   @onkeypress="HandleKeyPress"
+                                   placeholder="Enter product GUID (e.g., b6cc1306-75ea-45f0-902e-6cdf34260651)"
+                                   disabled="@isLoading">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" 
+                                    @onclick="SearchProduct" 
+                                    disabled="@(isLoading || string.IsNullOrWhiteSpace(searchProductId))">
+                                @if (isLoading)
+                                {
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                }
+                                <i class="fas fa-search me-1"></i>
+                                Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sample Product IDs -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb me-1"></i>Sample Product IDs to try:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button class="btn btn-link btn-sm p-0" @onclick="() => SetProductId(sampleProductId1)">
+                                    @sampleProductId1
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-link btn-sm p-0" @onclick="() => SetProductId(sampleProductId2)">
+                                    @sampleProductId2
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Searching for product...</p>
+                        </div>
+                    }
+
+                    <!-- Error Display -->
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Error:</strong> @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                    <!-- Product Result -->
+                    @if (searchResult != null)
+                    {
+                        <div class="card border-success mt-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Product Found
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4 class="text-primary">@searchResult.Name</h4>
+                                        <p class="text-muted mb-3">@searchResult.Description</p>
+                                        
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <p><strong>Price:</strong> <span class="text-success fs-5">$@searchResult.Price.ToString("F2")</span></p>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <p><strong>Status:</strong> 
+                                                    @if (searchResult.IsAvailable)
+                                                    {
+                                                        <span class="badge bg-success">Available</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Unavailable</span>
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-light p-3 rounded">
+                                            <h6 class="fw-bold">Product Details</h6>
+                                            <p class="small mb-1"><strong>ID:</strong> <code>@searchResult.Id</code></p>
+                                            <p class="small mb-1"><strong>User ID:</strong> <code>@searchResult.UserId</code></p>
+                                            <p class="small mb-1"><strong>Created:</strong> @searchResult.CreatedAt.ToString("MMM dd, yyyy")</p>
+                                            @if (searchResult.UpdatedAt.HasValue)
+                                            {
+                                                <p class="small mb-0"><strong>Updated:</strong> @searchResult.UpdatedAt.Value.ToString("MMM dd, yyyy")</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string searchProductId = string.Empty;
+    private Product? searchResult = null;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    // Sample product IDs (these should match your seeded data)
+    private readonly string sampleProductId1 = "b6cc1306-75ea-45f0-902e-6cdf34260651";
+    private readonly string sampleProductId2 = "11111111-1111-1111-1111-111111111111";
+
+    private async Task SearchProduct()
+    {
+        if (string.IsNullOrWhiteSpace(searchProductId))
+            return;
+
+        isLoading = true;
+        errorMessage = string.Empty;
+        searchResult = null;
+        StateHasChanged();
+
+        try
+        {
+            if (!Guid.TryParse(searchProductId.Trim(), out var productId))
+            {
+                errorMessage = "Please enter a valid GUID format.";
+                return;
+            }
+
+            // Direct HTTP call to API
+            var response = await Http.GetAsync($"https://localhost:7142/api/v1/products/{productId}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var product = await response.Content.ReadFromJsonAsync<Product>();
+                searchResult = product;
+                Logger.LogInformation("Product found: {Name}", product?.Name);
+            }
+            else
+            {
+                errorMessage = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                Logger.LogWarning("API returned error: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Network error: {ex.Message}. Make sure API is running on https://localhost:7142";
+            Logger.LogError(ex, "HTTP request failed");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unexpected error: {ex.Message}";
+            Logger.LogError(ex, "Unexpected error in SearchProduct");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetProductId(string productId)
+    {
+        searchProductId = productId;
+        searchResult = null;
+        errorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchProduct();
+        }
+    }
+
+    // Simple Product class for JSON deserialization
+    public class Product
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public bool IsAvailable { get; set; }
+        public Guid UserId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
+}

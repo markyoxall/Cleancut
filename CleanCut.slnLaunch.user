@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
