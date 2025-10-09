@@ -1,0 +1,44 @@
+/* Custom Swagger UI styles for CleanCut API */
+
+/* Highlight V1 endpoints */
+.opblock[data-tag*="v1"] {
+    border-left: 4px solid #28a745;
+    background-color: #f8fff9;
+}
+
+/* Highlight V2 endpoints */
+.opblock[data-tag*="v2"] {
+    border-left: 4px solid #007bff;
+    background-color: #f8fbff;
+}
+
+/* Add version badges */
+.opblock-summary::before {
+    content: "V1";
+    background-color: #28a745;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.opblock[data-tag*="v2"] .opblock-summary::before {
+    content: "V2";
+    background-color: #007bff;
+}
+
+/* Style the main header */
+.swagger-ui .info .title {
+    color: #333;
+}
+
+.swagger-ui .info .description {
+    color: #666;
+}
+
+/* Add some spacing for better readability */
+.swagger-ui .opblock {
+    margin-bottom: 10px;
+}

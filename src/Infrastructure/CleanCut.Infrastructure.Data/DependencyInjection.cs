@@ -23,13 +23,15 @@ public static class DependencyInjection
                 b => b.MigrationsAssembly(typeof(CleanCutDbContext).Assembly.FullName));
 
             // Enable sensitive data logging in development
-            if (configuration.GetValue<bool>("EnableSensitiveDataLogging"))
+            var enableSensitiveDataLogging = configuration.GetSection("EnableSensitiveDataLogging").Get<bool>();
+            if (enableSensitiveDataLogging)
             {
                 options.EnableSensitiveDataLogging();
             }
 
             // Enable detailed errors in development
-            if (configuration.GetValue<bool>("EnableDetailedErrors"))
+            var enableDetailedErrors = configuration.GetSection("EnableDetailedErrors").Get<bool>();
+            if (enableDetailedErrors)
             {
                 options.EnableDetailedErrors();
             }

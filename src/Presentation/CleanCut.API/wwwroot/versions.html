@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanCut API Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .version-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+        }
+        .version-card h2 {
+            color: #007bff;
+            margin-top: 0;
+        }
+        .version-card p {
+            color: #666;
+            margin: 10px 0;
+        }
+        .test-buttons {
+            margin-top: 15px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px 10px 5px 0;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .endpoint-list {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .endpoint {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .method {
+            display: inline-block;
+            width: 60px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+        }
+        .get { background-color: #28a745; color: white; }
+        .post { background-color: #ffc107; color: black; }
+        .put { background-color: #17a2b8; color: white; }
+        .delete { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? CleanCut API Documentation</h1>
+        <p style="text-align: center; color: #666; font-size: 16px;">
+            Clean Architecture API with Domain-Driven Design and CQRS
+        </p>
+
+        <div class="version-card">
+            <h2>?? Version 1.0 - Current Stable</h2>
+            <p><strong>Base URL:</strong> <code>/api/v1</code></p>
+            <p>Standard REST API with basic CRUD operations and simple JSON responses.</p>
+            
+            <div class="endpoint-list">
+                <div class="endpoint"><span class="method get">GET</span> /api/v1/products <em>(get all)</em></div>
+                <div class="endpoint"><span class="method get">GET</span> /api/v1/products/{id}</div>
+                <div class="endpoint"><span class="method get">GET</span> /api/v1/products/user/{userId}</div>
+                <div class="endpoint"><span class="method post">POST</span> /api/v1/products</div>
+                <div class="endpoint"><span class="method put">PUT</span> /api/v1/products/{id}</div>
+            </div>
+
+            <div class="test-buttons">
+                <a href="/swagger" class="btn">📖 View V1 Documentation</a>
+                <a href="/api/v1/products" class="btn btn-secondary" target="_blank">🔍 Test V1 - Get All</a>
+            </div>
+        </div>
+
+        <div class="version-card">
+            <h2>🆕 Version 2.0 - Enhanced Features</h2>
+            <p><strong>Base URL:</strong> <code>/api/v2</code></p>
+            <p>Enhanced API with pagination, rich metadata, improved error handling, and new features.</p>
+            
+            <div class="endpoint-list">
+                <div class="endpoint"><span class="method get">GET</span> /api/v2/products?page=1&pageSize=10 <em>(paginated)</em></div>
+                <div class="endpoint"><span class="method get">GET</span> /api/v2/products/{id} <em>(enhanced response)</em></div>
+                <div class="endpoint"><span class="method get">GET</span> /api/v2/products/user/{userId}?page=1&pageSize=10 <em>(paginated)</em></div>
+                <div class="endpoint"><span class="method post">POST</span> /api/v2/products <em>(rich response)</em></div>
+                <div class="endpoint"><span class="method put">PUT</span> /api/v2/products/{id} <em>(enhanced validation)</em></div>
+                <div class="endpoint"><span class="method get">GET</span> /api/v2/products/statistics <em>(NEW!)</em></div>
+            </div>
+
+            <div class="test-buttons">
+                <a href="/api/v2/products" class="btn" target="_blank">🧪 Test V2 - Get All</a>
+                <a href="/api/v2/products/statistics" class="btn btn-secondary" target="_blank">📊 Test V2 - Statistics</a>
+            </div>
+        </div>
+
+        <div class="version-card">
+            <h2>🔗 Quick Test Examples</h2>
+            <p>Try these URLs directly in your browser or API client:</p>
+            
+            <div class="endpoint-list">
+                <div class="endpoint">
+                    <strong>V1 All Products:</strong> 
+                    <a href="/api/v1/products" target="_blank">
+                        /api/v1/products
+                    </a>
+                </div>
+                <div class="endpoint">
+                    <strong>V1 Product:</strong> 
+                    <a href="/api/v1/products/b6cc1306-75ea-45f0-902e-6cdf34260651" target="_blank">
+                        /api/v1/products/b6cc1306-75ea-45f0-902e-6cdf34260651
+                    </a>
+                </div>
+                <div class="endpoint">
+                    <strong>V2 All Products:</strong> 
+                    <a href="/api/v2/products" target="_blank">
+                        /api/v2/products
+                    </a>
+                </div>
+                <div class="endpoint">
+                    <strong>V2 Product:</strong> 
+                    <a href="/api/v2/products/b6cc1306-75ea-45f0-902e-6cdf34260651" target="_blank">
+                        /api/v2/products/b6cc1306-75ea-45f0-902e-6cdf34260651
+                    </a>
+                </div>
+                <div class="endpoint">
+                    <strong>V2 Statistics:</strong> 
+                    <a href="/api/v2/products/statistics" target="_blank">
+                        /api/v2/products/statistics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+            <p>Built with ❤️ using Clean Architecture, DDD, and CQRS patterns</p>
+            <p><strong>.NET 10</strong> • <strong>Entity Framework Core</strong> • <strong>MediatR</strong> • <strong>AutoMapper</strong></p>
+        </div>
+    </div>
+
+    <script>
+        function testV2() {
+            window.open('/api/v2/products/statistics', '_blank');
+        }
+    </script>
+</body>
+</html>
