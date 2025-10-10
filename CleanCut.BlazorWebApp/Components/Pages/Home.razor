@@ -17,11 +17,14 @@
                         A modern Blazor web application demonstrating Clean Architecture with DDD and CQRS patterns
                     </p>
                     <div class="d-flex justify-content-center gap-3">
-                        <a href="/products" class="btn btn-light btn-lg">
-                            <i class="fas fa-search me-2"></i>Search Products
+                        <a href="/api-demo" class="btn btn-light btn-lg">
+                            <i class="fas fa-code me-2"></i>API Demo
                         </a>
-                        <a href="/swagger" class="btn btn-outline-light btn-lg" target="_blank">
-                            <i class="fas fa-code me-2"></i>API Documentation
+                        <a href="/products" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-search me-2"></i>Product Search
+                        </a>
+                        <a href="https://localhost:7142/swagger" class="btn btn-outline-light btn-lg" target="_blank">
+                            <i class="fas fa-book me-2"></i>API Docs
                         </a>
                     </div>
                 </div>
@@ -33,14 +36,14 @@
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body text-center p-4">
                             <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
-                                <i class="fas fa-search fa-2x"></i>
+                                <i class="fas fa-code fa-2x"></i>
                             </div>
-                            <h4 class="card-title text-primary">Product Search</h4>
+                            <h4 class="card-title text-primary">Interactive API Demo</h4>
                             <p class="card-text text-muted">
-                                Search and explore products using our CleanCut API. Test both V1 and V2 endpoints with real-time results.
+                                Explore all API endpoints interactively. Test Products v1 & v2, Users API, and see real-time responses.
                             </p>
-                            <a href="/products" class="btn btn-primary">
-                                <i class="fas fa-arrow-right me-1"></i>Start Searching
+                            <a href="/api-demo" class="btn btn-primary">
+                                <i class="fas fa-arrow-right me-1"></i>Try API Demo
                             </a>
                         </div>
                     </div>
@@ -50,13 +53,15 @@
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body text-center p-4">
                             <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
-                                <i class="fas fa-layer-group fa-2x"></i>
+                                <i class="fas fa-search fa-2x"></i>
                             </div>
-                            <h4 class="card-title text-success">Clean Architecture</h4>
+                            <h4 class="card-title text-success">Product Search</h4>
                             <p class="card-text text-muted">
-                                Built with Clean Architecture principles, featuring separate layers for Domain, Application, Infrastructure, and Presentation.
+                                Search and explore products using our CleanCut API. Test with sample GUIDs and see detailed product information.
                             </p>
-                            <span class="badge bg-success">Enterprise Ready</span>
+                            <a href="/products" class="btn btn-success">
+                                <i class="fas fa-search me-1"></i>Start Searching
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -65,35 +70,92 @@
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body text-center p-4">
                             <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
-                                <i class="fas fa-rocket fa-2x"></i>
+                                <i class="fas fa-layer-group fa-2x"></i>
                             </div>
-                            <h4 class="card-title text-info">Modern Tech</h4>
+                            <h4 class="card-title text-info">Clean Architecture</h4>
                             <p class="card-text text-muted">
-                                Powered by .NET 9, Blazor Server, Entity Framework Core, MediatR, and AutoMapper for optimal performance.
+                                Built with Clean Architecture principles, featuring Domain, Application, Infrastructure, and Presentation layers.
                             </p>
-                            <span class="badge bg-info">.NET 9</span>
+                            <span class="badge bg-info">Enterprise Ready</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- API Information -->
+            <!-- API Showcase -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <h4 class="mb-0">
+                                <i class="fas fa-rocket me-2 text-primary"></i>
+                                API Capabilities Showcase
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6 class="text-primary">Products API v1</h6>
+                                    <ul class="list-unstyled small">
+                                        <li><i class="fas fa-check text-success me-1"></i>GET All Products</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>GET Product by ID</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>GET Products by User</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>POST Create Product</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>PUT Update Product</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="text-info">Products API v2</h6>
+                                    <ul class="list-unstyled small">
+                                        <li><i class="fas fa-star text-warning me-1"></i>GET All (Paginated)</li>
+                                        <li><i class="fas fa-star text-warning me-1"></i>GET by ID (Enhanced)</li>
+                                        <li><i class="fas fa-star text-warning me-1"></i>GET by User (Paginated)</li>
+                                        <li><i class="fas fa-star text-warning me-1"></i>POST Create (Enhanced)</li>
+                                        <li><i class="fas fa-star text-warning me-1"></i>PUT Update (Enhanced)</li>
+                                        <li><i class="fas fa-magic text-primary me-1"></i>GET Statistics</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="text-success">Users API</h6>
+                                    <ul class="list-unstyled small">
+                                        <li><i class="fas fa-user text-primary me-1"></i>GET All Users</li>
+                                        <li><i class="fas fa-user text-primary me-1"></i>GET User by ID</li>
+                                        <li><i class="fas fa-user-plus text-success me-1"></i>POST Create User</li>
+                                        <li><i class="fas fa-user-edit text-warning me-1"></i>PUT Update User</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technology Stack -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="card border-primary">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
-                                <i class="fas fa-leaf me-2"></i>API Version 1
+                                <i class="fas fa-cogs me-2"></i>Technology Stack
                             </h5>
                         </div>
                         <div class="card-body">
-                            <p class="card-text">Simple REST API with basic CRUD operations and standard JSON responses.</p>
-                            <ul class="list-unstyled">
-                                <li><i class="fas fa-check text-success me-2"></i>GET /api/v1/products</li>
-                                <li><i class="fas fa-check text-success me-2"></i>GET /api/v1/products/{id}</li>
-                                <li><i class="fas fa-check text-success me-2"></i>POST /api/v1/products</li>
-                                <li><i class="fas fa-check text-success me-2"></i>PUT /api/v1/products/{id}</li>
-                            </ul>
+                            <div class="row">
+                                <div class="col-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fab fa-microsoft text-primary me-2"></i>.NET 9</li>
+                                        <li><i class="fas fa-bolt text-warning me-2"></i>Blazor Server</li>
+                                        <li><i class="fas fa-database text-info me-2"></i>Entity Framework Core</li>
+                                    </ul>
+                                </div>
+                                <div class="col-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-exchange-alt text-success me-2"></i>MediatR</li>
+                                        <li><i class="fas fa-map text-danger me-2"></i>AutoMapper</li>
+                                        <li><i class="fas fa-shield-alt text-secondary me-2"></i>FluentValidation</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -102,16 +164,16 @@
                     <div class="card border-info">
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0">
-                                <i class="fas fa-rocket me-2"></i>API Version 2
+                                <i class="fas fa-cubes me-2"></i>Architecture Patterns
                             </h5>
                         </div>
                         <div class="card-body">
-                            <p class="card-text">Enhanced API with pagination, rich metadata, and improved error handling.</p>
                             <ul class="list-unstyled">
-                                <li><i class="fas fa-star text-warning me-2"></i>Pagination support</li>
-                                <li><i class="fas fa-star text-warning me-2"></i>Enhanced responses</li>
-                                <li><i class="fas fa-star text-warning me-2"></i>Better error details</li>
-                                <li><i class="fas fa-star text-warning me-2"></i>Statistics endpoint</li>
+                                <li><i class="fas fa-layer-group text-primary me-2"></i>Clean Architecture</li>
+                                <li><i class="fas fa-cube text-success me-2"></i>Domain Driven Design (DDD)</li>
+                                <li><i class="fas fa-code-branch text-info me-2"></i>Command Query Responsibility Segregation (CQRS)</li>
+                                <li><i class="fas fa-microchip text-warning me-2"></i>Repository Pattern</li>
+                                <li><i class="fas fa-puzzle-piece text-danger me-2"></i>Unit of Work Pattern</li>
                             </ul>
                         </div>
                     </div>

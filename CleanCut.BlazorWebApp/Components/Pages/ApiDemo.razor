@@ -1,0 +1,134 @@
+@page "/api-demo"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject ILogger<ApiDemo> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>API Demo - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            
+            <!-- Header -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-code me-2"></i>
+                        CleanCut API Demo
+                    </h2>
+                    <small class="text-light">Interactive demonstration of all API endpoints</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-info-circle me-2 text-info"></i>Available APIs</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-arrow-right me-2 text-primary"></i>Products API v1 & v2</li>
+                                <li><i class="fas fa-arrow-right me-2 text-primary"></i>Users API</li>
+                                <li><i class="fas fa-arrow-right me-2 text-primary"></i>CRUD Operations</li>
+                                <li><i class="fas fa-arrow-right me-2 text-primary"></i>Search & Filtering</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-server me-2 text-success"></i>API Status</h5>
+                            <div class="d-flex align-items-center">
+                                @if (apiStatus == "online")
+                                {
+                                    <span class="badge bg-success me-2">Online</span>
+                                    <small class="text-muted">API is responding normally</small>
+                                }
+                                else if (apiStatus == "offline")
+                                {
+                                    <span class="badge bg-danger me-2">Offline</span>
+                                    <small class="text-muted">Cannot connect to API</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning me-2">Checking...</span>
+                                    <small class="text-muted">Testing API connection</small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs nav-fill mb-4" id="apiTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "products-v1" ? "active" : "")" 
+                            @onclick="@(() => SetActiveTab("products-v1"))" 
+                            type="button">
+                        <i class="fas fa-boxes me-1"></i>Products API v1
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "products-v2" ? "active" : "")" 
+                            @onclick="@(() => SetActiveTab("products-v2"))" 
+                            type="button">
+                        <i class="fas fa-box me-1"></i>Products API v2
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "users" ? "active" : "")" 
+                            @onclick="@(() => SetActiveTab("users"))" 
+                            type="button">
+                        <i class="fas fa-users me-1"></i>Users API
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="apiTabsContent">
+                
+                <!-- Products v1 Tab -->
+                <div class="tab-pane @(activeTab == "products-v1" ? "show active" : "")" role="tabpanel">
+                    <ProductsV1Demo />
+                </div>
+
+                <!-- Products v2 Tab -->
+                <div class="tab-pane @(activeTab == "products-v2" ? "show active" : "")" role="tabpanel">
+                    <ProductsV2Demo />
+                </div>
+
+                <!-- Users Tab -->
+                <div class="tab-pane @(activeTab == "users" ? "show active" : "")" role="tabpanel">
+                    <UsersDemo />
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string activeTab = "products-v1";
+    private string apiStatus = "checking";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckApiStatus();
+    }
+
+    private void SetActiveTab(string tabName)
+    {
+        activeTab = tabName;
+        StateHasChanged();
+    }
+
+    private async Task CheckApiStatus()
+    {
+        try
+        {
+            var response = await Http.GetAsync("https://localhost:7142/api/v1/products");
+            apiStatus = response.IsSuccessStatusCode ? "online" : "offline";
+        }
+        catch
+        {
+            apiStatus = "offline";
+        }
+        StateHasChanged();
+    }
+}

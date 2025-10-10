@@ -1,0 +1,475 @@
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject ILogger<UsersDemo> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<div class="row">
+    
+    <!-- Get All Users -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>GET All Users
+                </h5>
+                <small>GET /api/users</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Retrieve all users in the system</p>
+                
+                <button class="btn btn-info" @onclick="GetAllUsers" disabled="@isLoadingAll">
+                    @if (isLoadingAll)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-download me-1"></i>Load All Users
+                </button>
+
+                @if (!string.IsNullOrEmpty(getAllError))
+                {
+                    <div class="alert alert-danger mt-3">@getAllError</div>
+                }
+
+                @if (allUsers?.Any() == true)
+                {
+                    <div class="mt-3">
+                        <h6>Users Found: @allUsers.Count</h6>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            @foreach (var user in allUsers)
+                            {
+                                <div class="border rounded p-3 mb-2 bg-light">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">@user.FullName</h6>
+                                            <p class="mb-1 text-muted">@user.Email</p>
+                                            <small class="text-muted">
+                                                Created: @user.CreatedAt.ToString("MMM dd, yyyy")
+                                                @if (user.UpdatedAt.HasValue)
+                                                {
+                                                    <text> | Updated: @user.UpdatedAt.Value.ToString("MMM dd, yyyy")</text>
+                                                }
+                                            </small>
+                                        </div>
+                                        <span class="badge @(user.IsActive ? "bg-success" : "bg-secondary")">
+                                            @(user.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Get User By ID -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>GET User by ID
+                </h5>
+                <small>GET /api/users/{id}</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Retrieve a specific user by their GUID</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">User ID:</label>
+                    <input type="text" class="form-control" @bind="userIdToGet" 
+                           placeholder="Enter user GUID" disabled="@isLoadingById">
+                </div>
+
+                <button class="btn btn-success" @onclick="GetUserById" 
+                        disabled="@(isLoadingById || string.IsNullOrWhiteSpace(userIdToGet))">
+                    @if (isLoadingById)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-search me-1"></i>Get User
+                </button>
+
+                @if (!string.IsNullOrEmpty(getByIdError))
+                {
+                    <div class="alert alert-danger mt-3">@getByIdError</div>
+                }
+
+                @if (foundUser != null)
+                {
+                    <div class="mt-3 border rounded p-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6>@foundUser.FullName</h6>
+                            <span class="badge @(foundUser.IsActive ? "bg-success" : "bg-secondary")">
+                                @(foundUser.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </div>
+                        <p class="mb-1"><strong>Email:</strong> @foundUser.Email</p>
+                        <p class="mb-1"><strong>First Name:</strong> @foundUser.FirstName</p>
+                        <p class="mb-1"><strong>Last Name:</strong> @foundUser.LastName</p>
+                        <p class="mb-1"><strong>User ID:</strong> <code>@foundUser.Id</code></p>
+                        <small class="text-muted">
+                            Created: @foundUser.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                            @if (foundUser.UpdatedAt.HasValue)
+                            {
+                                <text> | Updated: @foundUser.UpdatedAt.Value.ToString("MMM dd, yyyy HH:mm")</text>
+                            }
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>POST Create User
+                </h5>
+                <small>POST /api/users</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Create a new user in the system</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">First Name:</label>
+                    <input type="text" class="form-control" @bind="newUser.FirstName" 
+                           placeholder="First name" disabled="@isCreating">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Last Name:</label>
+                    <input type="text" class="form-control" @bind="newUser.LastName" 
+                           placeholder="Last name" disabled="@isCreating">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email:</label>
+                    <input type="email" class="form-control" @bind="newUser.Email" 
+                           placeholder="user@example.com" disabled="@isCreating">
+                </div>
+
+                <button class="btn btn-primary" @onclick="CreateUser" 
+                        disabled="@(isCreating || !IsValidUser())">
+                    @if (isCreating)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-user-plus me-1"></i>Create User
+                </button>
+
+                @if (!string.IsNullOrEmpty(createError))
+                {
+                    <div class="alert alert-danger mt-3">@createError</div>
+                }
+
+                @if (createdUser != null)
+                {
+                    <div class="alert alert-success mt-3">
+                        <strong>User Created Successfully!</strong>
+                        <div>
+                            <strong>ID:</strong> @createdUser.Id
+                        </div>
+                        <div>
+                            <strong>Name:</strong> @createdUser.FullName
+                        </div>
+                        <div>
+                            <strong>Email:</strong> @createdUser.Email
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Update User -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-edit me-2"></i>PUT Update User
+                </h5>
+                <small>PUT /api/users/{id}</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Update an existing user's information</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">User ID to Update:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" @bind="updateUser.Id" 
+                               placeholder="Enter user GUID" disabled="@isUpdating">
+                        <button class="btn btn-outline-secondary" type="button" @onclick="LoadUserForUpdate" 
+                                disabled="@(isUpdating || string.IsNullOrWhiteSpace(updateUser.Id))">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">First Name:</label>
+                    <input type="text" class="form-control" @bind="updateUser.FirstName" 
+                           placeholder="First name" disabled="@isUpdating">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Last Name:</label>
+                    <input type="text" class="form-control" @bind="updateUser.LastName" 
+                           placeholder="Last name" disabled="@isUpdating">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email:</label>
+                    <input type="email" class="form-control" @bind="updateUser.Email" 
+                           placeholder="user@example.com" disabled="@isUpdating">
+                </div>
+
+                <button class="btn btn-warning" @onclick="UpdateUser" 
+                        disabled="@(isUpdating || !IsValidUpdateUser())">
+                    @if (isUpdating)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-save me-1"></i>Update User
+                </button>
+
+                @if (!string.IsNullOrEmpty(updateError))
+                {
+                    <div class="alert alert-danger mt-3">@updateError</div>
+                }
+
+                @if (updatedUser != null)
+                {
+                    <div class="alert alert-success mt-3">
+                        <strong>User Updated Successfully!</strong>
+                        <div>
+                            <strong>Name:</strong> @updatedUser.FullName
+                        </div>
+                        <div>
+                            <strong>Email:</strong> @updatedUser.Email
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    // State variables
+    private bool isLoadingAll = false;
+    private bool isLoadingById = false;
+    private bool isCreating = false;
+    private bool isUpdating = false;
+
+    // Data
+    private List<UserDto>? allUsers;
+    private UserDto? foundUser;
+    private UserDto? createdUser;
+    private UserDto? updatedUser;
+
+    // Form inputs
+    private string userIdToGet = "11111111-1111-1111-1111-111111111111";
+    private CreateUserRequest newUser = new();
+    private UpdateUserRequest updateUser = new();
+
+    // Error messages
+    private string getAllError = string.Empty;
+    private string getByIdError = string.Empty;
+    private string createError = string.Empty;
+    private string updateError = string.Empty;
+
+    private async Task GetAllUsers()
+    {
+        isLoadingAll = true;
+        getAllError = string.Empty;
+        allUsers = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetAsync("https://localhost:7142/api/users");
+            if (response.IsSuccessStatusCode)
+            {
+                allUsers = await response.Content.ReadFromJsonAsync<List<UserDto>>();
+            }
+            else
+            {
+                getAllError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            getAllError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingAll = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetUserById()
+    {
+        isLoadingById = true;
+        getByIdError = string.Empty;
+        foundUser = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetAsync($"https://localhost:7142/api/users/{userIdToGet}");
+            if (response.IsSuccessStatusCode)
+            {
+                foundUser = await response.Content.ReadFromJsonAsync<UserDto>();
+            }
+            else
+            {
+                getByIdError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            getByIdError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingById = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateUser()
+    {
+        isCreating = true;
+        createError = string.Empty;
+        createdUser = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("https://localhost:7142/api/users", newUser);
+            if (response.IsSuccessStatusCode)
+            {
+                createdUser = await response.Content.ReadFromJsonAsync<UserDto>();
+                newUser = new(); // Reset form
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                createError = $"API Error: {response.StatusCode} - {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            createError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isCreating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUserForUpdate()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"https://localhost:7142/api/users/{updateUser.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var user = await response.Content.ReadFromJsonAsync<UserDto>();
+                if (user != null)
+                {
+                    updateUser.FirstName = user.FirstName;
+                    updateUser.LastName = user.LastName;
+                    updateUser.Email = user.Email;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            updateError = $"Error loading user: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateUser()
+    {
+        isUpdating = true;
+        updateError = string.Empty;
+        updatedUser = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"https://localhost:7142/api/users/{updateUser.Id}", updateUser);
+            if (response.IsSuccessStatusCode)
+            {
+                updatedUser = await response.Content.ReadFromJsonAsync<UserDto>();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                updateError = $"API Error: {response.StatusCode} - {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            updateError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isUpdating = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool IsValidUser()
+    {
+        return !string.IsNullOrWhiteSpace(newUser.FirstName) &&
+               !string.IsNullOrWhiteSpace(newUser.LastName) &&
+               !string.IsNullOrWhiteSpace(newUser.Email) &&
+               newUser.Email.Contains("@");
+    }
+
+    private bool IsValidUpdateUser()
+    {
+        return !string.IsNullOrWhiteSpace(updateUser.Id) &&
+               !string.IsNullOrWhiteSpace(updateUser.FirstName) &&
+               !string.IsNullOrWhiteSpace(updateUser.LastName) &&
+               !string.IsNullOrWhiteSpace(updateUser.Email) &&
+               updateUser.Email.Contains("@");
+    }
+
+    // DTO Classes
+    public class UserDto
+    {
+        public Guid Id { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string FullName { get; set; } = string.Empty;
+    }
+
+    public class CreateUserRequest
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class UpdateUserRequest
+    {
+        public string Id { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+}
