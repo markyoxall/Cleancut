@@ -7,7 +7,7 @@
         "Action": "Start"
       },
       {
-        "Path": "CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
+        "Path": "src\\Presentation\\CleanCut.WebApp\\CleanCut.WebApp.csproj",
         "Action": "Start"
       }
     ]
