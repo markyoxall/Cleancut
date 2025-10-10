@@ -1,0 +1,99 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+@inherits LayoutComponentBase
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-cut me-2"></i>
+            CleanCut
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                    </NavLink>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="usersDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-users me-1"></i>Users
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/users/management">
+                            <i class="fas fa-list me-2"></i>Manage Users
+                        </a></li>
+                        <li><a class="dropdown-item" href="/users/create">
+                            <i class="fas fa-user-plus me-2"></i>Add New User
+                        </a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-box me-1"></i>Products
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/products/management">
+                            <i class="fas fa-list me-2"></i>Manage Products
+                        </a></li>
+                        <li><a class="dropdown-item" href="/products/create">
+                            <i class="fas fa-plus me-2"></i>Add New Product
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/products">
+                            <i class="fas fa-search me-2"></i>Product Search
+                        </a></li>
+                        <li><a class="dropdown-item" href="/api-demo">
+                            <i class="fas fa-code me-2"></i>API Demo
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="devDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-tools me-1"></i>Developer
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="https://localhost:7142/swagger" target="_blank">
+                            <i class="fas fa-book me-2"></i>Swagger UI
+                        </a></li>
+                        <li><a class="dropdown-item" href="https://localhost:7142/versions.html" target="_blank">
+                            <i class="fas fa-layer-group me-2"></i>API Versions
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Quick Stats</h6></li>
+                        <li><span class="dropdown-item-text small text-muted">
+                            <i class="fas fa-info-circle me-1"></i>Blazor Server + .NET 9
+                        </span></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-4">
+    @Body
+</main>
+
+<!-- Footer -->
+<footer class="bg-dark text-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-2">
+            <strong>CleanCut Management System</strong> - Complete CRUD with Beautiful UI
+        </p>
+        <p class="small text-muted mb-0">
+            <i class="fas fa-users me-1"></i>User Management • 
+            <i class="fas fa-box me-1"></i>Product Management • 
+            <i class="fas fa-chart-bar me-1"></i>Dashboard Analytics
+        </p>
+    </div>
+</footer>

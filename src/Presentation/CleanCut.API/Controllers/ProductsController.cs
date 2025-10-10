@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using CleanCut.Application.Commands.Products.CreateProduct;
 using CleanCut.Application.Commands.Products.UpdateProduct;
+using CleanCut.Application.Commands.Products.DeleteProduct;
 using CleanCut.Application.Queries.Products.GetProduct;
 using CleanCut.Application.Queries.Products.GetProductsByUser;
 using CleanCut.Application.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace CleanCut.API.Controllers;
 
@@ -137,6 +139,47 @@ public class ProductsController : ControllerBase
                 detail: ex.Message,
                 statusCode: StatusCodes.Status422UnprocessableEntity,
                 type: "https://tools.ietf.org/html/rfc4918#section-11.2"
+            );
+        }
+    }
+
+    /// <summary>
+    /// Delete a product (v1)
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken cancellationToken)
+    {
+        var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ProductsController>>();
+        logger.LogInformation("DELETE request received for product {ProductId}", id);
+        
+        try
+        {
+            var command = new DeleteProductCommand(id);
+            var success = await _mediator.Send(command, cancellationToken);
+            
+            if (!success)
+            {
+                logger.LogWarning("Product {ProductId} not found for deletion", id);
+                return Problem(
+                    title: "Product not found",
+                    detail: $"Product with ID '{id}' was not found",
+                    statusCode: StatusCodes.Status404NotFound,
+                    type: "https://tools.ietf.org/html/rfc7231#section-6.5.4"
+                );
+            }
+            
+            logger.LogInformation("Product {ProductId} deleted successfully", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting product {ProductId}", id);
+            return Problem(
+                title: "Internal server error",
+                detail: "An error occurred while deleting the product",
+                statusCode: StatusCodes.Status500InternalServerError
             );
         }
     }

@@ -1,4 +1,5 @@
 using CleanCut.BlazorWebApp.Components;
+using CleanCut.BlazorWebApp.Services;
 
 namespace CleanCut.BlazorWebApp;
 
@@ -11,6 +12,10 @@ public class Program
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        // Register API services
+        builder.Services.AddScoped<IProductApiService, ProductApiService>();
+        builder.Services.AddScoped<IUserApiService, UserApiService>();
 
         // Simple HttpClient for making direct API calls
         builder.Services.AddHttpClient();

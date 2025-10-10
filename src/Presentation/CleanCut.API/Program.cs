@@ -51,9 +51,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorApp", policy =>
     {
-        policy.WithOrigins("https://localhost:5001", "http://localhost:5000") // Common Blazor ports
+        policy.WithOrigins(
+                "https://localhost:7297", // Your Blazor HTTPS port
+                "http://localhost:5091",  // Your Blazor HTTP port
+                "https://localhost:5001", // Common Blazor ports
+                "http://localhost:5000"   // Common Blazor ports
+              )
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(5)); // Cache preflight for 5 minutes
     });
     
     options.AddPolicy("AllowSwagger", policy =>
@@ -62,6 +69,13 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
+});
+
+// Add logging to see CORS in action
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.AddConsole();
+    loggingBuilder.SetMinimumLevel(LogLevel.Information);
 });
 
 // Get API configuration
@@ -85,6 +99,23 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    // Add request logging middleware first
+    app.Use(async (context, next) =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Incoming request: {Method} {Path} from {Origin}", 
+            context.Request.Method, 
+            context.Request.Path, 
+            context.Request.Headers.Origin.FirstOrDefault() ?? "No Origin");
+        
+        await next();
+        
+        logger.LogInformation("Response: {StatusCode} for {Method} {Path}", 
+            context.Response.StatusCode, 
+            context.Request.Method, 
+            context.Request.Path);
+    });
+    
     // Enable CORS for both Blazor app and Swagger
     app.UseCors("AllowBlazorApp");
     
