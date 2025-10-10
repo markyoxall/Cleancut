@@ -42,6 +42,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.UpdatedAt)
             .IsRequired(false);
 
+        // Ignore domain events - they should not be persisted
+        builder.Ignore(x => x.DomainEvents);
+
         // Indexes
         builder.HasIndex(x => x.UserId)
             .HasDatabaseName("IX_Products_UserId");

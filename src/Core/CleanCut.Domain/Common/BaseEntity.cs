@@ -3,15 +3,34 @@ namespace CleanCut.Domain.Common;
 /// <summary>
 /// Base class for all domain entities
 /// </summary>
-public abstract class BaseEntity
+public abstract class BaseEntity : IHasDomainEvents
 {
+    private readonly List<DomainEvent> _domainEvents = [];
+
     public Guid Id { get; protected set; } = Guid.NewGuid();
     public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; protected set; }
 
+    public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
     protected void SetUpdatedAt()
     {
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddDomainEvent(DomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    public void RemoveDomainEvent(DomainEvent domainEvent)
+    {
+        _domainEvents.Remove(domainEvent);
+    }
+
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
     }
 
     public override bool Equals(object? obj)

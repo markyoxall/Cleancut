@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore.Storage;
 using CleanCut.Domain.Repositories;
 using CleanCut.Infrastructure.Data.Context;
 using CleanCut.Infrastructure.Data.Repositories;
+using CleanCut.Domain.Common;
+using Microsoft.EntityFrameworkCore;
 
 namespace CleanCut.Infrastructure.Data.UnitOfWork;
 
@@ -81,6 +83,14 @@ public class UnitOfWork : IUnitOfWork
             await _transaction.DisposeAsync();
             _transaction = null;
         }
+    }
+
+    public IEnumerable<IHasDomainEvents> GetEntitiesWithDomainEvents()
+    {
+        return _context.ChangeTracker
+            .Entries<IHasDomainEvents>()
+            .Where(entry => entry.Entity.DomainEvents.Any())
+            .Select(entry => entry.Entity);
     }
 
     public void Dispose()

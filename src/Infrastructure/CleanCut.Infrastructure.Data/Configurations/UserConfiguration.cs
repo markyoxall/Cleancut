@@ -39,6 +39,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.UpdatedAt)
             .IsRequired(false);
 
+        // Ignore domain events - they should not be persisted
+        builder.Ignore(x => x.DomainEvents);
+
         // Index for email uniqueness
         builder.HasIndex(x => x.Email)
             .IsUnique()

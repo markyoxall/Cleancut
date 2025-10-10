@@ -13,4 +13,9 @@ public class UserDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string FullName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets the full name (for consistency with domain entity)
+    /// </summary>
+    public string GetFullName() => FullName;
 }

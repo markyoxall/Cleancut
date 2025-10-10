@@ -1,11 +1,16 @@
 using CleanCut.Application;
 using CleanCut.Infrastructure.Data;
+using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data.Seeding;
+using CleanCut.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add global exception handling
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Configure Problem Details (only for API routes)
 builder.Services.AddProblemDetails(options =>
@@ -72,6 +77,9 @@ builder.Services.AddApplication();
 // Add Data Infrastructure layer
 builder.Services.AddDataInfrastructure(builder.Configuration);
 
+// Add Caching Infrastructure layer
+builder.Services.AddCachingInfrastructure(builder.Configuration);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -113,13 +121,8 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-// Use Problem Details middleware only for API routes
-app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), 
-    subApp =>
-    {
-        subApp.UseExceptionHandler();
-        subApp.UseStatusCodePages();
-    });
+// Use global exception handler
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

@@ -1,5 +1,6 @@
 using MediatR;
 using CleanCut.Application.DTOs;
+using CleanCut.Application.Common.Interfaces;
 
 namespace CleanCut.Application.Commands.Users.CreateUser;
 
@@ -10,4 +11,8 @@ public record CreateUserCommand(
     string FirstName,
     string LastName,
     string Email
-) : IRequest<UserDto>;
+) : IRequest<UserDto>, ICacheInvalidator
+{
+    public IEnumerable<string> CacheKeysToInvalidate => 
+        ["user:all", $"user:email:{Email.ToLowerInvariant()}"];
+}

@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Core\CleanCut.Application\CleanCut.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Data\CleanCut.Infrastructure.Data.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Caching\CleanCut.Infrastructure.Caching.csproj" />
   </ItemGroup>
 
 </Project>

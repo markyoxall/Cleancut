@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using CleanCut.Domain.Entities;
+using CleanCut.Domain.Common;
+using CleanCut.Domain.Events;
 
 namespace CleanCut.Infrastructure.Data.Context;
 
@@ -18,6 +20,21 @@ public class CleanCutDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Ignore all domain event types - they should not be persisted
+        modelBuilder.Ignore<DomainEvent>();
+        modelBuilder.Ignore<UserCreatedEvent>();
+        modelBuilder.Ignore<UserUpdatedEvent>();
+        
+        // Configure BaseEntity to ignore domain events collection for all entities
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Ignore(nameof(BaseEntity.DomainEvents));
+            }
+        }
 
         // Apply all configurations from the current assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CleanCutDbContext).Assembly);

@@ -1,4 +1,5 @@
 using CleanCut.Domain.Common;
+using CleanCut.Domain.Events;
 using System.Net.Mail;
 
 namespace CleanCut.Domain.Entities;
@@ -33,6 +34,9 @@ public class User : BaseEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         Email = email.Trim().ToLowerInvariant();
+        
+        // Raise domain event
+        AddDomainEvent(new UserCreatedEvent(this));
     }
 
     public string GetFullName() => $"{FirstName} {LastName}";
@@ -48,6 +52,9 @@ public class User : BaseEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         SetUpdatedAt();
+        
+        // Raise domain event
+        AddDomainEvent(new UserUpdatedEvent(this, "Name"));
     }
 
     public void UpdateEmail(string email)
@@ -60,18 +67,27 @@ public class User : BaseEntity
 
         Email = email.Trim().ToLowerInvariant();
         SetUpdatedAt();
+        
+        // Raise domain event
+        AddDomainEvent(new UserUpdatedEvent(this, "Email"));
     }
 
     public void Deactivate()
     {
         IsActive = false;
         SetUpdatedAt();
+        
+        // Raise domain event
+        AddDomainEvent(new UserUpdatedEvent(this, "Status"));
     }
 
     public void Activate()
     {
         IsActive = true;
         SetUpdatedAt();
+        
+        // Raise domain event
+        AddDomainEvent(new UserUpdatedEvent(this, "Status"));
     }
 
     private static bool IsValidEmail(string email)

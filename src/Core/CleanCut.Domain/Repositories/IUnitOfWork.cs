@@ -1,3 +1,5 @@
+using CleanCut.Domain.Common;
+
 namespace CleanCut.Domain.Repositories;
 
 /// <summary>
@@ -12,4 +14,9 @@ public interface IUnitOfWork : IDisposable
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task CommitTransactionAsync(CancellationToken cancellationToken = default);
     Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Gets all entities that have domain events
+    /// </summary>
+    IEnumerable<IHasDomainEvents> GetEntitiesWithDomainEvents();
 }
