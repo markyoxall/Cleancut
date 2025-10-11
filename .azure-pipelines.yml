@@ -43,8 +43,6 @@ steps:
     artifactName: 'blazorapp'
     publishLocation: 'Container'
 
-# Optional: Deploy to Azure App Service
-# Uncomment and configure when ready
 - task: AzureWebApp@1
   displayName: 'Deploy to Azure App Service'
   inputs:
