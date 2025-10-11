@@ -1,5 +1,6 @@
 using CleanCut.BlazorWebApp.Components;
 using CleanCut.BlazorWebApp.Services;
+using CleanCut.BlazorWebApp.State;
 
 namespace CleanCut.BlazorWebApp;
 
@@ -16,6 +17,10 @@ public class Program
         // Register API services
         builder.Services.AddScoped<IProductApiService, ProductApiService>();
         builder.Services.AddScoped<IUserApiService, UserApiService>();
+
+        // Register state management services
+        builder.Services.AddScoped<IAppStateService, AppStateService>();
+        builder.Services.AddScoped<IStateContainer, StateContainer>();
 
         // Simple HttpClient for making direct API calls
         builder.Services.AddHttpClient();
