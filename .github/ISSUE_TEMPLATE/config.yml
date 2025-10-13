@@ -1,0 +1,47 @@
+blank_issues_enabled: false
+contact_links: []
+issue_templates:
+  - name: Scaffold hydration-aware login shell
+    description: Prepare Blazor login flow for future Entra ID integration with secure UX and token handling
+    title: "[Scaffold] Hydration-aware login shell with secure token handling"
+    labels: ["security", "UX", "scaffolding", "copilot-agent"]
+    assignees: ["github-copilot"]
+    body:
+      - type: markdown
+        attributes:
+          value: |
+            ## Task
+
+            Scaffold foundational components for a future login flow in a Blazor Server app. This should support hydration-aware UX and secure token handling, ready for Entra ID integration later.
+
+      - type: textarea
+        id: requirements
+        attributes:
+          label: Requirements
+          value: |
+            - Create a `HydrationGuard` component that disables login UI until Blazor is fully interactive.
+            - Scaffold a `TokenStore` service that stores tokens in memory only (no localStorage/sessionStorage).
+            - Create a mock `IAuthProvider` interface to simulate authentication and token retrieval.
+            - Add placeholder login UI gated by hydration and authentication state.
+            - Ensure all logic avoids client-side tampering (no exposed flags or markup-based auth checks).
+
+      - type: textarea
+        id: notes
+        attributes:
+          label: Notes
+          value: |
+            - This is a Blazor Server app (not WebAssembly).
+            - No actual login implementation yet — just scaffolding.
+            - Entra ID will be added later — keep interfaces modular.
+            - UX must prevent user interaction before hydration completes.
+
+      - type: checkboxes
+        id: acceptance
+        attributes:
+          label: Acceptance Criteria
+          options:
+            - label: `HydrationGuard` component disables login until hydrated
+            - label: `TokenStore` uses scoped DI and stores tokens in memory
+            - label: `IAuthProvider` interface is ready for Entra ID plug-in
+            - label: Placeholder login UI is gated by hydration and auth state
+            - label: No sensitive logic exposed in Razor markup
