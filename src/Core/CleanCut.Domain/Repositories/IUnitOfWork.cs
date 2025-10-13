@@ -9,7 +9,9 @@ public interface IUnitOfWork : IDisposable
 {
     IUserRepository Users { get; }
     IProductRepository Products { get; }
-    
+
+    ICountryRepository Countries { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task CommitTransactionAsync(CancellationToken cancellationToken = default);

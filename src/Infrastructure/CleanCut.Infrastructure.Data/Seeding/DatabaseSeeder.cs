@@ -32,6 +32,22 @@ public static class DatabaseSeeder
 
             logger.LogInformation("Seeding database with comprehensive test data");
 
+            // Seed Countries FIRST
+            if (!await context.Countries.AnyAsync())
+            {
+                var countries = new List<Country>
+                {
+                    new Country("United States", "US"),
+                    new Country("Canada", "CA"),
+                    new Country("United Kingdom", "GB"),
+                    new Country("Australia", "AU"),
+                    new Country("Germany", "DE")
+                };
+                await context.Countries.AddRangeAsync(countries);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Seeded {Count} countries", countries.Count);
+            }
+
             // Seed Users (50 users for better pagination testing)
             var users = GenerateUsers();
             await context.Users.AddRangeAsync(users);

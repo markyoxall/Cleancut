@@ -19,6 +19,7 @@ public class UnitOfWork : IUnitOfWork
     // Lazy initialization of repositories
     private IUserRepository? _users;
     private IProductRepository? _products;
+    private ICountryRepository? _countries;
 
     public UnitOfWork(CleanCutDbContext context)
     {
@@ -27,6 +28,8 @@ public class UnitOfWork : IUnitOfWork
 
     public IUserRepository Users => _users ??= new UserRepository(_context);
     public IProductRepository Products => _products ??= new ProductRepository(_context);
+
+    public ICountryRepository Countries => _countries ??= new CountryRepository(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

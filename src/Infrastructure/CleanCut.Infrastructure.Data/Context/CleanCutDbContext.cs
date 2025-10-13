@@ -16,6 +16,7 @@ public class CleanCutDbContext : DbContext
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Product> Products { get; set; } = null!;
+    public DbSet<Country> Countries { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -15,5 +15,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.GetFullName()));
 
         CreateMap<Product, ProductDto>();
+
+        CreateMap<Country, CountryDto>();
     }
 }
