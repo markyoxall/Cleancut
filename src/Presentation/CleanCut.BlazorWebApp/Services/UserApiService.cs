@@ -1,14 +1,16 @@
 using CleanCut.Application.DTOs;
+using System.Net.Http.Json;
+using System.Threading;
 
 namespace CleanCut.BlazorWebApp.Services;
 
 public interface IUserApiService
 {
-    Task<List<UserDto>> GetAllUsersAsync();
-    Task<UserDto?> GetUserByIdAsync(Guid id);
-    Task<UserDto> CreateUserAsync(CreateUserRequest request);
-    Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request);
-    Task<bool> DeleteUserAsync(Guid id);
+    Task<List<UserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
+    Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteUserAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public class UserApiService : IUserApiService
@@ -23,17 +25,22 @@ public class UserApiService : IUserApiService
         _logger = logger;
     }
 
-    public async Task<List<UserDto>> GetAllUsersAsync()
+    public async Task<List<UserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{BaseUrl}/api/users";
             _logger.LogInformation("Making GET request to: {Url}", url);
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
-            var users = await response.Content.ReadFromJsonAsync<List<UserDto>>() ?? new();
+            var users = await response.Content.ReadFromJsonAsync<List<UserDto>>(cancellationToken: cancellationToken) ?? new();
             _logger.LogInformation("Fetched {Count} users", users.Count);
             return users;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("GetAllUsersAsync canceled");
+            throw;
         }
         catch (Exception ex)
         {
@@ -42,18 +49,23 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid id)
+    public async Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
             _logger.LogInformation("Making GET request to: {Url}", url);
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync(url, cancellationToken);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;
-            
+
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<UserDto>();
+            return await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("GetUserByIdAsync canceled for {UserId}", id);
+            throw;
         }
         catch (Exception ex)
         {
@@ -62,35 +74,38 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto> CreateUserAsync(CreateUserRequest request)
+    public async Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{BaseUrl}/api/users";
             _logger.LogInformation("Making POST request to: {Url} for user {Email}", url, request.Email);
-            
-            // Create the command structure that matches the API expectation
+
             var command = new
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Email = request.Email
             };
-            
-            var response = await _httpClient.PostAsJsonAsync(url, command);
-            
+
+            var response = await _httpClient.PostAsJsonAsync(url, command, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError("API returned error {StatusCode}: {ErrorContent}", response.StatusCode, errorContent);
             }
-            
+
             response.EnsureSuccessStatusCode();
-            var user = await response.Content.ReadFromJsonAsync<UserDto>() 
+            var user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Failed to create user");
-            
+
             _logger.LogInformation("Successfully created user {UserId}", user.Id);
             return user;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("CreateUserAsync canceled for {Email}", request.Email);
+            throw;
         }
         catch (Exception ex)
         {
@@ -99,14 +114,13 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request)
+    public async Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
             _logger.LogInformation("Making PUT request to: {Url} for user {Email}", url, request.Email);
-            
-            // Create the command structure that matches the API expectation
+
             var command = new
             {
                 Id = id,
@@ -114,21 +128,26 @@ public class UserApiService : IUserApiService
                 LastName = request.LastName,
                 Email = request.Email
             };
-            
-            var response = await _httpClient.PutAsJsonAsync(url, command);
-            
+
+            var response = await _httpClient.PutAsJsonAsync(url, command, cancellationToken);
+
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError("API returned error {StatusCode}: {ErrorContent}", response.StatusCode, errorContent);
             }
-            
+
             response.EnsureSuccessStatusCode();
-            var user = await response.Content.ReadFromJsonAsync<UserDto>() 
+            var user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Failed to update user");
-            
+
             _logger.LogInformation("Successfully updated user {UserId}", user.Id);
             return user;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("UpdateUserAsync canceled for {UserId}", id);
+            throw;
         }
         catch (Exception ex)
         {
@@ -137,47 +156,47 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<bool> DeleteUserAsync(Guid id)
+    public async Task<bool> DeleteUserAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
             _logger.LogInformation("Making DELETE request to: {Url}", url);
-            
-            // Add timeout for debugging
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var response = await _httpClient.DeleteAsync(url, cts.Token);
-            
-            _logger.LogInformation("DELETE request completed. Status: {StatusCode}, Reason: {ReasonPhrase}", 
+
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
+
+            var response = await _httpClient.DeleteAsync(url, linked.Token);
+
+            _logger.LogInformation("DELETE request completed. Status: {StatusCode}, Reason: {ReasonPhrase}",
                 response.StatusCode, response.ReasonPhrase);
-            
+
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 _logger.LogWarning("User {UserId} not found during delete - may have already been deleted", id);
                 return false; // User not found
             }
-            
+
             if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
                 _logger.LogInformation("User {UserId} deleted successfully", id);
                 return true; // Successfully deleted
             }
-            
-            // Log other non-success status codes
+
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Delete failed for user {UserId}. Status: {StatusCode}, Error: {ErrorContent}", 
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Delete failed for user {UserId}. Status: {StatusCode}, Error: {ErrorContent}",
                     id, response.StatusCode, errorContent);
                 throw new HttpRequestException($"Delete failed with status {response.StatusCode}: {errorContent}");
             }
-            
+
             return response.IsSuccessStatusCode;
         }
-        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        catch (OperationCanceledException)
         {
-            _logger.LogError(ex, "Timeout while deleting user {UserId}", id);
-            throw new HttpRequestException($"Request timeout while deleting user {id}", ex);
+            _logger.LogWarning("DeleteUserAsync canceled for {UserId}", id);
+            throw;
         }
         catch (HttpRequestException httpEx)
         {
@@ -193,6 +212,7 @@ public class UserApiService : IUserApiService
 }
 
 // Local request models for API calls
+
 public class CreateUserRequest
 {
     public string FirstName { get; set; } = string.Empty;
@@ -202,6 +222,7 @@ public class CreateUserRequest
 
 public class UpdateUserRequest
 {
+    public string Id { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

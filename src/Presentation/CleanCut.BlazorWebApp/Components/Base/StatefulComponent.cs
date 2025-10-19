@@ -5,11 +5,14 @@ using CleanCut.BlazorWebApp.State;
 namespace CleanCut.BlazorWebApp.Components.Base;
 
 /// <summary>
-/// Base component class with built-in state management capabilities
+/// Base component class with built-in state management capabilities (feature-state driven)
 /// </summary>
 public abstract class StatefulComponent : ComponentBase, IDisposable
 {
-    [Inject] protected IAppStateService AppState { get; set; } = default!;
+    [Inject] protected IUsersState UsersState { get; set; } = default!;
+    [Inject] protected IProductsState ProductsState { get; set; } = default!;
+    [Inject] protected ICountriesState CountriesState { get; set; } = default!;
+    [Inject] protected IUiStateService UiState { get; set; } = default!;
     [Inject] protected ILogger<StatefulComponent> Logger { get; set; } = default!;
 
     // Local component state
@@ -18,19 +21,38 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
     protected bool LocalIsSuccess { get; set; }
 
     // State management helpers
-    protected bool IsLoading => AppState.IsLoading || LocalIsLoading;
-    protected string? Message => LocalMessage ?? AppState.CurrentMessage;
-    protected bool IsSuccess => LocalIsSuccess || AppState.IsSuccess;
+    // Prefer UiState.IsLoading if available (it aggregates feature-state loading)
+    protected bool IsLoading => (UiState != null) ? (UiState.IsLoading || LocalIsLoading) : (UsersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading || LocalIsLoading);
+    // Prefer global UI message, fall back to local
+    protected string? Message => UiState?.CurrentMessage ?? LocalMessage;
+    protected bool IsSuccess => UiState?.IsSuccess ?? LocalIsSuccess;
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
-        // Subscribe to global state changes
-        AppState.StateChanged += OnGlobalStateChanged;
-        AppState.MessageChanged += OnGlobalMessageChanged;
-        
-        Logger.LogDebug("Component {ComponentName} initialized with state management", GetType().Name);
+
+        // Feature state subscriptions (data/caching)
+        UsersState.StateChanged += OnGlobalStateChanged;
+        ProductsState.StateChanged += OnGlobalStateChanged;
+        CountriesState.StateChanged += OnGlobalStateChanged;
+
+        UsersState.UsersChanged += OnUsersChanged;
+        ProductsState.ProductsChanged += OnProductsChanged;
+        CountriesState.CountriesChanged += OnCountriesChanged;
+
+        // Feature-level messages -> local message handling
+        UsersState.MessageChanged += OnFeatureMessage;
+        ProductsState.MessageChanged += OnFeatureMessage;
+        CountriesState.MessageChanged += OnFeatureMessage;
+
+        // Subscribe to new UI state service for global UI events
+        if (UiState != null)
+        {
+            UiState.StateChanged += OnGlobalStateChanged;
+            UiState.MessageChanged += OnUiMessage;
+        }
+
+        Logger.LogDebug("Component {ComponentName} initialized with feature-state management", GetType().Name);
     }
 
     protected virtual void OnGlobalStateChanged()
@@ -38,8 +60,42 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    protected virtual void OnGlobalMessageChanged(string message)
+    private void OnUiMessage(string message, bool isSuccess)
     {
+        // Let UiState own the canonical message; also mirror to local if desired
+        LocalMessage = message;
+        LocalIsSuccess = isSuccess;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnFeatureMessage(string message, bool isSuccess)
+    {
+        // Mirror feature messages into local UI so pages still show them
+        LocalMessage = message;
+        LocalIsSuccess = isSuccess;
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Virtual hooks for derived components
+    protected virtual Task OnUsersChangedAsync(List<UserDto> users) => Task.CompletedTask;
+    protected virtual Task OnProductsChangedAsync(List<ProductDto> products) => Task.CompletedTask;
+    protected virtual Task OnCountriesChangedAsync(List<CountryDto> countries) => Task.CompletedTask;
+
+    private void OnUsersChanged(List<UserDto> users)
+    {
+        _ = OnUsersChangedAsync(users);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnProductsChanged(List<ProductDto> products)
+    {
+        _ = OnProductsChangedAsync(products);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnCountriesChanged(List<CountryDto> countries)
+    {
+        _ = OnCountriesChangedAsync(countries);
         InvokeAsync(StateHasChanged);
     }
 
@@ -71,7 +127,7 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         try
         {
             await action();
-            
+
             if (!string.IsNullOrEmpty(successMessage))
             {
                 SetLocalMessage(successMessage, true);
@@ -80,7 +136,7 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error executing action in component {ComponentName}", GetType().Name);
-            
+
             var message = errorMessage ?? "An error occurred. Please try again.";
             SetLocalMessage(message, false);
         }
@@ -98,21 +154,21 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         try
         {
             var result = await action();
-            
+
             if (!string.IsNullOrEmpty(successMessage))
             {
                 SetLocalMessage(successMessage, true);
             }
-            
+
             return result;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error executing action in component {ComponentName}", GetType().Name);
-            
+
             var message = errorMessage ?? "An error occurred. Please try again.";
             SetLocalMessage(message, false);
-            
+
             return default;
         }
         finally
@@ -121,19 +177,28 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         }
     }
 
-    // Virtual methods for derived components to override
-    protected virtual Task OnUsersChangedAsync(List<UserDto> users) => Task.CompletedTask;
-    protected virtual Task OnProductsChangedAsync(List<ProductDto> products) => Task.CompletedTask;
-
     public virtual void Dispose()
     {
-        // Unsubscribe from global state changes
-        if (AppState != null)
+        // Unsubscribe from feature state events
+        UsersState.StateChanged -= OnGlobalStateChanged;
+        ProductsState.StateChanged -= OnGlobalStateChanged;
+        CountriesState.StateChanged -= OnGlobalStateChanged;
+
+        UsersState.UsersChanged -= OnUsersChanged;
+        ProductsState.ProductsChanged -= OnProductsChanged;
+        CountriesState.CountriesChanged -= OnCountriesChanged;
+
+        UsersState.MessageChanged -= OnFeatureMessage;
+        ProductsState.MessageChanged -= OnFeatureMessage;
+        CountriesState.MessageChanged -= OnFeatureMessage;
+
+        // Unsubscribe from UI service
+        if (UiState != null)
         {
-            AppState.StateChanged -= OnGlobalStateChanged;
-            AppState.MessageChanged -= OnGlobalMessageChanged;
+            UiState.StateChanged -= OnGlobalStateChanged;
+            UiState.MessageChanged -= OnUiMessage;
         }
-        
+
         Logger.LogDebug("Component {ComponentName} disposed", GetType().Name);
     }
 }

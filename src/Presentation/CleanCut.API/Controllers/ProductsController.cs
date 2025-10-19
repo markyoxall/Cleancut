@@ -7,6 +7,7 @@ using CleanCut.Application.Queries.Products.GetProduct;
 using CleanCut.Application.Queries.Products.GetProductsByUser;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
+using CleanCut.Application.Queries.Products.GetAllProducts;
 
 namespace CleanCut.API.Controllers;
 
@@ -25,17 +26,14 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all products (v1) - Added for testing purposes
+    /// Get all products (v1) -  
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<ProductDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetAllProducts(CancellationToken cancellationToken)
     {
-        // For demonstration, we'll get products for the first seeded user
-        // In a real API, you might want pagination or require authentication
-        var seededUserId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // This should match your seeded data
-        
-        var query = new GetProductsByUserQuery(seededUserId);
+         
+        var query = new GetAllProductsQuery();
         var products = await _mediator.Send(query, cancellationToken);
         return Ok(products);
     }

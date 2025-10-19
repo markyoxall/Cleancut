@@ -1,221 +1,62 @@
 ﻿using CleanCut.Application.DTOs;
+using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace CleanCut.BlazorWebApp.Services;
 
+// Adapter used by Blazor UI — delegates to typed v1/v2 clients.
+// NOTE: V2 DTO types live in ProductApiV2Dtos.cs only.
 public interface IProductApiService
 {
-    Task<List<ProductDto>> GetProductsByUserAsync(Guid userId);
-    Task<List<UserDto>> GetAllUsersAsync();
-    Task<ProductDto?> GetProductByIdAsync(Guid id);
-    Task<ProductDto> CreateProductAsync(CreateProductRequest request);
-    Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request);
-    Task<bool> DeleteProductAsync(Guid id);
+    // v1 (simple) methods
+    Task<List<ProductDto>> GetAllProductsAsync(CancellationToken cancellationToken = default);
+    Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default);
+    Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default);
+
+    // explicit v2 methods (no ambiguous overloads)
+    Task<V2ProductListResponse> GetAllProductsV2Async(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+    Task<ProductDto?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default);
+    Task<V2ProductListResponse> GetProductsByUserV2Async(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+    Task<V2StatsResponse> GetProductStatisticsV2Async(CancellationToken cancellationToken = default);
 }
 
 public class ProductApiService : IProductApiService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IProductApiClientV1 _v1;
+    private readonly IProductApiClientV2 _v2;
     private readonly ILogger<ProductApiService> _logger;
-    private const string BaseUrl = "https://localhost:7142";
 
-    public ProductApiService(HttpClient httpClient, ILogger<ProductApiService> logger)
+    public ProductApiService(IProductApiClientV1 v1, IProductApiClientV2 v2, ILogger<ProductApiService> logger)
     {
-        _httpClient = httpClient;
+        _v1 = v1;
+        _v2 = v2;
         _logger = logger;
     }
 
-    public async Task<List<ProductDto>> GetProductsByUserAsync(Guid userId)
+    // v1 delegations
+    public Task<List<ProductDto>> GetAllProductsAsync(CancellationToken cancellationToken = default) => _v1.GetAllAsync(cancellationToken);
+    public Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default) => _v1.GetByIdAsync(id, cancellationToken);
+    public Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default) => _v1.GetByUserAsync(userId, cancellationToken).ContinueWith(t => (IEnumerable<ProductDto>)t.Result, cancellationToken);
+    public Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default) => _v1.CreateAsync(request, cancellationToken);
+    public Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default) => _v1.UpdateAsync(id, request, cancellationToken);
+    public Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default) => _v1.DeleteAsync(id, cancellationToken);
+
+    // v2 delegations
+    public Task<V2ProductListResponse> GetAllProductsV2Async(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+        => _v2.GetAllAsync(page, pageSize, cancellationToken);
+
+    public async Task<ProductDto?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var url = $"{BaseUrl}/api/v1/products/user/{userId}";
-            _logger.LogInformation("Making GET request to: {Url}", url);
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var products = await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new();
-            _logger.LogInformation("Fetched {Count} products for user {UserId}", products.Count, userId);
-            return products;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching products for user {UserId}", userId);
-            throw;
-        }
+        var wrapper = await _v2.GetByIdAsync(id, cancellationToken);
+        return wrapper?.Data;
     }
 
-    public async Task<List<UserDto>> GetAllUsersAsync()
-    {
-        try
-        {
-            var url = $"{BaseUrl}/api/users";
-            _logger.LogInformation("Making GET request to: {Url}", url);
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var users = await response.Content.ReadFromJsonAsync<List<UserDto>>() ?? new();
-            _logger.LogInformation("Fetched {Count} users", users.Count);
-            return users;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching users");
-            throw;
-        }
-    }
+    public Task<V2ProductListResponse> GetProductsByUserV2Async(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+        => _v2.GetByUserAsync(userId, page, pageSize, cancellationToken);
 
-    public async Task<ProductDto?> GetProductByIdAsync(Guid id)
-    {
-        try
-        {
-            var url = $"{BaseUrl}/api/v1/products/{id}";
-            _logger.LogInformation("Making GET request to: {Url}", url);
-            var response = await _httpClient.GetAsync(url);
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                return null;
-            
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<ProductDto>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching product {ProductId}", id);
-            throw;
-        }
-    }
-
-    public async Task<ProductDto> CreateProductAsync(CreateProductRequest request)
-    {
-        try
-        {
-            var url = $"{BaseUrl}/api/v1/products";
-            _logger.LogInformation("Making POST request to: {Url} for product {ProductName}", url, request.Name);
-            var response = await _httpClient.PostAsJsonAsync(url, request);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("API returned error {StatusCode}: {ErrorContent}", response.StatusCode, errorContent);
-            }
-            
-            response.EnsureSuccessStatusCode();
-            var product = await response.Content.ReadFromJsonAsync<ProductDto>() 
-                ?? throw new InvalidOperationException("Failed to create product");
-            
-            _logger.LogInformation("Successfully created product {ProductId}", product.Id);
-            return product;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating product {ProductName}", request.Name);
-            throw;
-        }
-    }
-
-    public async Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request)
-    {
-        try
-        {
-            var url = $"{BaseUrl}/api/v1/products/{id}";
-            _logger.LogInformation("Making PUT request to: {Url} for product {ProductName}", url, request.Name);
-            
-            // Create the command structure that matches the API expectation
-            var command = new
-            {
-                Id = id,
-                Name = request.Name,
-                Description = request.Description,
-                Price = request.Price
-            };
-            
-            var response = await _httpClient.PutAsJsonAsync(url, command);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("API returned error {StatusCode}: {ErrorContent}", response.StatusCode, errorContent);
-            }
-            
-            response.EnsureSuccessStatusCode();
-            var product = await response.Content.ReadFromJsonAsync<ProductDto>() 
-                ?? throw new InvalidOperationException("Failed to update product");
-            
-            _logger.LogInformation("Successfully updated product {ProductId}", product.Id);
-            return product;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating product {ProductId}", id);
-            throw;
-        }
-    }
-
-    public async Task<bool> DeleteProductAsync(Guid id)
-    {
-        try
-        {
-            var url = $"{BaseUrl}/api/v1/products/{id}";
-            _logger.LogInformation("Making DELETE request to: {Url}", url);
-            
-            // Add timeout for debugging
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var response = await _httpClient.DeleteAsync(url, cts.Token);
-            
-            _logger.LogInformation("DELETE request completed. Status: {StatusCode}, Reason: {ReasonPhrase}", 
-                response.StatusCode, response.ReasonPhrase);
-            
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                _logger.LogWarning("Product {ProductId} not found during delete - may have already been deleted", id);
-                return false; // Product not found
-            }
-            
-            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
-            {
-                _logger.LogInformation("Product {ProductId} deleted successfully", id);
-                return true; // Successfully deleted
-            }
-            
-            // Log other non-success status codes
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Delete failed for product {ProductId}. Status: {StatusCode}, Error: {ErrorContent}", 
-                    id, response.StatusCode, errorContent);
-                throw new HttpRequestException($"Delete failed with status {response.StatusCode}: {errorContent}");
-            }
-            
-            return response.IsSuccessStatusCode;
-        }
-        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-        {
-            _logger.LogError(ex, "Timeout while deleting product {ProductId}", id);
-            throw new HttpRequestException($"Request timeout while deleting product {id}", ex);
-        }
-        catch (HttpRequestException httpEx)
-        {
-            _logger.LogError(httpEx, "HTTP error while deleting product {ProductId}. Message: {Message}", id, httpEx.Message);
-            // Re-throw HTTP exceptions so they can be handled specifically
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deleting product {ProductId}", id);
-            throw;
-        }
-    }
-}
-
-// Local request models for API calls
-public class CreateProductRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public Guid UserId { get; set; }
-}
-
-public class UpdateProductRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public decimal Price { get; set; }
+    public Task<V2StatsResponse> GetProductStatisticsV2Async(CancellationToken cancellationToken = default)
+        => _v2.GetStatisticsAsync(cancellationToken);
 }

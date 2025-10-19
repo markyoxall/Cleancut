@@ -1,8 +1,7 @@
-@inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject ILogger<UsersDemo> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-
+@inject IUserApiService UserApi
 <div class="row">
     
     <!-- Get All Users -->
@@ -291,14 +290,16 @@
 
         try
         {
-            var response = await Http.GetAsync("https://localhost:7142/api/users");
-            if (response.IsSuccessStatusCode)
+
+            var users = await UserApi.GetAllUsersAsync();
+
+            if (users != null)
             {
-                allUsers = await response.Content.ReadFromJsonAsync<List<UserDto>>();
+                allUsers = users;
             }
             else
             {
-                getAllError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                getAllError = $"API Error: ";
             }
         }
         catch (Exception ex)
@@ -321,14 +322,16 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/users/{userIdToGet}");
-            if (response.IsSuccessStatusCode)
+
+            var user = await UserApi.GetUserByIdAsync(Guid.Parse(userIdToGet));
+
+            if (user != null)
             {
-                foundUser = await response.Content.ReadFromJsonAsync<UserDto>();
+                foundUser = user;
             }
             else
             {
-                getByIdError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                getByIdError = $"API Error: ";
             }
         }
         catch (Exception ex)
@@ -351,16 +354,16 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("https://localhost:7142/api/users", newUser);
-            if (response.IsSuccessStatusCode)
+            var user = await UserApi.CreateUserAsync(newUser);
+
+            if (user != null)
             {
-                createdUser = await response.Content.ReadFromJsonAsync<UserDto>();
+                createdUser = user;
                 newUser = new(); // Reset form
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                createError = $"API Error: {response.StatusCode} - {errorContent}";
+                createError = $"API Error: ";
             }
         }
         catch (Exception ex)
@@ -378,17 +381,18 @@
     {
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/users/{updateUser.Id}");
-            if (response.IsSuccessStatusCode)
+           
+            var updatedUser = await UserApi.UpdateUserAsync(Guid.Parse(updateUser.Id), updateUser);
+
+            if (updatedUser != null)
             {
-                var user = await response.Content.ReadFromJsonAsync<UserDto>();
-                if (user != null)
-                {
-                    updateUser.FirstName = user.FirstName;
-                    updateUser.LastName = user.LastName;
-                    updateUser.Email = user.Email;
-                    StateHasChanged();
-                }
+                 
+              
+                updateUser.FirstName = updatedUser.FirstName;
+                updateUser.LastName = updatedUser.LastName;
+                updateUser.Email = updatedUser.Email;
+                StateHasChanged();
+                 
             }
         }
         catch (Exception ex)
@@ -406,15 +410,21 @@
 
         try
         {
-            var response = await Http.PutAsJsonAsync($"https://localhost:7142/api/users/{updateUser.Id}", updateUser);
-            if (response.IsSuccessStatusCode)
+            if (!Guid.TryParse(updateUser.Id, out var userId))
             {
-                updatedUser = await response.Content.ReadFromJsonAsync<UserDto>();
+                updateError = "Invalid User ID format.";
+                return;
+            }
+
+            var user = await UserApi.UpdateUserAsync(userId, updateUser);
+
+            if (user != null)
+            {
+                updatedUser = user;
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                updateError = $"API Error: {response.StatusCode} - {errorContent}";
+                updateError = "API Error: User not updated.";
             }
         }
         catch (Exception ex)
@@ -445,31 +455,5 @@
                updateUser.Email.Contains("@");
     }
 
-    // DTO Classes
-    public class UserDto
-    {
-        public Guid Id { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public string FullName { get; set; } = string.Empty;
-    }
-
-    public class CreateUserRequest
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-    }
-
-    public class UpdateUserRequest
-    {
-        public string Id { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-    }
+  
 }

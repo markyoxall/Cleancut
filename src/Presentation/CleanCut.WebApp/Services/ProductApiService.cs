@@ -1,9 +1,11 @@
 using CleanCut.Application.DTOs;
+using CleanCut.Domain.Entities;
 
 namespace CleanCut.WebApp.Services;
 
 public interface IProductApiService
 {
+    Task<List<ProductDto>> GetAllProductsAsync();
     Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId);
     Task<ProductDto?> GetProductByIdAsync(Guid id);
     Task<ProductDto> CreateProductAsync(string name, string description, decimal price, Guid userId);
@@ -24,13 +26,39 @@ public class ProductApiService : IProductApiService
         _baseUrl = configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:7142";
     }
 
+    public async Task<List<ProductDto>> GetAllProductsAsync()
+    {
+     
+        try
+        {
+            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products}", _baseUrl);
+
+            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products");
+            response.EnsureSuccessStatusCode();
+
+            var products = await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new List<ProductDto>();
+
+            _logger.LogInformation("? API returned {ProductCount} products", products.Count);
+            return products;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "? Error calling Products API for all products");
+            throw;
+        }
+
+
+
+    }
+
+
     public async Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId)
     {
         try
         {
-            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products?userId={UserId}", _baseUrl, userId);
+            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products/user/{UserId}", _baseUrl, userId);
             
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products?userId={userId}");
+            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/user/{userId}");
             response.EnsureSuccessStatusCode();
             
             var products = await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new List<ProductDto>();

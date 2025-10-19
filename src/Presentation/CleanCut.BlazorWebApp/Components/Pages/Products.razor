@@ -1,10 +1,9 @@
 @page "/products"
 @page "/products/search"
-@inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject ILogger<Products> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-
+@inject IProductApiService ProductApi
 <PageTitle>Product Search - CleanCut</PageTitle>
 
 <div class="container-fluid">
@@ -143,7 +142,7 @@
 
 @code {
     private string searchProductId = string.Empty;
-    private Product? searchResult = null;
+    private ProductDto? searchResult = null; // <-- Use ProductDto here
     private string errorMessage = string.Empty;
     private bool isLoading = false;
 
@@ -169,25 +168,17 @@
                 return;
             }
 
-            // Direct HTTP call to API
-            var response = await Http.GetAsync($"https://localhost:7142/api/v1/products/{productId}");
-            
-            if (response.IsSuccessStatusCode)
+            var product = await ProductApi.GetProductByIdAsync(productId);
+            if (product != null)
             {
-                var product = await response.Content.ReadFromJsonAsync<Product>();
-                searchResult = product;
-                Logger.LogInformation("Product found: {Name}", product?.Name);
+                searchResult = product; // This now matches the type
+                Logger.LogInformation("Product found: {Name}", product.Name);
             }
             else
             {
-                errorMessage = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
-                Logger.LogWarning("API returned error: {StatusCode}", response.StatusCode);
+                errorMessage = "Product not found.";
+                Logger.LogWarning("Product with ID {ProductId} not found", productId);
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            errorMessage = $"Network error: {ex.Message}. Make sure API is running on https://localhost:7142";
-            Logger.LogError(ex, "HTTP request failed");
         }
         catch (Exception ex)
         {
@@ -215,18 +206,5 @@
         {
             await SearchProduct();
         }
-    }
-
-    // Simple Product class for JSON deserialization
-    public class Product
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public bool IsAvailable { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

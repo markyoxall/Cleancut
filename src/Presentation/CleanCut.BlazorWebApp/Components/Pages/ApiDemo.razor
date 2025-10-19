@@ -1,9 +1,8 @@
 @page "/api-demo"
-@inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject ILogger<ApiDemo> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-
+@inject IProductApiService ProductApi
 <PageTitle>API Demo - CleanCut</PageTitle>
 
 <div class="container-fluid">
@@ -122,8 +121,8 @@
     {
         try
         {
-            var response = await Http.GetAsync("https://localhost:7142/api/v1/products");
-            apiStatus = response.IsSuccessStatusCode ? "online" : "offline";
+            var products =await ProductApi.GetAllProductsAsync();
+            apiStatus = "online";
         }
         catch
         {

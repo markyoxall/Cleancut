@@ -1,7 +1,8 @@
-@inject HttpClient Http
+@using CleanCut.BlazorWebApp.Services
 @inject IJSRuntime JSRuntime
 @inject ILogger<ProductsV2Demo> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IProductApiService ProductApi
 
 <div class="row">
     
@@ -289,7 +290,7 @@
     private string productIdToGet = "b6cc1306-75ea-45f0-902e-6cdf34260651";
     private string userIdToGet = "11111111-1111-1111-1111-111111111111";
 
-    // V2 API Responses
+    // V2 API Responses (shared DTOs from ProductApiV2Dtos.cs)
     private V2ProductListResponse? allProductsResponse;
     private V2ProductResponse? foundProductResponse;
     private V2ProductListResponse? userProductsResponse;
@@ -310,15 +311,9 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/v2/products?page={page}&pageSize={pageSize}");
-            if (response.IsSuccessStatusCode)
-            {
-                allProductsResponse = await response.Content.ReadFromJsonAsync<V2ProductListResponse>();
-            }
-            else
-            {
-                getAllError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
-            }
+            allProductsResponse = await ProductApi.GetAllProductsV2Async(page, pageSize);
+            if (allProductsResponse == null || allProductsResponse.Data == null)
+                getAllError = "API Error: null products";
         }
         catch (Exception ex)
         {
@@ -340,14 +335,19 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/v2/products/{productIdToGet}");
-            if (response.IsSuccessStatusCode)
+            var dto = await ProductApi.GetProductByIdV2Async(Guid.Parse(productIdToGet));
+            if (dto == null)
             {
-                foundProductResponse = await response.Content.ReadFromJsonAsync<V2ProductResponse>();
+                getByIdError = "Product not found or API error.";
             }
             else
             {
-                getByIdError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                foundProductResponse = new V2ProductResponse
+                {
+                    Data = dto,
+                    ApiVersion = "v2",
+                    Timestamp = DateTime.UtcNow
+                };
             }
         }
         catch (Exception ex)
@@ -370,15 +370,7 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/v2/products/user/{userIdToGet}?page={userPage}&pageSize={userPageSize}");
-            if (response.IsSuccessStatusCode)
-            {
-                userProductsResponse = await response.Content.ReadFromJsonAsync<V2ProductListResponse>();
-            }
-            else
-            {
-                getByUserError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
-            }
+            userProductsResponse = await ProductApi.GetProductsByUserV2Async(Guid.Parse(userIdToGet), userPage, userPageSize);
         }
         catch (Exception ex)
         {
@@ -400,15 +392,7 @@
 
         try
         {
-            var response = await Http.GetAsync("https://localhost:7142/api/v2/products/statistics");
-            if (response.IsSuccessStatusCode)
-            {
-                statsResponse = await response.Content.ReadFromJsonAsync<V2StatsResponse>();
-            }
-            else
-            {
-                getStatsError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
-            }
+            statsResponse = await ProductApi.GetProductStatisticsV2Async();
         }
         catch (Exception ex)
         {
@@ -419,58 +403,5 @@
             isLoadingStats = false;
             StateHasChanged();
         }
-    }
-
-    // V2 Response DTOs
-    public class V2ProductListResponse
-    {
-        public List<ProductDto> Data { get; set; } = new();
-        public PaginationInfo Pagination { get; set; } = new();
-        public string ApiVersion { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; }
-    }
-
-    public class V2ProductResponse
-    {
-        public ProductDto Data { get; set; } = new();
-        public string ApiVersion { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; }
-    }
-
-    public class V2StatsResponse
-    {
-        public StatsData Data { get; set; } = new();
-        public string Message { get; set; } = string.Empty;
-        public string ApiVersion { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; }
-    }
-
-    public class PaginationInfo
-    {
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-        public int TotalItems { get; set; }
-        public int TotalPages { get; set; }
-    }
-
-    public class StatsData
-    {
-        public int TotalProducts { get; set; }
-        public int AvailableProducts { get; set; }
-        public int UnavailableProducts { get; set; }
-        public decimal AveragePrice { get; set; }
-        public DateTime LastUpdated { get; set; }
-    }
-
-    public class ProductDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public bool IsAvailable { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

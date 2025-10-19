@@ -3,6 +3,7 @@ using CleanCut.Infrastructure.Data;
 using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data.Seeding;
 using CleanCut.API.Middleware;
+using CleanCut.API.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -133,9 +134,10 @@ if (app.Environment.IsDevelopment())
     // Add Swagger UI (shows all endpoints from both versions)
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", $"{apiTitle} - All Versions");
-        options.RoutePrefix = "swagger";
-        options.DocumentTitle = $"{apiTitle} - API Documentation (V1 & V2)";
+        // Use canonical endpoints/titles from ApiConstants
+        options.SwaggerEndpoint(ApiConstants.OpenApiJson, ApiConstants.SwaggerUiTitle);
+        options.RoutePrefix = ApiConstants.SwaggerUiRoutePrefix;
+        options.DocumentTitle = ApiConstants.SwaggerUiTitle;
         options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
         options.DisplayRequestDuration();
         options.EnableDeepLinking();

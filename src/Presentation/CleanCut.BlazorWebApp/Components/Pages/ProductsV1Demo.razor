@@ -1,8 +1,7 @@
-@inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject ILogger<ProductsV1Demo> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-
+@inject IProductApiService ProductApi
 <div class="row">
     
     <!-- Get All Products -->
@@ -241,14 +240,10 @@
 
         try
         {
-            var response = await Http.GetAsync("https://localhost:7142/api/v1/products");
-            if (response.IsSuccessStatusCode)
+            var products = await ProductApi.GetAllProductsAsync();
+            if (products is null)
             {
-                allProducts = await response.Content.ReadFromJsonAsync<List<ProductDto>>();
-            }
-            else
-            {
-                getAllError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                getAllError = $"API Error: products is null";
             }
         }
         catch (Exception ex)
@@ -271,14 +266,14 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/v1/products/{productIdToGet}");
-            if (response.IsSuccessStatusCode)
+            var product = await ProductApi.GetProductByIdAsync(Guid.Parse(productIdToGet));  
+            if (product is null)
             {
-                foundProduct = await response.Content.ReadFromJsonAsync<ProductDto>();
+                foundProduct = product;
             }
             else
             {
-                getByIdError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                getByIdError = $"API Error: product is null";
             }
         }
         catch (Exception ex)
@@ -301,14 +296,14 @@
 
         try
         {
-            var response = await Http.GetAsync($"https://localhost:7142/api/v1/products/user/{userIdToGet}");
-            if (response.IsSuccessStatusCode)
+            var products = await ProductApi.GetProductsByUserAsync(Guid.Parse(userIdToGet)); // Http.GetAsync($"https://localhost:7142/api/v1/products/user/{userIdToGet}");
+            if (products is not null)
             {
-                userProducts = await response.Content.ReadFromJsonAsync<List<ProductDto>>();
+                userProducts = products.ToList();
             }
             else
             {
-                getByUserError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                getByUserError = $"API Error: product is null";
             }
         }
         catch (Exception ex)
@@ -331,15 +326,15 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("https://localhost:7142/api/v1/products", newProduct);
-            if (response.IsSuccessStatusCode)
+            var product = await ProductApi.CreateProductAsync(newProduct); // Http.PostAsJsonAsync("https://localhost:7142/api/v1/products", newProduct);
+            if (product is null)
             {
-                createdProduct = await response.Content.ReadFromJsonAsync<ProductDto>();
+                createdProduct = product;
                 newProduct = new(); // Reset form
             }
             else
             {
-                createError = $"API Error: {response.StatusCode} - {response.ReasonPhrase}";
+                createError = $"API Error: product is null";
             }
         }
         catch (Exception ex)
@@ -358,27 +353,27 @@
         return !string.IsNullOrWhiteSpace(newProduct.Name) &&
                !string.IsNullOrWhiteSpace(newProduct.Description) &&
                newProduct.Price > 0 &&
-               !string.IsNullOrWhiteSpace(newProduct.UserId);
+               !string.IsNullOrWhiteSpace(newProduct.UserId.ToString());
     }
 
     // DTO Classes
-    public class ProductDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public bool IsAvailable { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-    }
+    // public class ProductDto
+    // {
+    //     public Guid Id { get; set; }
+    //     public string Name { get; set; } = string.Empty;
+    //     public string Description { get; set; } = string.Empty;
+    //     public decimal Price { get; set; }
+    //     public bool IsAvailable { get; set; }
+    //     public Guid UserId { get; set; }
+    //     public DateTime CreatedAt { get; set; }
+    //     public DateTime? UpdatedAt { get; set; }
+    // }
 
-    public class CreateProductRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public string UserId { get; set; } = "11111111-1111-1111-1111-111111111111";
-    }
+    // public class CreateProductRequest
+    // {
+    //     public string Name { get; set; } = string.Empty;
+    //     public string Description { get; set; } = string.Empty;
+    //     public decimal Price { get; set; }
+    //     public string UserId { get; set; } = "11111111-1111-1111-1111-111111111111";
+    // }
 }

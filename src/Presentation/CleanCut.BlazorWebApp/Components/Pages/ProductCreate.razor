@@ -4,6 +4,7 @@
 @using System.ComponentModel.DataAnnotations
 @inject ILogger<ProductCreate> Logger
 @inject IProductApiService ProductApi
+@inject IUserApiService UserApi
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveServerRenderMode(prerender: true))
 
@@ -106,7 +107,7 @@
     {
         try
         {
-            Users = await ProductApi.GetAllUsersAsync();
+            Users = await UserApi.GetAllUsersAsync();
             Logger.LogInformation("Loaded {UserCount} users for create form", Users.Count);
         }
         catch (Exception ex)

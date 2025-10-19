@@ -48,6 +48,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1FC327D6-277A-43EE-9437-2D04D85C0D72}"
 	ProjectSection(SolutionItems) = preProject
 		.azure-pipelines.yml = .azure-pipelines.yml
+		.github\ISSUE_TEMPLATE\config.yml = .github\ISSUE_TEMPLATE\config.yml
+		.github\ISSUE_TEMPLATE\hydration-login-scaffold.md = .github\ISSUE_TEMPLATE\hydration-login-scaffold.md
 		README.md = README.md
 	EndProjectSection
 EndProject

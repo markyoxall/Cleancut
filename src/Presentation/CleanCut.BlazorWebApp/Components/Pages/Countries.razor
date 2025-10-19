@@ -1,7 +1,7 @@
 ﻿@page "/countries"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using CleanCut.Application.DTOs
-@inject HttpClient Http
+@inject ICountryApiService CountryApi
 
 <h3>Countries</h3>
 
@@ -47,7 +47,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        countries = await Http.GetFromJsonAsync<List<CountryDto>>("https://localhost:7142/api/countries");
+        countries = await CountryApi.GetAllCountriesAsync();
     }
 
     private void OnSearchChanged(ChangeEventArgs e)

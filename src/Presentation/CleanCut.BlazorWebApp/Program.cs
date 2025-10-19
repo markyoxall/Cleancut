@@ -1,6 +1,7 @@
 using CleanCut.BlazorWebApp.Components;
 using CleanCut.BlazorWebApp.Services;
 using CleanCut.BlazorWebApp.State;
+using CleanCut.BlazorWebApp.Extensions; // add extension namespace
 
 namespace CleanCut.BlazorWebApp;
 
@@ -14,20 +15,24 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        // Register API services
-        builder.Services.AddScoped<IProductApiService, ProductApiService>();
+        // Register product api clients & adapter via extension (reads appsettings)
+        builder.Services.AddProductApiClients(builder.Configuration);
+
+        // Other services unchanged
         builder.Services.AddScoped<IUserApiService, UserApiService>();
+        builder.Services.AddScoped<ICountryApiService, CountryApiService>();
+        builder.Services.AddScoped<IUiStateService, UiStateService>();
 
-        // Register state management services
-        builder.Services.AddScoped<IAppStateService, AppStateService>();
-        builder.Services.AddScoped<IStateContainer, StateContainer>();
+        // Register feature state services
+        builder.Services.AddScoped<IUsersState, UsersState>();
+        builder.Services.AddScoped<IProductsState, ProductsState>();
+        builder.Services.AddScoped<ICountriesState, CountriesState>();
 
-        // Simple HttpClient for making direct API calls
+        // Leave a default HttpClient for other uses
         builder.Services.AddHttpClient();
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error");

@@ -241,7 +241,7 @@
             }
 
             // Load user's products
-            UserProducts = await ProductApi.GetProductsByUserAsync(User.Id);
+            UserProducts = (await ProductApi.GetProductsByUserAsync(User.Id)).ToList();
 
             Logger.LogInformation("Loaded user details: {UserName} with {ProductCount} products", 
                 User.FirstName + " " + User.LastName, UserProducts.Count);

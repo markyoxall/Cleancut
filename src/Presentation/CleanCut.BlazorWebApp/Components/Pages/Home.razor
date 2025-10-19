@@ -1,10 +1,13 @@
 ﻿@page "/"
 @using CleanCut.Application.DTOs
-@using CleanCut.BlazorWebApp.Services
+@implements IDisposable
 @inject ILogger<Home> Logger
-@inject IUserApiService UserApi
-@inject IProductApiService ProductApi
 @inject NavigationManager Navigation
+@inject IUsersState UsersState
+@inject IProductsState ProductsState
+@inject ICountriesState CountriesState
+@inject IUiStateService UiState
+
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>Dashboard - CleanCut</PageTitle>
@@ -38,6 +41,14 @@
     }
     else
     {
+        @if (!string.IsNullOrEmpty(UiState.CurrentMessage))
+        {
+            <div class="alert @(UiState.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                <i class="fas @(UiState.IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @UiState.CurrentMessage
+                <button type="button" class="btn-close" @onclick="UiState.ClearMessage"></button>
+            </div>
+        }
+
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-6 col-xl-3 mb-3">
@@ -174,7 +185,7 @@
                         <h5 class="card-title mb-0">
                             <i class="fas fa-history me-2"></i>Recent Products
                         </h5>
-                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                        <button type="button" class="btn btn-sm btn-outline-primary"
                                 @onclick="NavigateToAllProducts">
                             View All
                         </button>
@@ -213,7 +224,7 @@
                         <h5 class="card-title mb-0">
                             <i class="fas fa-users me-2"></i>Active Users
                         </h5>
-                        <button type="button" class="btn btn-sm btn-outline-info" 
+                        <button type="button" class="btn btn-sm btn-outline-info"
                                 @onclick="NavigateToAllUsers">
                             View All
                         </button>
@@ -278,11 +289,10 @@
 </style>
 
 @code {
-    private bool IsLoading { get; set; } = true;
-    private List<UserDto> Users { get; set; } = new();
-    private List<ProductDto> Products { get; set; } = new();
+    private bool IsLoading => (UiState != null) ? UiState.IsLoading : (UsersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
+    private List<UserDto> Users => UsersState?.Users?.ToList() ?? new();
+    private List<ProductDto> Products => ProductsState?.Products?.ToList() ?? new();
 
-    // Dashboard statistics
     private int TotalUsers => Users.Count;
     private int ActiveUsers => Users.Count(u => u.IsActive);
     private int TotalProducts => Products.Count;
@@ -290,49 +300,81 @@
     private decimal TotalValue => Products.Sum(p => p.Price);
     private double AverageProductsPerUser => TotalUsers > 0 ? (double)TotalProducts / TotalUsers : 0;
 
-    // Recent data
     private List<ProductDto> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
     private List<UserDto> ActiveUsersList => Users.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
 
     protected override async Task OnInitializedAsync()
     {
-        Logger.LogInformation("Dashboard loading");
+        // Subscribe to feature events
+        UsersState.UsersChanged += OnUsersChanged;
+        ProductsState.ProductsChanged += OnProductsChanged;
+        CountriesState.CountriesChanged += OnCountriesChanged;
+
+        UsersState.MessageChanged += OnFeatureMessage;
+        ProductsState.MessageChanged += OnFeatureMessage;
+        CountriesState.MessageChanged += OnFeatureMessage;
+
+        // Subscribe to global UI messages
+        if (UiState != null)
+            UiState.MessageChanged += OnUiMessage;
+
         await LoadDashboardDataAsync();
+    }
+
+    private void OnUsersChanged(List<UserDto> users) => InvokeAsync(StateHasChanged);
+    private void OnProductsChanged(List<ProductDto> products) => InvokeAsync(StateHasChanged);
+    private void OnCountriesChanged(List<CountryDto> countries) => InvokeAsync(StateHasChanged);
+
+    private void OnFeatureMessage(string message, bool isSuccess)
+    {
+        // Mirror feature messages into the global UI service so UI is consistent
+        UiState?.SetMessage(message, isSuccess);
+    }
+
+    private void OnUiMessage(string message, bool isSuccess)
+    {
+        // UI service raised a message — refresh UI
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ClearPageMessage()
+    {
+        UiState?.ClearMessage();
+    }
+
+    public void Dispose()
+    {
+        UsersState.UsersChanged -= OnUsersChanged;
+        ProductsState.ProductsChanged -= OnProductsChanged;
+        CountriesState.CountriesChanged -= OnCountriesChanged;
+
+        UsersState.MessageChanged -= OnFeatureMessage;
+        ProductsState.MessageChanged -= OnFeatureMessage;
+        CountriesState.MessageChanged -= OnFeatureMessage;
+
+        if (UiState != null)
+            UiState.MessageChanged -= OnUiMessage;
     }
 
     private async Task LoadDashboardDataAsync()
     {
-        IsLoading = true;
         try
         {
-            // Load all users
-            Users = await UserApi.GetAllUsersAsync();
-            
-            // Load all products from all users
-            Products = new List<ProductDto>();
-            foreach (var user in Users)
-            {
-                try
-                {
-                    var userProducts = await ProductApi.GetProductsByUserAsync(user.Id);
-                    Products.AddRange(userProducts);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to load products for user {UserId}", user.Id);
-                }
-            }
+            await UsersState.LoadAsync();
+            await ProductsState.LoadAllAsync();
+            await CountriesState.LoadAsync();
 
-            Logger.LogInformation("Dashboard loaded - {UserCount} users, {ProductCount} products", Users.Count, Products.Count);
+            Logger.LogInformation("Dashboard loaded - {UserCount} users, {ProductCount} products", UsersState.Users.Count, ProductsState.Products.Count);
+            UiState?.SetMessage("Dashboard loaded", true);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading dashboard data");
+            UiState?.SetMessage("Failed to load dashboard data", false);
         }
         finally
         {
-            IsLoading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
         }
     }
 

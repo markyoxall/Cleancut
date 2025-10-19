@@ -2,6 +2,7 @@
 @using CleanCut.Application.DTOs
 @inject ILogger<ProductManagement> Logger
 @inject CleanCut.BlazorWebApp.Services.IProductApiService ProductApi
+@inject IUserApiService UserApi
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -295,20 +296,20 @@
         try
         {
             // Load users
-            Users = await ProductApi.GetAllUsersAsync();
+            Users = await UserApi.GetAllUsersAsync();
 
             // Determine which user to load products for
             if (SelectedUserId.HasValue)
             {
                 // Use the specified user (from URL parameter or filter)
-                Products = await ProductApi.GetProductsByUserAsync(SelectedUserId.Value);
+                Products = (await ProductApi.GetProductsByUserAsync(SelectedUserId.Value)).ToList();
             }
             else if (Users.Any())
             {
                 // Default to first user
                 var firstUser = Users.First();
                 SelectedUserId = firstUser.Id;
-                Products = await ProductApi.GetProductsByUserAsync(firstUser.Id);
+                Products = (await ProductApi.GetProductsByUserAsync(firstUser.Id)).ToList();
             }
             else
             {
@@ -345,13 +346,13 @@
             // Load products based on selected user (match MVC logic)
             if (SelectedUserId.HasValue)
             {
-                Products = await ProductApi.GetProductsByUserAsync(SelectedUserId.Value);
+                Products = (await ProductApi.GetProductsByUserAsync(SelectedUserId.Value)).ToList();
             }
             else if (Users.Any())
             {
                 var firstUser = Users.First();
                 SelectedUserId = firstUser.Id;
-                Products = await ProductApi.GetProductsByUserAsync(firstUser.Id);
+                Products = (await ProductApi.GetProductsByUserAsync(firstUser.Id)).ToList();
             }
             else
             {

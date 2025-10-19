@@ -355,7 +355,7 @@
             };
 
             // Load user's products
-            UserProducts = await ProductApi.GetProductsByUserAsync(OriginalUser.Id);
+            UserProducts = (await ProductApi.GetProductsByUserAsync(OriginalUser.Id)).ToList();
 
             Logger.LogInformation("Loaded user for editing: {UserName}", OriginalUser.FirstName + " " + OriginalUser.LastName);
         }
