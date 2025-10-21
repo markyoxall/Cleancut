@@ -77,23 +77,23 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
     }
 
     // Virtual hooks for derived components
-    protected virtual Task OnUsersChangedAsync(List<UserDto> users) => Task.CompletedTask;
-    protected virtual Task OnProductsChangedAsync(List<ProductDto> products) => Task.CompletedTask;
-    protected virtual Task OnCountriesChangedAsync(List<CountryDto> countries) => Task.CompletedTask;
+    protected virtual Task OnUsersChangedAsync(List<UserInfo> users) => Task.CompletedTask;
+    protected virtual Task OnProductsChangedAsync(List<ProductInfo> products) => Task.CompletedTask;
+    protected virtual Task OnCountriesChangedAsync(List<CountryInfo> countries) => Task.CompletedTask;
 
-    private void OnUsersChanged(List<UserDto> users)
+    private void OnUsersChanged(List<UserInfo> users)
     {
         _ = OnUsersChangedAsync(users);
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnProductsChanged(List<ProductDto> products)
+    private void OnProductsChanged(List<ProductInfo> products)
     {
         _ = OnProductsChangedAsync(products);
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnCountriesChanged(List<CountryDto> countries)
+    private void OnCountriesChanged(List<CountryInfo> countries)
     {
         _ = OnCountriesChangedAsync(countries);
         InvokeAsync(StateHasChanged);

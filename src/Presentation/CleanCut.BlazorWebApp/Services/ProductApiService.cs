@@ -9,16 +9,16 @@ namespace CleanCut.BlazorWebApp.Services;
 public interface IProductApiService
 {
     // v1 (simple) methods
-    Task<List<ProductDto>> GetAllProductsAsync(CancellationToken cancellationToken = default);
-    Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default);
-    Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default);
+    Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default);
+    Task<ProductInfo?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ProductInfo>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<ProductInfo> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default);
+    Task<ProductInfo> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default);
     Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default);
 
     // explicit v2 methods (no ambiguous overloads)
     Task<V2ProductListResponse> GetAllProductsV2Async(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
-    Task<ProductDto?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default);
+    Task<ProductInfo?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default);
     Task<V2ProductListResponse> GetProductsByUserV2Async(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
     Task<V2StatsResponse> GetProductStatisticsV2Async(CancellationToken cancellationToken = default);
 }
@@ -37,18 +37,18 @@ public class ProductApiService : IProductApiService
     }
 
     // v1 delegations
-    public Task<List<ProductDto>> GetAllProductsAsync(CancellationToken cancellationToken = default) => _v1.GetAllAsync(cancellationToken);
-    public Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default) => _v1.GetByIdAsync(id, cancellationToken);
-    public Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default) => _v1.GetByUserAsync(userId, cancellationToken).ContinueWith(t => (IEnumerable<ProductDto>)t.Result, cancellationToken);
-    public Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default) => _v1.CreateAsync(request, cancellationToken);
-    public Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default) => _v1.UpdateAsync(id, request, cancellationToken);
+    public Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default) => _v1.GetAllAsync(cancellationToken);
+    public Task<ProductInfo?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default) => _v1.GetByIdAsync(id, cancellationToken);
+    public Task<IEnumerable<ProductInfo>> GetProductsByUserAsync(Guid userId, CancellationToken cancellationToken = default) => _v1.GetByUserAsync(userId, cancellationToken).ContinueWith(t => (IEnumerable<ProductInfo>)t.Result, cancellationToken);
+    public Task<ProductInfo> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default) => _v1.CreateAsync(request, cancellationToken);
+    public Task<ProductInfo> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default) => _v1.UpdateAsync(id, request, cancellationToken);
     public Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default) => _v1.DeleteAsync(id, cancellationToken);
 
     // v2 delegations
     public Task<V2ProductListResponse> GetAllProductsV2Async(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
         => _v2.GetAllAsync(page, pageSize, cancellationToken);
 
-    public async Task<ProductDto?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo?> GetProductByIdV2Async(Guid id, CancellationToken cancellationToken = default)
     {
         var wrapper = await _v2.GetByIdAsync(id, cancellationToken);
         return wrapper?.Data;

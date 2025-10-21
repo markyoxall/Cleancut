@@ -6,8 +6,8 @@ namespace CleanCut.BlazorWebApp.Services;
 
 public interface ICountryApiService
 {
-    Task<List<CountryDto>> GetAllCountriesAsync(CancellationToken cancellationToken = default);
-    Task<CountryDto?> GetCountryByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<CountryInfo>> GetAllCountriesAsync(CancellationToken cancellationToken = default);
+    Task<CountryInfo?> GetCountryByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public class CountryApiService : ICountryApiService
@@ -22,16 +22,16 @@ public class CountryApiService : ICountryApiService
         _logger = logger;
     }
 
-    public async Task<List<CountryDto>> GetAllCountriesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<CountryInfo>> GetAllCountriesAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/api/countries";
         _logger.LogInformation("Making GET request to: {Url}", url);
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<List<CountryDto>>(cancellationToken: cancellationToken) ?? new List<CountryDto>();
+        return await response.Content.ReadFromJsonAsync<List<CountryInfo>>(cancellationToken: cancellationToken) ?? new List<CountryInfo>();
     }
 
-    public async Task<CountryDto?> GetCountryByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<CountryInfo?> GetCountryByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -42,7 +42,7 @@ public class CountryApiService : ICountryApiService
                 return null;
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<CountryDto>(cancellationToken: cancellationToken);
+            return await response.Content.ReadFromJsonAsync<CountryInfo>(cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException)
         {

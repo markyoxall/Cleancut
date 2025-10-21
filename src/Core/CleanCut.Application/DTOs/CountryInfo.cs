@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CleanCut.Application.DTOs;
 
-public class CountryDto
+public class CountryInfo
 {
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;

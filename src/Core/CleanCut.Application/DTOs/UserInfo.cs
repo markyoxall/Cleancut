@@ -3,7 +3,7 @@ namespace CleanCut.Application.DTOs;
 /// <summary>
 /// Data Transfer Object for User
 /// </summary>
-public class UserDto
+public class UserInfo
 {
     public Guid Id { get; set; }
     public string FirstName { get; set; } = string.Empty;

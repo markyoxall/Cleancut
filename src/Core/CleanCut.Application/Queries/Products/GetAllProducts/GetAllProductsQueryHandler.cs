@@ -16,7 +16,7 @@ namespace CleanCut.Application.Queries.Products.GetAllProducts;
 /// <summary>
 /// Handler for GetAllUsersQuery
 /// </summary>
-public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, IReadOnlyList<ProductDto>>
+public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, IReadOnlyList<ProductInfo>>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -27,10 +27,10 @@ public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, I
         _mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<ProductDto>> Handle(GetAllProductsQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProductInfo>> Handle(GetAllProductsQuery request, CancellationToken cancellationToken)
     {
         var products = await _unitOfWork.Products.GetAllAsync(cancellationToken);
-        return _mapper.Map<IReadOnlyList<ProductDto>>(products);
+        return _mapper.Map<IReadOnlyList<ProductInfo>>(products);
     }
 
 }

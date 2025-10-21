@@ -11,11 +11,11 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<User, UserDto>()
+        CreateMap<User, UserInfo>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.GetFullName()));
 
-        CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductInfo>();
 
-        CreateMap<Country, CountryDto>();
+        CreateMap<Country, CountryInfo>();
     }
 }

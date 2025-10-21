@@ -16,25 +16,22 @@ namespace CleanCut.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
-public class ProductsController : ControllerBase
+public class ProductsController : ApiControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public ProductsController(IMediator mediator)
+    public ProductsController(IMediator mediator) : base(mediator)
     {
-        _mediator = mediator;
     }
 
     /// <summary>
     /// Get all products (v1) -  
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<ProductDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetAllProducts(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IReadOnlyList<ProductInfo>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ProductInfo>>> GetAllProducts(CancellationToken cancellationToken)
     {
          
         var query = new GetAllProductsQuery();
-        var products = await _mediator.Send(query, cancellationToken);
+        var products = await  Send(query, cancellationToken);
         return Ok(products);
     }
 
@@ -42,12 +39,12 @@ public class ProductsController : ControllerBase
     /// Get product by ID (v1)
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProductInfo), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ProductDto>> GetProduct(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProductInfo>> GetProduct(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetProductQuery(id);
-        var product = await _mediator.Send(query, cancellationToken);
+        var product = await  Send(query, cancellationToken);
         
         if (product == null)
             return Problem(
@@ -64,12 +61,12 @@ public class ProductsController : ControllerBase
     /// Get all products for a specific user (v1)
     /// </summary>
     [HttpGet("user/{userId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyList<ProductDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<ProductInfo>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetProductsByUser(Guid userId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<ProductInfo>>> GetProductsByUser(Guid userId, CancellationToken cancellationToken)
     {
         var query = new GetProductsByUserQuery(userId);
-        var products = await _mediator.Send(query, cancellationToken);
+        var products = await  Send(query, cancellationToken);
         return Ok(products);
     }
 
@@ -77,14 +74,14 @@ public class ProductsController : ControllerBase
     /// Create a new product (v1)
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProductInfo), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<ProductDto>> CreateProduct(CreateProductCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProductInfo>> CreateProduct(CreateProductCommand command, CancellationToken cancellationToken)
     {
         try
         {
-            var product = await _mediator.Send(command, cancellationToken);
+            var product = await  Send(command, cancellationToken);
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
         catch (InvalidOperationException ex)
@@ -111,11 +108,11 @@ public class ProductsController : ControllerBase
     /// Update an existing product (v1)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProductInfo), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, UpdateProductCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProductInfo>> UpdateProduct(Guid id, UpdateProductCommand command, CancellationToken cancellationToken)
     {
         if (id != command.Id)
             return Problem(
@@ -127,7 +124,7 @@ public class ProductsController : ControllerBase
 
         try
         {
-            var product = await _mediator.Send(command, cancellationToken);
+            var product = await  Send(command, cancellationToken);
             return Ok(product);
         }
         catch (InvalidOperationException ex)
@@ -155,7 +152,7 @@ public class ProductsController : ControllerBase
         try
         {
             var command = new DeleteProductCommand(id);
-            var success = await _mediator.Send(command, cancellationToken);
+            var success = await  Send(command, cancellationToken);
             
             if (!success)
             {

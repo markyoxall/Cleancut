@@ -9,7 +9,7 @@ namespace CleanCut.Application.Commands.Products.CreateProduct;
 /// <summary>
 /// Handler for CreateProductCommand
 /// </summary>
-public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, ProductDto>
+public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, ProductInfo>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -20,7 +20,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         _mapper = mapper;
     }
 
-    public async Task<ProductDto> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    public async Task<ProductInfo> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
         // Verify user exists
         var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
@@ -37,6 +37,6 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Return mapped DTO
-        return _mapper.Map<ProductDto>(product);
+        return _mapper.Map<ProductInfo>(product);
     }
 }

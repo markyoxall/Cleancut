@@ -16,46 +16,46 @@ public class ProductApiClientV1 : IProductApiClientV1
         _logger = logger;
     }
 
-    public async Task<List<ProductDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<List<ProductInfo>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("V1: GET /api/v1/products");
         var resp = await _http.GetAsync("api/v1/products", cancellationToken);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<List<ProductDto>>(cancellationToken: cancellationToken) ?? new();
+        return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
     }
 
-    public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("V1: GET /api/v1/products/{Id}", id);
         var resp = await _http.GetAsync($"api/v1/products/{id}", cancellationToken);
         if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<ProductDto>(cancellationToken: cancellationToken);
+        return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken);
     }
 
-    public async Task<List<ProductDto>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<List<ProductInfo>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("V1: GET /api/v1/products/user/{UserId}", userId);
         var resp = await _http.GetAsync($"api/v1/products/user/{userId}", cancellationToken);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<List<ProductDto>>(cancellationToken: cancellationToken) ?? new();
+        return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
     }
 
-    public async Task<ProductDto> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("V1: POST /api/v1/products");
         var resp = await _http.PostAsJsonAsync("api/v1/products", request, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<ProductDto>(cancellationToken: cancellationToken)
+        return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
                ?? throw new InvalidOperationException("Failed to create product (v1)");
     }
 
-    public async Task<ProductDto> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("V1: PUT /api/v1/products/{Id}", id);
         var resp = await _http.PutAsJsonAsync($"api/v1/products/{id}", request, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<ProductDto>(cancellationToken: cancellationToken)
+        return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
                ?? throw new InvalidOperationException("Failed to update product (v1)");
     }
 

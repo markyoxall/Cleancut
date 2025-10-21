@@ -1,43 +1,45 @@
-﻿using MediatR;
-using Microsoft.AspNetCore.Mvc;
+﻿using CleanCut.API.Controllers;
+using CleanCut.Application.Commands.Countries.CreateCountry;
+using CleanCut.Application.Commands.Countries.DeleteCountry;
+using CleanCut.Application.Commands.Countries.UpdateCountryCommand;
 using CleanCut.Application.DTOs;
 using CleanCut.Application.Queries.Countries.GetAllCountries;
 using CleanCut.Application.Queries.Countries.GetCountry;
-using CleanCut.Application.Commands.Countries.CreateCountry;
-using CleanCut.Application.Commands.Countries.UpdateCountryCommand;
-using CleanCut.Application.Commands.Countries.DeleteCountry;
+using MediatR;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CountriesController : ControllerBase
+public class CountriesController : ApiControllerBase
 {
-    private readonly IMediator _mediator;
+   
 
-    public CountriesController(IMediator mediator)
+    public CountriesController(IMediator mediator) : base(mediator)
     {
-        _mediator = mediator;
+        
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CountryDto>>> GetAll()
-        => await _mediator.Send(new GetAllCountriesQuery());
+    public async Task<ActionResult<List<CountryInfo>>> GetAll()
+        => await  Send(new GetAllCountriesQuery());
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<CountryDto?>> Get(Guid id)
-        => await _mediator.Send(new GetCountryQuery(id));
+    public async Task<ActionResult<CountryInfo?>> Get(Guid id)
+        => await  Send(new GetCountryQuery(id));
 
     [HttpPost]
-    public async Task<ActionResult<CountryDto>> Create(CreateCountryCommand command)
-        => await _mediator.Send(command);
+    public async Task<ActionResult<CountryInfo>> Create(CreateCountryCommand command)
+        => await  Send(command);
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<CountryDto>> Update(Guid id, UpdateCountryCommand command)
+    public async Task<ActionResult<CountryInfo>> Update(Guid id, UpdateCountryCommand command)
     {
         if (id != command.Id) return BadRequest();
-        return await _mediator.Send(command);
+        return await  Send(command);
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<bool>> Delete(Guid id)
-        => await _mediator.Send(new DeleteCountryCommand(id));
+        => await  Send(new DeleteCountryCommand(id));
 }

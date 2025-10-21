@@ -11,4 +11,4 @@ public record CreateProductCommand(
     string Description,
     decimal Price,
     Guid UserId
-) : IRequest<ProductDto>;
+) : IRequest<ProductInfo>;

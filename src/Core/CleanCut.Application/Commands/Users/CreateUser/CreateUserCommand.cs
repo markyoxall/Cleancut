@@ -11,7 +11,7 @@ public record CreateUserCommand(
     string FirstName,
     string LastName,
     string Email
-) : IRequest<UserDto>, ICacheInvalidator
+) : IRequest<UserInfo>, ICacheInvalidator
 {
     public IEnumerable<string> CacheKeysToInvalidate => 
         ["user:all", $"user:email:{Email.ToLowerInvariant()}"];

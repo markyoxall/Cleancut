@@ -3,7 +3,7 @@ namespace CleanCut.Application.DTOs;
 /// <summary>
 /// Data Transfer Object for Product
 /// </summary>
-public class ProductDto
+public class ProductInfo
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -15,5 +15,5 @@ public class ProductDto
     public DateTime? UpdatedAt { get; set; }
     
     // Optional user information
-    public UserDto? User { get; set; }
+    public UserInfo? User { get; set; }
 }

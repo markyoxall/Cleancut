@@ -6,10 +6,10 @@ namespace CleanCut.BlazorWebApp.Services;
 
 public interface IUserApiService
 {
-    Task<List<UserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
-    Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
-    Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default);
+    Task<List<UserInfo>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    Task<UserInfo?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<UserInfo> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
+    Task<UserInfo> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default);
     Task<bool> DeleteUserAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
@@ -25,7 +25,7 @@ public class UserApiService : IUserApiService
         _logger = logger;
     }
 
-    public async Task<List<UserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<List<UserInfo>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -33,7 +33,7 @@ public class UserApiService : IUserApiService
             _logger.LogInformation("Making GET request to: {Url}", url);
             var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
-            var users = await response.Content.ReadFromJsonAsync<List<UserDto>>(cancellationToken: cancellationToken) ?? new();
+            var users = await response.Content.ReadFromJsonAsync<List<UserInfo>>(cancellationToken: cancellationToken) ?? new();
             _logger.LogInformation("Fetched {Count} users", users.Count);
             return users;
         }
@@ -49,7 +49,7 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<UserInfo?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -60,7 +60,7 @@ public class UserApiService : IUserApiService
                 return null;
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken);
+            return await response.Content.ReadFromJsonAsync<UserInfo>(cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -74,7 +74,7 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<UserInfo> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -96,7 +96,7 @@ public class UserApiService : IUserApiService
             }
 
             response.EnsureSuccessStatusCode();
-            var user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken)
+            var user = await response.Content.ReadFromJsonAsync<UserInfo>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Failed to create user");
 
             _logger.LogInformation("Successfully created user {UserId}", user.Id);
@@ -114,7 +114,7 @@ public class UserApiService : IUserApiService
         }
     }
 
-    public async Task<UserDto> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<UserInfo> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -138,7 +138,7 @@ public class UserApiService : IUserApiService
             }
 
             response.EnsureSuccessStatusCode();
-            var user = await response.Content.ReadFromJsonAsync<UserDto>(cancellationToken: cancellationToken)
+            var user = await response.Content.ReadFromJsonAsync<UserInfo>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Failed to update user");
 
             _logger.LogInformation("Successfully updated user {UserId}", user.Id);

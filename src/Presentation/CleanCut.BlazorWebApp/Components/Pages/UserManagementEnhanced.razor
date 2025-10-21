@@ -206,7 +206,7 @@
 </style>
 
 @code {
-    private UserDto? SelectedUserLocal;
+    private UserInfo? SelectedUserLocal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -235,7 +235,7 @@
         );
     }
 
-    private void SelectUser(UserDto user)
+    private void SelectUser(UserInfo user)
     {
         SelectedUserLocal = user;
         SetLocalMessage($"Selected user: {user.FirstName} {user.LastName}", true);
@@ -280,13 +280,13 @@
         Navigation.NavigateTo($"/users/edit/{id}");
     }
 
-    private void OnUsersChanged(List<UserDto> users)
+    private void OnUsersChanged(List<UserInfo> users)
     {
         Logger.LogInformation("Users changed event received: {UserCount} users", users.Count);
         InvokeAsync(StateHasChanged);
     }
 
-    protected override async Task OnUsersChangedAsync(List<UserDto> users)
+    protected override async Task OnUsersChangedAsync(List<UserInfo> users)
     {
         Logger.LogInformation("Users state updated: {UserCount} users loaded", users.Count);
         await Task.CompletedTask;

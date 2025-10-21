@@ -290,8 +290,8 @@
 
 @code {
     private bool IsLoading => (UiState != null) ? UiState.IsLoading : (UsersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
-    private List<UserDto> Users => UsersState?.Users?.ToList() ?? new();
-    private List<ProductDto> Products => ProductsState?.Products?.ToList() ?? new();
+    private List<UserInfo> Users => UsersState?.Users?.ToList() ?? new();
+    private List<ProductInfo> Products => ProductsState?.Products?.ToList() ?? new();
 
     private int TotalUsers => Users.Count;
     private int ActiveUsers => Users.Count(u => u.IsActive);
@@ -300,8 +300,8 @@
     private decimal TotalValue => Products.Sum(p => p.Price);
     private double AverageProductsPerUser => TotalUsers > 0 ? (double)TotalProducts / TotalUsers : 0;
 
-    private List<ProductDto> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
-    private List<UserDto> ActiveUsersList => Users.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
+    private List<ProductInfo> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
+    private List<UserInfo> ActiveUsersList => Users.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -321,9 +321,9 @@
         await LoadDashboardDataAsync();
     }
 
-    private void OnUsersChanged(List<UserDto> users) => InvokeAsync(StateHasChanged);
-    private void OnProductsChanged(List<ProductDto> products) => InvokeAsync(StateHasChanged);
-    private void OnCountriesChanged(List<CountryDto> countries) => InvokeAsync(StateHasChanged);
+    private void OnUsersChanged(List<UserInfo> users) => InvokeAsync(StateHasChanged);
+    private void OnProductsChanged(List<ProductInfo> products) => InvokeAsync(StateHasChanged);
+    private void OnCountriesChanged(List<CountryInfo> countries) => InvokeAsync(StateHasChanged);
 
     private void OnFeatureMessage(string message, bool isSuccess)
     {

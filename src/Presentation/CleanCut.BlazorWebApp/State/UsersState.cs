@@ -10,7 +10,7 @@ public class UsersState : IUsersState
     private readonly IUserApiService _userApi;
     private readonly ILogger<UsersState> _logger;
 
-    private List<UserDto> _users = new();
+    private List<UserInfo> _users = new();
     private DateTime _lastLoaded = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
@@ -25,9 +25,9 @@ public class UsersState : IUsersState
         _logger = logger;
     }
 
-    public IReadOnlyList<UserDto> Users => _users;
+    public IReadOnlyList<UserInfo> Users => _users;
     public event Action? StateChanged;
-    public event Action<List<UserDto>>? UsersChanged;
+    public event Action<List<UserInfo>>? UsersChanged;
 
     public async Task LoadAsync(bool force = false, CancellationToken cancellationToken = default)
     {
@@ -74,7 +74,7 @@ public class UsersState : IUsersState
         }
     }
 
-    public async Task<UserDto?> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<UserInfo?> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             throw new OperationCanceledException(cancellationToken);
@@ -110,7 +110,7 @@ public class UsersState : IUsersState
         }
     }
 
-    public async Task<UserDto?> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<UserInfo?> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             throw new OperationCanceledException(cancellationToken);

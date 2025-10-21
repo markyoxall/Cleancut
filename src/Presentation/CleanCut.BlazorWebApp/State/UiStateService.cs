@@ -15,8 +15,8 @@ public class UiStateService : IUiStateService
     private bool _isSuccess;
 
     // local selection
-    private UserDto? _selectedUser;
-    private ProductDto? _selectedProduct;
+    private UserInfo? _selectedUser;
+    private ProductInfo? _selectedProduct;
 
     public UiStateService(IUsersState users, IProductsState products, ICountriesState countries, ILogger<UiStateService> logger)
     {
@@ -40,8 +40,8 @@ public class UiStateService : IUiStateService
     public string? CurrentMessage => _currentMessage;
     public bool IsSuccess => _isSuccess;
 
-    public UserDto? SelectedUser => _selectedUser;
-    public ProductDto? SelectedProduct => _selectedProduct;
+    public UserInfo? SelectedUser => _selectedUser;
+    public ProductInfo? SelectedProduct => _selectedProduct;
 
     public event Action? StateChanged;
     public event Action<string, bool>? MessageChanged;
@@ -67,13 +67,13 @@ public class UiStateService : IUiStateService
         NotifyStateChanged();
     }
 
-    public void SetSelectedUser(UserDto? user)
+    public void SetSelectedUser(UserInfo? user)
     {
         _selectedUser = user;
         NotifyStateChanged();
     }
 
-    public void SetSelectedProduct(ProductDto? product)
+    public void SetSelectedProduct(ProductInfo? product)
     {
         _selectedProduct = product;
         NotifyStateChanged();

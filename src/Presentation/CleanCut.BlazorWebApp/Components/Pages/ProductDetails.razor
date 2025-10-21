@@ -278,7 +278,7 @@
 @code {
     [Parameter] public Guid Id { get; set; }
     
-    private ProductDto? Product { get; set; }
+    private ProductInfo? Product { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? Message { get; set; }
     private bool IsSuccess { get; set; }
@@ -286,7 +286,7 @@
     // Delete modal state
     private bool ShowingDeleteModal { get; set; }
     private bool IsDeleting { get; set; }
-    private ProductDto? ProductToDelete { get; set; }
+    private ProductInfo? ProductToDelete { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

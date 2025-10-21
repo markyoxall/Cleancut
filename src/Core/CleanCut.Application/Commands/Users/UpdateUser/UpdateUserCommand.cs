@@ -11,4 +11,4 @@ public record UpdateUserCommand(
     string FirstName,
     string LastName,
     string Email
-) : IRequest<UserDto>;
+) : IRequest<UserInfo>;

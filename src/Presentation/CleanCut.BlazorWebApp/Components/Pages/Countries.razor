@@ -42,7 +42,7 @@ else
 }
 
 @code {
-    private List<CountryDto>? countries;
+    private List<CountryInfo>? countries;
     private string searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -56,11 +56,11 @@ else
         StateHasChanged();
     }
 
-    private IEnumerable<CountryDto> FilteredCountries =>
+    private IEnumerable<CountryInfo> FilteredCountries =>
         string.IsNullOrWhiteSpace(searchTerm)
-            ? countries ?? Enumerable.Empty<CountryDto>()
+            ? countries ?? Enumerable.Empty<CountryInfo>()
             : countries?.Where(c =>
                 (!string.IsNullOrEmpty(c.Name) && c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Code) && c.Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-            ) ?? Enumerable.Empty<CountryDto>();
+            ) ?? Enumerable.Empty<CountryInfo>();
 }

@@ -5,9 +5,9 @@ namespace CleanCut.BlazorWebApp.State;
 
 public interface ICountriesState
 {
-    IReadOnlyList<CountryDto> Countries { get; }
+    IReadOnlyList<CountryInfo> Countries { get; }
     event Action? StateChanged;
-    event Action<List<CountryDto>>? CountriesChanged;
+    event Action<List<CountryInfo>>? CountriesChanged;
 
     bool IsLoading { get; }
     event Action<string, bool>? MessageChanged;

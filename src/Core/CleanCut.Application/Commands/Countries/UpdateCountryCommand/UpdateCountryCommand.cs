@@ -10,4 +10,4 @@ public record UpdateCountryCommand(
     Guid Id,
     string Name,
     string Code
-) : IRequest<CountryDto>;
+) : IRequest<CountryInfo>;

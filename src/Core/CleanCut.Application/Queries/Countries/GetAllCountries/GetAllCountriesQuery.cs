@@ -7,4 +7,4 @@ namespace CleanCut.Application.Queries.Countries.GetAllCountries;
 /// <summary>
 /// Query to get all countries
 /// </summary>
-public record GetAllCountriesQuery() : IRequest<List<CountryDto>>;
+public record GetAllCountriesQuery() : IRequest<List<CountryInfo>>;

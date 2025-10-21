@@ -8,7 +8,7 @@ namespace CleanCut.Application.Queries.Products.GetProduct;
 /// <summary>
 /// Handler for GetProductQuery
 /// </summary>
-public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ProductDto?>
+public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ProductInfo?>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -19,9 +19,9 @@ public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ProductDt
         _mapper = mapper;
     }
 
-    public async Task<ProductDto?> Handle(GetProductQuery request, CancellationToken cancellationToken)
+    public async Task<ProductInfo?> Handle(GetProductQuery request, CancellationToken cancellationToken)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(request.Id, cancellationToken);
-        return product != null ? _mapper.Map<ProductDto>(product) : null;
+        return product != null ? _mapper.Map<ProductInfo>(product) : null;
     }
 }

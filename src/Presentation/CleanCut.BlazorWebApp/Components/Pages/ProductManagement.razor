@@ -225,8 +225,8 @@
 
 @code {
     // State
-    private List<UserDto> Users { get; set; } = new();
-    private List<ProductDto> Products { get; set; } = new();
+    private List<UserInfo> Users { get; set; } = new();
+    private List<ProductInfo> Products { get; set; } = new();
     private string? SearchTerm { get; set; }
     private Guid? SelectedUserId { get; set; }
     private bool? IsAvailableFilter { get; set; }
@@ -237,10 +237,10 @@
     // Delete modal state
     private bool ShowingDeleteModal { get; set; }
     private bool IsDeleting { get; set; }
-    private ProductDto? ProductToDelete { get; set; }
+    private ProductInfo? ProductToDelete { get; set; }
 
     // Computed property for filtered products (matches MVC logic)
-    private List<ProductDto> FilteredProducts
+    private List<ProductInfo> FilteredProducts
     {
         get
         {
@@ -313,7 +313,7 @@
             }
             else
             {
-                Products = new List<ProductDto>();
+                Products = new List<ProductInfo>();
             }
 
             Logger.LogInformation("Loaded {UserCount} users and {ProductCount} products for user {UserId}", Users.Count, Products.Count, SelectedUserId);
@@ -356,7 +356,7 @@
             }
             else
             {
-                Products = new List<ProductDto>();
+                Products = new List<ProductInfo>();
             }
 
             Logger.LogInformation("Reloaded {ProductCount} products for user {UserId}", Products.Count, SelectedUserId);

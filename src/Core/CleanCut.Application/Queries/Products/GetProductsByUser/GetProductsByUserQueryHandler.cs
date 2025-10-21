@@ -8,7 +8,7 @@ namespace CleanCut.Application.Queries.Products.GetProductsByUser;
 /// <summary>
 /// Handler for GetProductsByUserQuery
 /// </summary>
-public class GetProductsByUserQueryHandler : IRequestHandler<GetProductsByUserQuery, IReadOnlyList<ProductDto>>
+public class GetProductsByUserQueryHandler : IRequestHandler<GetProductsByUserQuery, IReadOnlyList<ProductInfo>>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -19,9 +19,9 @@ public class GetProductsByUserQueryHandler : IRequestHandler<GetProductsByUserQu
         _mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<ProductDto>> Handle(GetProductsByUserQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProductInfo>> Handle(GetProductsByUserQuery request, CancellationToken cancellationToken)
     {
         var products = await _unitOfWork.Products.GetByUserIdAsync(request.UserId, cancellationToken);
-        return _mapper.Map<IReadOnlyList<ProductDto>>(products);
+        return _mapper.Map<IReadOnlyList<ProductInfo>>(products);
     }
 }

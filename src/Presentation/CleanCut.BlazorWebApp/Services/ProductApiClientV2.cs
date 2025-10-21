@@ -22,7 +22,7 @@ public class ProductApiClientV2 : IProductApiClientV2
         var resp = await _http.GetAsync($"api/v2/products?page={page}&pageSize={pageSize}", cancellationToken);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<V2ProductListResponse>(cancellationToken: cancellationToken)
-               ?? new V2ProductListResponse { Data = new List<ProductDto>(), Pagination = new PaginationInfo { Page = page, PageSize = pageSize }, ApiVersion = "v2", Timestamp = DateTime.UtcNow };
+               ?? new V2ProductListResponse { Data = new List<ProductInfo>(), Pagination = new PaginationInfo { Page = page, PageSize = pageSize }, ApiVersion = "v2", Timestamp = DateTime.UtcNow };
     }
 
     public async Task<V2ProductResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -40,7 +40,7 @@ public class ProductApiClientV2 : IProductApiClientV2
         var resp = await _http.GetAsync($"api/v2/products/user/{userId}?page={page}&pageSize={pageSize}", cancellationToken);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<V2ProductListResponse>(cancellationToken: cancellationToken)
-               ?? new V2ProductListResponse { Data = new List<ProductDto>(), Pagination = new PaginationInfo { Page = page, PageSize = pageSize }, ApiVersion = "v2", Timestamp = DateTime.UtcNow };
+               ?? new V2ProductListResponse { Data = new List<ProductInfo>(), Pagination = new PaginationInfo { Page = page, PageSize = pageSize }, ApiVersion = "v2", Timestamp = DateTime.UtcNow };
     }
 
     public async Task<V2StatsResponse> GetStatisticsAsync(CancellationToken cancellationToken = default)

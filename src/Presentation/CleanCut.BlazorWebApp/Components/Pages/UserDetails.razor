@@ -215,8 +215,8 @@
 @code {
     [Parameter] public Guid Id { get; set; }
     
-    private UserDto? User { get; set; }
-    private List<ProductDto> UserProducts { get; set; } = new();
+    private UserInfo? User { get; set; }
+    private List<ProductInfo> UserProducts { get; set; } = new();
     private bool IsLoading { get; set; } = true;
     private string? Message { get; set; }
 

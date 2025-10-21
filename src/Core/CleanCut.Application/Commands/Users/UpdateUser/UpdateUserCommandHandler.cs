@@ -8,7 +8,7 @@ namespace CleanCut.Application.Commands.Users.UpdateUser;
 /// <summary>
 /// Handler for UpdateUserCommand
 /// </summary>
-public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserDto>
+public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserInfo>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -19,7 +19,7 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
         _mapper = mapper;
     }
 
-    public async Task<UserDto> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserInfo> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
         // Get existing user
         var user = await _unitOfWork.Users.GetByIdAsync(request.Id, cancellationToken);
@@ -47,6 +47,6 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Return mapped DTO
-        return _mapper.Map<UserDto>(user);
+        return _mapper.Map<UserInfo>(user);
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CleanCut.Application.Queries.Countries.GetCountry;
 
-internal class GetCountryHandler : IRequestHandler<GetCountryQuery, CountryDto?>
+internal class GetCountryHandler : IRequestHandler<GetCountryQuery, CountryInfo?>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -18,9 +18,9 @@ internal class GetCountryHandler : IRequestHandler<GetCountryQuery, CountryDto?>
         _mapper = mapper;
     }
 
-    public async Task<CountryDto?> Handle(GetCountryQuery request, CancellationToken cancellationToken)
+    public async Task<CountryInfo?> Handle(GetCountryQuery request, CancellationToken cancellationToken)
     {
         var country = await _unitOfWork.Countries.GetByIdAsync(request.Id, cancellationToken);
-        return country == null ? null : _mapper.Map<CountryDto>(country);
+        return country == null ? null : _mapper.Map<CountryInfo>(country);
     }
 }

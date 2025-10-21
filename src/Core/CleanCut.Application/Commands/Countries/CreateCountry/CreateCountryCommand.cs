@@ -9,4 +9,4 @@ namespace CleanCut.Application.Commands.Countries.CreateCountry;
 public record CreateCountryCommand(
     string Name,
     string Code
-) : IRequest<CountryDto>;
+) : IRequest<CountryInfo>;

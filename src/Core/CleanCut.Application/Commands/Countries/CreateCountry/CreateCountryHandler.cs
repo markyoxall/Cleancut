@@ -9,7 +9,7 @@ namespace CleanCut.Application.Commands.Countries.CreateCountry;
 /// <summary>
 /// Handler for creating a new country
 /// </summary>
-internal class CreateCountryHandler : IRequestHandler<CreateCountryCommand, CountryDto>
+internal class CreateCountryHandler : IRequestHandler<CreateCountryCommand, CountryInfo>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -20,7 +20,7 @@ internal class CreateCountryHandler : IRequestHandler<CreateCountryCommand, Coun
         _mapper = mapper;
     }
 
-    public async Task<CountryDto> Handle(CreateCountryCommand request, CancellationToken cancellationToken)
+    public async Task<CountryInfo> Handle(CreateCountryCommand request, CancellationToken cancellationToken)
     {
         // Create new country (use constructor if available)
         var country = new Country(request.Name, request.Code);
@@ -30,6 +30,6 @@ internal class CreateCountryHandler : IRequestHandler<CreateCountryCommand, Coun
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Return mapped DTO
-        return _mapper.Map<CountryDto>(country);
+        return _mapper.Map<CountryInfo>(country);
     }
 }

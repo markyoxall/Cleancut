@@ -16,8 +16,8 @@ public interface IUiStateService
     void ClearMessage();
 
     // Optional selection surface
-    UserDto? SelectedUser { get; }
-    ProductDto? SelectedProduct { get; }
-    void SetSelectedUser(UserDto? user);
-    void SetSelectedProduct(ProductDto? product);
+    UserInfo? SelectedUser { get; }
+    ProductInfo? SelectedProduct { get; }
+    void SetSelectedUser(UserInfo? user);
+    void SetSelectedProduct(ProductInfo? product);
 }

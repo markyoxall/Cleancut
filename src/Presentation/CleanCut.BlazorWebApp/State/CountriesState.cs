@@ -10,7 +10,7 @@ public class CountriesState : ICountriesState
     private readonly ICountryApiService _countryApi;
     private readonly ILogger<CountriesState> _logger;
 
-    private List<CountryDto> _countries = new();
+    private List<CountryInfo> _countries = new();
     private DateTime _lastLoaded = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
@@ -24,9 +24,9 @@ public class CountriesState : ICountriesState
         _logger = logger;
     }
 
-    public IReadOnlyList<CountryDto> Countries => _countries;
+    public IReadOnlyList<CountryInfo> Countries => _countries;
     public event Action? StateChanged;
-    public event Action<List<CountryDto>>? CountriesChanged;
+    public event Action<List<CountryInfo>>? CountriesChanged;
 
     public async Task LoadAsync(bool force = false, CancellationToken cancellationToken = default)
     {

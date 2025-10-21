@@ -4,7 +4,7 @@ namespace CleanCut.BlazorWebApp.Services;
 
 public class V2ProductListResponse
 {
-    public List<ProductDto> Data { get; set; } = new();
+    public List<ProductInfo> Data { get; set; } = new();
     public PaginationInfo Pagination { get; set; } = new();
     public string ApiVersion { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
@@ -12,7 +12,7 @@ public class V2ProductListResponse
 
 public class V2ProductResponse
 {
-    public ProductDto Data { get; set; } = new();
+    public ProductInfo Data { get; set; } = new();
     public string ApiVersion { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
 }

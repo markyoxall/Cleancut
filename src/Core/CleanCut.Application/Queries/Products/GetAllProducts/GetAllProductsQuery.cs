@@ -8,4 +8,4 @@ using System.Threading.Tasks;
 
 namespace CleanCut.Application.Queries.Products.GetAllProducts;
 
-public record GetAllProductsQuery() : IRequest<IReadOnlyList<ProductDto>>;
+public record GetAllProductsQuery() : IRequest<IReadOnlyList<ProductInfo>>;

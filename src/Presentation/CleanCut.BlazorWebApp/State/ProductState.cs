@@ -10,7 +10,7 @@ public class ProductsState : IProductsState
     private readonly IProductApiService _productApi;
     private readonly ILogger<ProductsState> _logger;
 
-    private List<ProductDto> _products = new();
+    private List<ProductInfo> _products = new();
     private DateTime _lastLoaded = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
@@ -25,9 +25,9 @@ public class ProductsState : IProductsState
         _logger = logger;
     }
 
-    public IReadOnlyList<ProductDto> Products => _products;
+    public IReadOnlyList<ProductInfo> Products => _products;
     public event Action? StateChanged;
-    public event Action<List<ProductDto>>? ProductsChanged;
+    public event Action<List<ProductInfo>>? ProductsChanged;
 
     public async Task LoadAllAsync(bool force = false, CancellationToken cancellationToken = default)
     {
@@ -119,7 +119,7 @@ public class ProductsState : IProductsState
         }
     }
 
-    public async Task<ProductDto?> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo?> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             throw new OperationCanceledException(cancellationToken);
@@ -156,7 +156,7 @@ public class ProductsState : IProductsState
         }
     }
 
-    public async Task<ProductDto?> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
+    public async Task<ProductInfo?> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             throw new OperationCanceledException(cancellationToken);

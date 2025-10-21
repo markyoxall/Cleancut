@@ -8,7 +8,7 @@ namespace CleanCut.Application.Commands.Countries.UpdateCountryCommand;
 /// <summary>
 /// Handler for updating an existing country
 /// </summary>
-internal class UpdateCountryHandler : IRequestHandler<UpdateCountryCommand, CountryDto>
+internal class UpdateCountryHandler : IRequestHandler<UpdateCountryCommand, CountryInfo>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -19,7 +19,7 @@ internal class UpdateCountryHandler : IRequestHandler<UpdateCountryCommand, Coun
         _mapper = mapper;
     }
 
-    public async Task<CountryDto> Handle(UpdateCountryCommand request, CancellationToken cancellationToken)
+    public async Task<CountryInfo> Handle(UpdateCountryCommand request, CancellationToken cancellationToken)
     {
         // Retrieve the country entity
         var country = await _unitOfWork.Countries.GetByIdAsync(request.Id, cancellationToken);
@@ -39,6 +39,6 @@ internal class UpdateCountryHandler : IRequestHandler<UpdateCountryCommand, Coun
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Map to DTO and return
-        return _mapper.Map<CountryDto>(country);
+        return _mapper.Map<CountryInfo>(country);
     }
 }

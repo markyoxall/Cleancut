@@ -288,7 +288,7 @@
     [Parameter] public Guid Id { get; set; }
     
     private ProductEditModel? Model { get; set; }
-    private ProductDto? OriginalProduct { get; set; }
+    private ProductInfo? OriginalProduct { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSubmitting { get; set; }
     private string? Message { get; set; }
@@ -297,7 +297,7 @@
     // Delete modal state
     private bool ShowingDeleteModal { get; set; }
     private bool IsDeleting { get; set; }
-    private ProductDto? ProductToDelete { get; set; }
+    private ProductInfo? ProductToDelete { get; set; }
 
     // Toast notification state
     private bool ShowSuccessToast { get; set; }

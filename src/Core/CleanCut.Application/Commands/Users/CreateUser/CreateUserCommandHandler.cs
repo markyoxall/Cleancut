@@ -9,7 +9,7 @@ namespace CleanCut.Application.Commands.Users.CreateUser;
 /// <summary>
 /// Handler for CreateUserCommand
 /// </summary>
-public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserDto>
+public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserInfo>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -20,7 +20,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
         _mapper = mapper;
     }
 
-    public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserInfo> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
         // Check if email already exists
         var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
@@ -37,6 +37,6 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Return mapped DTO
-        return _mapper.Map<UserDto>(user);
+        return _mapper.Map<UserInfo>(user);
     }
 }

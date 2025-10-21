@@ -8,7 +8,7 @@ namespace CleanCut.Application.Queries.Users.GetUser;
 /// <summary>
 /// Handler for GetUserQuery
 /// </summary>
-public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto?>
+public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserInfo?>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -19,9 +19,9 @@ public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto?>
         _mapper = mapper;
     }
 
-    public async Task<UserDto?> Handle(GetUserQuery request, CancellationToken cancellationToken)
+    public async Task<UserInfo?> Handle(GetUserQuery request, CancellationToken cancellationToken)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(request.Id, cancellationToken);
-        return user != null ? _mapper.Map<UserDto>(user) : null;
+        return user != null ? _mapper.Map<UserInfo>(user) : null;
     }
 }
