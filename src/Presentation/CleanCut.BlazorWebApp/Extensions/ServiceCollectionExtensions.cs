@@ -30,6 +30,9 @@ public static class ServiceCollectionExtensions
         // Adapter/service registration
         services.AddScoped<IProductApiService, ProductApiService>();
 
+        // Register IHttpContextAccessor for access token retrieval
+        services.AddHttpContextAccessor();
+
         return services;
     }
 }

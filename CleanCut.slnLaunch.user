@@ -3,6 +3,10 @@
     "Name": "New Profile",
     "Projects": [
       {
+        "Path": "src\\Infrastructure\\CleanCut.Infrastructure.IdentityServer\\CleanCut.Infrastructure.IdentityServer.csproj",
+        "Action": "Start"
+      },
+      {
         "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
         "Action": "Start"
       },

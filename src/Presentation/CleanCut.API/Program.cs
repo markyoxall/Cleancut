@@ -4,6 +4,7 @@ using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data.Seeding;
 using CleanCut.API.Middleware;
 using CleanCut.API.Constants;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -95,6 +96,26 @@ builder.Services.AddDataInfrastructure(builder.Configuration);
 // Add Caching Infrastructure layer
 builder.Services.AddCachingInfrastructure(builder.Configuration);
 
+// Add JWT Bearer authentication for IdentityServer
+builder.Services.AddAuthentication(options =>
+{
+ options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+ options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5003";
+ options.Audience = "CleanCutAPI";
+ options.RequireHttpsMetadata = true;
+});
+
+// Add authorization and require authentication globally
+builder.Services.AddAuthorization(options =>
+{
+ options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+ .RequireAuthenticatedUser()
+ .Build();
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -158,6 +179,9 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -1,4 +1,6 @@
 using CleanCut.Application.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading;
 
@@ -17,16 +19,28 @@ public class UserApiService : IUserApiService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<UserApiService> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private const string BaseUrl = "https://localhost:7142";
 
-    public UserApiService(HttpClient httpClient, ILogger<UserApiService> logger)
+    public UserApiService(HttpClient httpClient, ILogger<UserApiService> logger, IHttpContextAccessor httpContextAccessor)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private async Task AttachAccessTokenAsync()
+    {
+        var accessToken = await _httpContextAccessor.HttpContext.GetTokenAsync("access_token");
+        if (!string.IsNullOrEmpty(accessToken))
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
     }
 
     public async Task<List<UserInfo>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
+        await AttachAccessTokenAsync();
         try
         {
             var url = $"{BaseUrl}/api/users";
@@ -51,6 +65,7 @@ public class UserApiService : IUserApiService
 
     public async Task<UserInfo?> GetUserByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await AttachAccessTokenAsync();
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
@@ -76,6 +91,7 @@ public class UserApiService : IUserApiService
 
     public async Task<UserInfo> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
+        await AttachAccessTokenAsync();
         try
         {
             var url = $"{BaseUrl}/api/users";
@@ -116,6 +132,7 @@ public class UserApiService : IUserApiService
 
     public async Task<UserInfo> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken = default)
     {
+        await AttachAccessTokenAsync();
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
@@ -158,6 +175,7 @@ public class UserApiService : IUserApiService
 
     public async Task<bool> DeleteUserAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await AttachAccessTokenAsync();
         try
         {
             var url = $"{BaseUrl}/api/users/{id}";
