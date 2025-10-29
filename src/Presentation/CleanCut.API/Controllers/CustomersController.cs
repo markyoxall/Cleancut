@@ -5,6 +5,7 @@ using CleanCut.Application.Commands.Customers.UpdateCustomer;
 using CleanCut.Application.Queries.Customers.GetCustomer;
 using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CleanCut.API.Controllers;
 
@@ -26,7 +27,7 @@ public class CustomersController : ApiControllerBase
     public async Task<ActionResult<IReadOnlyList<CustomerInfo>>> GetCustomers(CancellationToken cancellationToken)
     {
         var query = new GetAllCustomersQuery();
-  var customers = await Send(query, cancellationToken);
+        var customers = await Send(query, cancellationToken);
         return Ok(customers);
     }
 
@@ -78,7 +79,7 @@ public class CustomersController : ApiControllerBase
   }
   catch (InvalidOperationException ex)
         {
-            return BadRequest(ex.Message);
-    }
+      return BadRequest(ex.Message);
+        }
     }
 }

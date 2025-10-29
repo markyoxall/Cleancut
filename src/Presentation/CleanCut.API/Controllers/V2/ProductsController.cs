@@ -5,6 +5,7 @@ using CleanCut.Application.Commands.Products.UpdateProduct;
 using CleanCut.Application.Queries.Products.GetProduct;
 using CleanCut.Application.Queries.Products.GetProductsByCustomer;
 using CleanCut.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CleanCut.API.Controllers.V2;
 
@@ -145,7 +146,7 @@ public class ProductsController : ControllerBase
             problemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
             problemDetails.Extensions.Add("apiVersion", "2.0");
             problemDetails.Extensions.Add("invalidValues", new { page, pageSize });
-            
+
             return BadRequest(problemDetails);
         }
 
@@ -308,10 +309,10 @@ public class ProductsController : ControllerBase
         };
         
         return Ok(new {
-            Data = stats,
-            Message = "Product statistics retrieved successfully",
-            ApiVersion = "2.0",
-            Timestamp = DateTime.UtcNow
+          Data = stats,
+      Message = "Product statistics retrieved successfully",
+      ApiVersion = "2.0",
+ Timestamp = DateTime.UtcNow
         });
     }
 }

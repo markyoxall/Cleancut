@@ -8,6 +8,7 @@ using CleanCut.Application.Queries.Products.GetProductsByCustomer;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
 using CleanCut.Application.Queries.Products.GetAllProducts;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CleanCut.API.Controllers;
 

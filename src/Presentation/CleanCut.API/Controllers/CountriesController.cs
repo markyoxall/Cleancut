@@ -8,6 +8,7 @@ using CleanCut.Application.Queries.Countries.GetCountry;
 using MediatR;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -20,10 +21,16 @@ public class CountriesController : ApiControllerBase
         
     }
 
+    /// <summary>
+    /// Get all countries
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<List<CountryInfo>>> GetAll()
         => await  Send(new GetAllCountriesQuery());
 
+    /// <summary>
+    /// Get country by ID
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<CountryInfo?>> Get(Guid id)
         => await  Send(new GetCountryQuery(id));
@@ -35,11 +42,11 @@ public class CountriesController : ApiControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<CountryInfo>> Update(Guid id, UpdateCountryCommand command)
     {
-        if (id != command.Id) return BadRequest();
+  if (id != command.Id) return BadRequest();
         return await  Send(command);
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<bool>> Delete(Guid id)
-        => await  Send(new DeleteCountryCommand(id));
+      => await  Send(new DeleteCountryCommand(id));
 }

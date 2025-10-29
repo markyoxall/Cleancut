@@ -56,9 +56,10 @@ public class ProductApiService : IProductApiService
     {
         try
         {
-            _logger.LogInformation("Calling API: GET {BaseUrl}/api/v1/products/customer/{CustomerId}", _baseUrl, customerId);
+            // Fixed: changed from "customer" to "user" to match API endpoint
+            _logger.LogInformation("Calling API: GET {BaseUrl}/api/v1/products/user/{CustomerId}", _baseUrl, customerId);
             
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/customer/{customerId}");
+            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/user/{customerId}");
             response.EnsureSuccessStatusCode();
             
             var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();

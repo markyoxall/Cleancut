@@ -273,7 +273,7 @@
     private void ViewAllProducts(Guid customerId)
     {
         Logger.LogInformation("Navigating to products for customer: {CustomerId}", customerId);
-        Navigation.NavigateTo($"/products/management?userId={customerId}");
+        Navigation.NavigateTo($"/products/management?customerid={customerId}");
     }
 
     private void ViewProduct(Guid productId)

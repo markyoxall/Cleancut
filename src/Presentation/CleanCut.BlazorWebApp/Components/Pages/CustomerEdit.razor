@@ -1,4 +1,4 @@
-@page "/users/edit/{id:guid}"
+@page "/customers/edit/{id:guid}"
 @using CleanCut.Application.DTOs
 @using CleanCut.BlazorWebApp.Services
 @using System.ComponentModel.DataAnnotations
@@ -214,7 +214,7 @@
                     <div class="d-flex align-items-start">
                         <i class="fas fa-trash fa-2x text-danger me-3 mt-1"></i>
                         <div>
-                            <h6 class="mb-2">Are you sure you want to delete this user?</h6>
+                            <h6 class="mb-2">Are you sure you want to delete this customer?</h6>
                             <p class="mb-2">
                                 <strong>@CustomerToDelete?.FirstName @CustomerToDelete?.LastName</strong>
                             </p>
@@ -357,7 +357,7 @@
             // Load user's products
             CustomerProducts = (await ProductApi.GetProductsByCustomerAsync(OriginalCustomer.Id)).ToList();
 
-            Logger.LogInformation("Loaded user for editing: {CustomerName}", OriginalCustomer.FirstName + " " + OriginalCustomer.LastName);
+            Logger.LogInformation("Loaded customer for editing: {CustomerName}", OriginalCustomer.FirstName + " " + OriginalCustomer.LastName);
         }
         catch (Exception ex)
         {
@@ -428,21 +428,21 @@
     private void Cancel()
     {
         Logger.LogInformation("Customer edit cancelled");
-        Navigation.NavigateTo("/users/management");
+        Navigation.NavigateTo("/customers/management");
     }
 
-    private void ViewAllProducts(Guid userId)
+    private void ViewAllProducts(Guid customerId)
     {
-        Logger.LogInformation("Navigating to products for user: {CustomerId}", userId);
-        Navigation.NavigateTo($"/products/management?userId={userId}");
+        Logger.LogInformation("Navigating to products for user: {CustomerId}", customerId);
+        Navigation.NavigateTo($"/products/management?customerId={customerId}");
     }
 
     // Delete modal methods
-    private void ShowDeleteModal(Guid userId, string userName)
+    private void ShowDeleteModal(Guid customerId, string userName)
     {
         CustomerToDelete = OriginalCustomer;
         ShowingDeleteModal = true;
-        Logger.LogInformation("Showing delete confirmation for user: {CustomerName} (ID: {CustomerId})", userName, userId);
+        Logger.LogInformation("Showing delete confirmation for user: {CustomerName} (ID: {CustomerId})", userName, customerId);
         StateHasChanged();
     }
 

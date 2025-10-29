@@ -9,10 +9,6 @@
       {
         "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
         "Action": "Start"
-      },
-      {
-        "Path": "TempBlazorApp\\TempBlazorApp.csproj",
-        "Action": "Start"
       }
     ]
   }

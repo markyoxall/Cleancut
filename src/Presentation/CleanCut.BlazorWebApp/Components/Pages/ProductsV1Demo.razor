@@ -241,7 +241,11 @@
         try
         {
             var products = await ProductApi.GetAllProductsAsync();
-            if (products is null)
+            if (products is not null)
+            {
+                allProducts = products;
+            }
+            else
             {
                 getAllError = $"API Error: products is null";
             }
@@ -267,13 +271,13 @@
         try
         {
             var product = await ProductApi.GetProductByIdAsync(Guid.Parse(productIdToGet));  
-            if (product is null)
+            if (product is not null)
             {
                 foundProduct = product;
             }
             else
             {
-                getByIdError = $"API Error: product is null";
+                getByIdError = $"Product not found";
             }
         }
         catch (Exception ex)
@@ -327,14 +331,14 @@
         try
         {
             var product = await ProductApi.CreateProductAsync(newProduct); // Http.PostAsJsonAsync("https://localhost:7142/api/v1/products", newProduct);
-            if (product is null)
+            if (product is not null)
             {
                 createdProduct = product;
                 newProduct = new(); // Reset form
             }
             else
             {
-                createError = $"API Error: product is null";
+                createError = $"API Error: failed to create product";
             }
         }
         catch (Exception ex)

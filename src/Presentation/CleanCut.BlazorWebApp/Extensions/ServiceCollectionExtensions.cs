@@ -14,6 +14,32 @@ public static class ServiceCollectionExtensions
         // Read per-version config (fallbacks provided)
         var v1 = configuration.GetSection("ApiClients:Products:V1").Get<ProductApiOptions>() ?? new ProductApiOptions();
         var v2 = configuration.GetSection("ApiClients:Products:V2").Get<ProductApiOptions>() ?? new ProductApiOptions();
+        
+        // Read customer API config with consistent pattern
+        var customerConfig = configuration.GetSection("ApiClients:Customer").Get<CustomerApiOptions>() ?? new CustomerApiOptions();
+        
+        // Read country API config with consistent pattern  
+        var countryConfig = configuration.GetSection("ApiClients:Country").Get<CountryApiOptions>() ?? new CountryApiOptions();
+     
+        // Fallback to general ApiClients:BaseUrl if Customer section doesn't exist
+        if (customerConfig.BaseUrl == "https://localhost:7142") // default value, try config
+        {
+            var fallbackBaseUrl = configuration["ApiClients:BaseUrl"];
+            if (!string.IsNullOrEmpty(fallbackBaseUrl))
+            {
+                customerConfig.BaseUrl = fallbackBaseUrl;
+            }
+        }
+        
+        // Fallback to general ApiClients:BaseUrl if Country section doesn't exist
+        if (countryConfig.BaseUrl == "https://localhost:7142") // default value, try config
+        {
+            var fallbackBaseUrl = configuration["ApiClients:BaseUrl"];
+            if (!string.IsNullOrEmpty(fallbackBaseUrl))
+            {
+                countryConfig.BaseUrl = fallbackBaseUrl;
+            }
+        }
 
         // Register the token service for client credentials authentication
         services.AddHttpClient<ITokenService, TokenService>();
@@ -37,20 +63,19 @@ public static class ServiceCollectionExtensions
         })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
-        // Add authenticated HTTP client for other API services
+        // ✅ FIXED: Use consistent pattern for Customer API
         services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
         {
-            var baseUrl = configuration["ApiClients:BaseUrl"] ?? "https://localhost:7142";
-            client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.BaseAddress = new Uri(customerConfig.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(customerConfig.TimeoutSeconds);
         })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
+        // ✅ FIXED: Use consistent pattern for Country API  
         services.AddHttpClient<ICountryApiService, CountryApiService>(client =>
         {
-            var baseUrl = configuration["ApiClients:BaseUrl"] ?? "https://localhost:7142";
-            client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.BaseAddress = new Uri(countryConfig.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(countryConfig.TimeoutSeconds);
         })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 

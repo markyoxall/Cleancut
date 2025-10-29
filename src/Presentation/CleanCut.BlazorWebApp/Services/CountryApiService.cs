@@ -7,12 +7,6 @@ using System.Threading;
 
 namespace CleanCut.BlazorWebApp.Services;
 
-public interface ICountryApiService
-{
-    Task<List<CountryInfo>> GetAllCountriesAsync(CancellationToken cancellationToken = default);
-    Task<CountryInfo?> GetCountryByIdAsync(Guid id, CancellationToken cancellationToken = default);
-}
-
 public class CountryApiService : ICountryApiService
 {
     private readonly HttpClient _httpClient;

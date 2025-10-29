@@ -54,19 +54,20 @@ resp.EnsureSuccessStatusCode();
 
     public async Task<List<ProductInfo>> GetByCustomerAsync(Guid customerId, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("V1: GET /api/v1/products/user/{CustomerId}", customerId);
+    _logger.LogDebug("V1: GET /api/v1/products/user/{CustomerId}", customerId);
 
 try
- {
+      {
+            // Fixed: changed from "customer" to "user" to match API endpoint
  var resp = await _http.GetAsync($"api/v1/products/user/{customerId}", cancellationToken);
      resp.EnsureSuccessStatusCode();
-     return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
+    return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
         }
-     catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
- {
-     _logger.LogWarning("Unauthorized request - check token validity");
-   throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
-}
+        catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+      {
+            _logger.LogWarning("Unauthorized request - check token validity");
+            throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
+        }
     }
 
     public async Task<ProductInfo> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
