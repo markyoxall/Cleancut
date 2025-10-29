@@ -10,5 +10,5 @@ public record CreateProductCommand(
     string Name,
     string Description,
     decimal Price,
-    Guid UserId
+    Guid CustomerId
 ) : IRequest<ProductInfo>;

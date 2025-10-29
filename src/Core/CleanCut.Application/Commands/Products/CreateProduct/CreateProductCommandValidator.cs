@@ -25,7 +25,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
             .GreaterThanOrEqualTo(0)
             .WithMessage("Price cannot be negative");
 
-        RuleFor(x => x.UserId)
+        RuleFor(x => x.CustomerId)
             .NotEmpty()
             .WithMessage("User ID is required");
     }

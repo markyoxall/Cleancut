@@ -1,12 +1,15 @@
 ﻿@page "/"
 @using CleanCut.Application.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @implements IDisposable
 @inject ILogger<Home> Logger
 @inject NavigationManager Navigation
-@inject IUsersState UsersState
+@inject ICustomersState CustomersState
 @inject IProductsState ProductsState
 @inject ICountriesState CountriesState
 @inject IUiStateService UiState
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -21,10 +24,25 @@
                     <h1 class="display-6 fw-bold text-primary">
                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </h1>
-                    <p class="text-muted">Welcome to CleanCut Management System</p>
+                    <AuthorizeView>
+                        <Authorized>
+                            <p class="text-muted">Welcome back, @GetUserName(context.User)!</p>
+                        </Authorized>
+                        <NotAuthorized>
+                            <p class="text-muted">Welcome to CleanCut Management System</p>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
                 <div class="text-end">
                     <small class="text-muted">Last updated: @DateTime.Now.ToString("MMM dd, yyyy HH:mm")</small>
+                    <AuthorizeView>
+                        <Authorized>
+                            <br><small class="text-success"><i class="fas fa-lock me-1"></i>Authenticated</small>
+                        </Authorized>
+                        <NotAuthorized>
+                            <br><small class="text-warning"><i class="fas fa-unlock me-1"></i>Not Authenticated</small>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </div>
         </div>
@@ -49,6 +67,64 @@
             </div>
         }
 
+        <!-- Authentication Status Card -->
+        <AuthorizeView>
+            <Authorized>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm border-success">
+                            <div class="card-body bg-light-success">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-success p-3">
+                                            <i class="fas fa-shield-alt fa-lg text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="mb-1 text-success">Authentication Status: Active</h5>
+                                        <p class="mb-1">You are successfully authenticated and can access all API features.</p>
+                                        <small class="text-muted">User: @GetUserEmail(context.User) • Logged in at @DateTime.Now.ToString("HH:mm")</small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-success fs-6">
+                                            <i class="fas fa-check me-1"></i>Connected
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm border-warning">
+                            <div class="card-body bg-light-warning">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-warning p-3">
+                                            <i class="fas fa-exclamation-triangle fa-lg text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="mb-1 text-warning">Authentication Required</h5>
+                                        <p class="mb-1">Please log in to access API features and manage your data.</p>
+                                        <small class="text-muted">You'll be redirected to IdentityServer for secure authentication.</small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <a href="/Account/Login" class="btn btn-warning">
+                                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-6 col-xl-3 mb-3">
@@ -61,10 +137,10 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold text-primary fs-4">@TotalUsers</div>
-                                <div class="text-muted">Total Users</div>
+                                <div class="fw-bold text-primary fs-4">@TotalCustomers</div>
+                                <div class="text-muted">Total Customers</div>
                                 <small class="text-success">
-                                    <i class="fas fa-user-check me-1"></i>@ActiveUsers Active
+                                    <i class="fas fa-user-check me-1"></i>@ActiveCustomers Active
                                 </small>
                             </div>
                         </div>
@@ -124,8 +200,8 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold text-warning fs-4">@AverageProductsPerUser.ToString("F1")</div>
-                                <div class="text-muted">Avg Products/User</div>
+                                <div class="fw-bold text-warning fs-4">@AverageProductsPerCustomer.ToString("F1")</div>
+                                <div class="text-muted">Avg Products/Customer</div>
                                 <small class="text-warning">
                                     <i class="fas fa-calculator me-1"></i>Performance
                                 </small>
@@ -148,9 +224,9 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateUser">
+                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateCustomer">
                                     <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Add User</span>
+                                    <span class="fw-bold">Add Customer</span>
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
@@ -160,9 +236,9 @@
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageUsers">
+                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageCustomers">
                                     <i class="fas fa-users fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Manage Users</span>
+                                    <span class="fw-bold">Manage Customers</span>
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
@@ -201,7 +277,7 @@
                                     </div>
                                     <div class="flex-grow-1">
                                         <div class="fw-bold">@product.Name</div>
-                                        <small class="text-muted">by @(product.User?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
+                                        <small class="text-muted">by @(product.Customer?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
                                     </div>
                                     <div class="text-success fw-bold">@product.Price.ToString("C")</div>
                                 </div>
@@ -222,25 +298,25 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-users me-2"></i>Active Users
+                            <i class="fas fa-users me-2"></i>Active Customers
                         </h5>
                         <button type="button" class="btn btn-sm btn-outline-info"
-                                @onclick="NavigateToAllUsers">
+                                @onclick="NavigateToAllCustomers">
                             View All
                         </button>
                     </div>
                     <div class="card-body">
-                        @if (ActiveUsersList.Any())
+                        @if (ActiveCustomersList.Any())
                         {
-                            @foreach (var user in ActiveUsersList.Take(5))
+                            @foreach (var customer in ActiveCustomersList.Take(5))
                             {
                                 <div class="d-flex align-items-center py-2">
-                                    <div class="avatar-small-user me-3">
-                                        @user.FirstName.Substring(0, 1).ToUpper()
+                                    <div class="avatar-small-customer me-3">
+                                        @customer.FirstName.Substring(0, 1).ToUpper()
                                     </div>
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold">@user.FirstName @user.LastName</div>
-                                        <small class="text-muted">@user.Email</small>
+                                        <div class="fw-bold">@customer.FirstName @customer.LastName</div>
+                                        <small class="text-muted">@customer.Email</small>
                                     </div>
                                     <div class="text-success">
                                         <i class="fas fa-check-circle"></i>
@@ -252,7 +328,7 @@
                         {
                             <div class="text-center py-3">
                                 <i class="fas fa-users fa-2x text-muted mb-2"></i>
-                                <p class="text-muted">No active users</p>
+                                <p class="text-muted">No active customers</p>
                             </div>
                         }
                     </div>
@@ -275,7 +351,7 @@
         font-weight: bold;
     }
 
-    .avatar-small-user {
+    .avatar-small-customer {
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -286,31 +362,39 @@
         justify-content: center;
         font-weight: bold;
     }
+
+    .bg-light-success {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+    }
+
+    .bg-light-warning {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
 </style>
 
 @code {
-    private bool IsLoading => (UiState != null) ? UiState.IsLoading : (UsersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
-    private List<UserInfo> Users => UsersState?.Users?.ToList() ?? new();
+    private bool IsLoading => (UiState != null) ? UiState.IsLoading : (CustomersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
+    private List<CustomerInfo> Customers => CustomersState?.Customers?.ToList() ?? new();
     private List<ProductInfo> Products => ProductsState?.Products?.ToList() ?? new();
 
-    private int TotalUsers => Users.Count;
-    private int ActiveUsers => Users.Count(u => u.IsActive);
+    private int TotalCustomers => Customers.Count;
+    private int ActiveCustomers => Customers.Count(c => c.IsActive);
     private int TotalProducts => Products.Count;
     private int AvailableProducts => Products.Count(p => p.IsAvailable);
     private decimal TotalValue => Products.Sum(p => p.Price);
-    private double AverageProductsPerUser => TotalUsers > 0 ? (double)TotalProducts / TotalUsers : 0;
+    private double AverageProductsPerCustomer => TotalCustomers > 0 ? (double)TotalProducts / TotalCustomers : 0;
 
     private List<ProductInfo> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
-    private List<UserInfo> ActiveUsersList => Users.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
+    private List<CustomerInfo> ActiveCustomersList => Customers.Where(c => c.IsActive).OrderByDescending(c => c.CreatedAt).ToList();
 
     protected override async Task OnInitializedAsync()
     {
         // Subscribe to feature events
-        UsersState.UsersChanged += OnUsersChanged;
+        CustomersState.CustomersChanged += OnCustomersChanged;
         ProductsState.ProductsChanged += OnProductsChanged;
         CountriesState.CountriesChanged += OnCountriesChanged;
 
-        UsersState.MessageChanged += OnFeatureMessage;
+        CustomersState.MessageChanged += OnFeatureMessage;
         ProductsState.MessageChanged += OnFeatureMessage;
         CountriesState.MessageChanged += OnFeatureMessage;
 
@@ -321,7 +405,7 @@
         await LoadDashboardDataAsync();
     }
 
-    private void OnUsersChanged(List<UserInfo> users) => InvokeAsync(StateHasChanged);
+    private void OnCustomersChanged(List<CustomerInfo> customers) => InvokeAsync(StateHasChanged);
     private void OnProductsChanged(List<ProductInfo> products) => InvokeAsync(StateHasChanged);
     private void OnCountriesChanged(List<CountryInfo> countries) => InvokeAsync(StateHasChanged);
 
@@ -344,11 +428,11 @@
 
     public void Dispose()
     {
-        UsersState.UsersChanged -= OnUsersChanged;
+        CustomersState.CustomersChanged -= OnCustomersChanged;
         ProductsState.ProductsChanged -= OnProductsChanged;
         CountriesState.CountriesChanged -= OnCountriesChanged;
 
-        UsersState.MessageChanged -= OnFeatureMessage;
+        CustomersState.MessageChanged -= OnFeatureMessage;
         ProductsState.MessageChanged -= OnFeatureMessage;
         CountriesState.MessageChanged -= OnFeatureMessage;
 
@@ -360,17 +444,58 @@
     {
         try
         {
-            await UsersState.LoadAsync();
-            await ProductsState.LoadAllAsync();
-            await CountriesState.LoadAsync();
+            // Add timeout and error handling
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-            Logger.LogInformation("Dashboard loaded - {UserCount} users, {ProductCount} products", UsersState.Users.Count, ProductsState.Products.Count);
-            UiState?.SetMessage("Dashboard loaded", true);
+            // Try to load data with timeout
+            try
+            {
+                await CustomersState.LoadAsync(cancellationToken: cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load customers");
+                UiState?.SetMessage("Could not load customers - API may be unavailable", false);
+            }
+
+            try
+            {
+                await ProductsState.LoadAllAsync(cancellationToken: cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load products");
+                UiState?.SetMessage("Could not load products - API may be unavailable", false);
+            }
+
+            try
+            {
+                await CountriesState.LoadAsync(cancellationToken: cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load countries");
+                UiState?.SetMessage("Could not load countries - API may be unavailable", false);
+            }
+
+            Logger.LogInformation("Dashboard loaded - {CustomerCount} customers, {ProductCount} products",
+                CustomersState.Customers.Count,
+                ProductsState.Products.Count);
+
+            // Only show success if we loaded some data
+            if (CustomersState.Customers.Any() || ProductsState.Products.Any())
+            {
+                UiState?.SetMessage("Dashboard loaded successfully", true);
+            }
+            else
+            {
+                UiState?.SetMessage("Dashboard loaded but no data available - check API connectivity", false);
+            }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading dashboard data");
-            UiState?.SetMessage("Failed to load dashboard data", false);
+            UiState?.SetMessage("Failed to load dashboard data - check Service Status page", false);
         }
         finally
         {
@@ -378,11 +503,27 @@
         }
     }
 
+    // Authentication helper methods
+    private string GetUserName(ClaimsPrincipal user)
+    {
+        return user.FindFirst("name")?.Value
+            ?? user.FindFirst(ClaimTypes.Name)?.Value
+            ?? user.FindFirst("preferred_username")?.Value
+          ?? "User";
+}
+
+    private string GetUserEmail(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.Email)?.Value
+            ?? user.FindFirst("email")?.Value
+    ?? "No email";
+    }
+
     // Navigation methods
-    private void NavigateToCreateUser() => Navigation.NavigateTo("/users/create");
+    private void NavigateToCreateCustomer() => Navigation.NavigateTo("/customers/create");
     private void NavigateToCreateProduct() => Navigation.NavigateTo("/products/create");
-    private void NavigateToManageUsers() => Navigation.NavigateTo("/users/management");
+    private void NavigateToManageCustomers() => Navigation.NavigateTo("/customers/management");
     private void NavigateToManageProducts() => Navigation.NavigateTo("/products/management");
     private void NavigateToAllProducts() => Navigation.NavigateTo("/products/management");
-    private void NavigateToAllUsers() => Navigation.NavigateTo("/users/management");
+    private void NavigateToAllCustomers() => Navigation.NavigateTo("/customers/management");
 }

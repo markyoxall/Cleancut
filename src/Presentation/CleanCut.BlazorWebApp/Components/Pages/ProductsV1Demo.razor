@@ -175,7 +175,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">User ID:</label>
-                    <input type="text" class="form-control" @bind="newProduct.UserId" 
+                    <input type="text" class="form-control" @bind="newProduct.CustomerId" 
                            placeholder="User GUID" disabled="@isCreating">
                 </div>
 
@@ -296,7 +296,7 @@
 
         try
         {
-            var products = await ProductApi.GetProductsByUserAsync(Guid.Parse(userIdToGet)); // Http.GetAsync($"https://localhost:7142/api/v1/products/user/{userIdToGet}");
+            var products = await ProductApi.GetProductsByCustomerAsync(Guid.Parse(userIdToGet)); // Http.GetAsync($"https://localhost:7142/api/v1/products/user/{userIdToGet}");
             if (products is not null)
             {
                 userProducts = products.ToList();
@@ -353,7 +353,7 @@
         return !string.IsNullOrWhiteSpace(newProduct.Name) &&
                !string.IsNullOrWhiteSpace(newProduct.Description) &&
                newProduct.Price > 0 &&
-               !string.IsNullOrWhiteSpace(newProduct.UserId.ToString());
+               !string.IsNullOrWhiteSpace(newProduct.CustomerId.ToString());
     }
 
     // DTO Classes

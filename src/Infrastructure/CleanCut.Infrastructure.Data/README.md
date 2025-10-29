@@ -369,11 +369,11 @@ public class CustomerQueries : ICustomerQueries
 {
     private readonly CleanCutDbContext _context;
     
-    public async Task<CustomerDto> GetCustomerAsync(Guid id)
+    public async Task<CustomerInfo> GetCustomerAsync(Guid id)
     {
         return await _context.Customers
             .Where(c => c.Id == id)
-            .Select(c => new CustomerDto
+            .Select(c => new CustomerInfo
             {
                 Id = c.Id,
                 Name = c.Name,

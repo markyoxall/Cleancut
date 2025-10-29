@@ -49,7 +49,7 @@ public class ProductApiClientV2 : IProductApiClientV2
         return await resp.Content.ReadFromJsonAsync<V2ProductResponse>(cancellationToken: cancellationToken);
     }
 
-    public async Task<V2ProductListResponse> GetByUserAsync(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<V2ProductListResponse> GetByCustomerAsync(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         await AttachAccessTokenAsync();
         _logger.LogDebug("V2: GET /api/v2/products/user/{UserId}?page={Page}&pageSize={PageSize}", userId, page, pageSize);

@@ -11,7 +11,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<User, UserInfo>()
+        CreateMap<Customer, CustomerInfo>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.GetFullName()));
 
         CreateMap<Product, ProductInfo>();

@@ -2,7 +2,7 @@
 @using CleanCut.Application.DTOs
 @inject ILogger<ProductManagement> Logger
 @inject CleanCut.BlazorWebApp.Services.IProductApiService ProductApi
-@inject IUserApiService UserApi
+@inject ICustomerApiService CustomerApi
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -28,9 +28,9 @@
     }
 
     <!-- Product Filters Component -->
-    <ProductFilters Users="Users"
+    <ProductFilters Customers="Customers"
                     @bind-SearchTerm="SearchTerm"
-                    @bind-SelectedUserId="SelectedUserId"
+                    @bind-SelectedCustomerId="SelectedCustomerId"
                     @bind-IsAvailableFilter="IsAvailableFilter"
                     IsLoading="@IsLoading"
                     OnFiltersChanged="OnFiltersChanged" />
@@ -76,14 +76,14 @@
                                         <strong class="text-success">@product.Price.ToString("C")</strong>
                                     </td>
                                     <td>
-                                        @if (product.User != null)
+                                        @if (product.Customer != null)
                                         {
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-small me-2">
-                                                    @product.User.FirstName.Substring(0, 1).ToUpper()
+                                                    @product.Customer.FirstName.Substring(0, 1).ToUpper()
                                                 </div>
                                                 <div>
-                                                    <small>@product.User.FirstName @product.User.LastName</small>
+                                                    <small>@product.Customer.FirstName @product.Customer.LastName</small>
                                                 </div>
                                             </div>
                                         }
@@ -139,7 +139,7 @@
                     <i class="fas fa-box fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No products found</h5>
                     <p class="text-muted">
-                        @if (!string.IsNullOrEmpty(SearchTerm) || SelectedUserId.HasValue || IsAvailableFilter.HasValue)
+                        @if (!string.IsNullOrEmpty(SearchTerm) || SelectedCustomerId.HasValue || IsAvailableFilter.HasValue)
                         {
                             <text>Try adjusting your search criteria or </text>
                             <button type="button" class="btn btn-link p-0" @onclick="ClearFilters">clear filters</button>
@@ -225,10 +225,10 @@
 
 @code {
     // State
-    private List<UserInfo> Users { get; set; } = new();
+    private List<CustomerInfo> Customers { get; set; } = new();
     private List<ProductInfo> Products { get; set; } = new();
     private string? SearchTerm { get; set; }
-    private Guid? SelectedUserId { get; set; }
+    private Guid? SelectedCustomerId { get; set; }
     private bool? IsAvailableFilter { get; set; }
     private bool IsLoading { get; set; }
     private string? Message { get; set; }
@@ -272,11 +272,11 @@
         var uri = new Uri(Navigation.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
         
-        // Check for user filter parameter
-        if (query.ContainsKey("userId") && Guid.TryParse(query["userId"], out var userId))
+        // Check for Customer filter parameter
+        if (query.ContainsKey("CustomerId") && Guid.TryParse(query["CustomerId"], out var CustomerId))
         {
-            SelectedUserId = userId;
-            Logger.LogInformation("User filter parameter detected: {UserId}", userId);
+            SelectedCustomerId = CustomerId;
+            Logger.LogInformation("Customer filter parameter detected: {CustomerId}", CustomerId);
         }
         
         // Check for refresh parameter
@@ -295,28 +295,28 @@
         IsLoading = true;
         try
         {
-            // Load users
-            Users = await UserApi.GetAllUsersAsync();
+            // Load Customers
+            Customers = await CustomerApi.GetAllCustomersAsync();
 
-            // Determine which user to load products for
-            if (SelectedUserId.HasValue)
+            // Determine which Customer to load products for
+            if (SelectedCustomerId.HasValue)
             {
-                // Use the specified user (from URL parameter or filter)
-                Products = (await ProductApi.GetProductsByUserAsync(SelectedUserId.Value)).ToList();
+                // Use the specified Customer (from URL parameter or filter)
+                Products = (await ProductApi.GetProductsByCustomerAsync(SelectedCustomerId.Value)).ToList();
             }
-            else if (Users.Any())
+            else if (Customers.Any())
             {
-                // Default to first user
-                var firstUser = Users.First();
-                SelectedUserId = firstUser.Id;
-                Products = (await ProductApi.GetProductsByUserAsync(firstUser.Id)).ToList();
+                // Default to first Customer
+                var firstCustomer = Customers.First();
+                SelectedCustomerId = firstCustomer.Id;
+                Products = (await ProductApi.GetProductsByCustomerAsync(firstCustomer.Id)).ToList();
             }
             else
             {
                 Products = new List<ProductInfo>();
             }
 
-            Logger.LogInformation("Loaded {UserCount} users and {ProductCount} products for user {UserId}", Users.Count, Products.Count, SelectedUserId);
+            Logger.LogInformation("Loaded {CustomerCount} Customers and {ProductCount} products for Customer {CustomerId}", Customers.Count, Products.Count, SelectedCustomerId);
         }
         catch (Exception ex)
         {
@@ -333,8 +333,8 @@
 
     private async Task OnFiltersChanged()
     {
-        Logger.LogInformation("Filters changed - SearchTerm: {SearchTerm}, SelectedUserId: {UserId}, IsAvailableFilter: {IsAvailable}", 
-            SearchTerm, SelectedUserId, IsAvailableFilter);
+        Logger.LogInformation("Filters changed - SearchTerm: {SearchTerm}, SelectedCustomerId: {CustomerId}, IsAvailableFilter: {IsAvailable}", 
+            SearchTerm, SelectedCustomerId, IsAvailableFilter);
         await LoadProductsAsync();
     }
 
@@ -343,23 +343,23 @@
         IsLoading = true;
         try
         {
-            // Load products based on selected user (match MVC logic)
-            if (SelectedUserId.HasValue)
+            // Load products based on selected Customer (match MVC logic)
+            if (SelectedCustomerId.HasValue)
             {
-                Products = (await ProductApi.GetProductsByUserAsync(SelectedUserId.Value)).ToList();
+                Products = (await ProductApi.GetProductsByCustomerAsync(SelectedCustomerId.Value)).ToList();
             }
-            else if (Users.Any())
+            else if (Customers.Any())
             {
-                var firstUser = Users.First();
-                SelectedUserId = firstUser.Id;
-                Products = (await ProductApi.GetProductsByUserAsync(firstUser.Id)).ToList();
+                var firstCustomer = Customers.First();
+                SelectedCustomerId = firstCustomer.Id;
+                Products = (await ProductApi.GetProductsByCustomerAsync(firstCustomer.Id)).ToList();
             }
             else
             {
                 Products = new List<ProductInfo>();
             }
 
-            Logger.LogInformation("Reloaded {ProductCount} products for user {UserId}", Products.Count, SelectedUserId);
+            Logger.LogInformation("Reloaded {ProductCount} products for Customer {CustomerId}", Products.Count, SelectedCustomerId);
         }
         catch (Exception ex)
         {
@@ -434,7 +434,7 @@
             {
                 // Product not found on server - API returned false
                 Logger.LogWarning("Product {ProductId} not found on server during delete", ProductToDelete.Id);
-                Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted by another user.";
+                Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted by another Customer.";
                 IsSuccess = false;
                 
                 // Remove from local list anyway since it's not on server
@@ -477,7 +477,7 @@
     private async Task ClearFilters()
     {
         SearchTerm = null;
-        SelectedUserId = Users.Any() ? Users.First().Id : null;
+        SelectedCustomerId = Customers.Any() ? Customers.First().Id : null;
         IsAvailableFilter = null;
         await LoadProductsAsync();
     }

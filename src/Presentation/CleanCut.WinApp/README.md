@@ -102,7 +102,7 @@ This is a **Windows Forms desktop application** implementing the **MVP (Model-Vi
 public partial class ProductListForm : BaseForm, IProductListView
 {
     public event EventHandler? AddProductRequested;
-    public void DisplayProducts(IEnumerable<ProductDto> products) { ... }
+    public void DisplayProducts(IEnumerable<ProductInfo> products) { ... }
 }
 
 // Presenter: Business Logic Coordination

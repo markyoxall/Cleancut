@@ -5,6 +5,8 @@ using CleanCut.Infrastructure.Data.Seeding;
 using CleanCut.API.Middleware;
 using CleanCut.API.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+ 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,9 +57,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "https://localhost:7297", // Your Blazor HTTPS port
-                "http://localhost:5091",  // Your Blazor HTTP port
-                "https://localhost:5001", // Common Blazor ports
-                "http://localhost:5000"   // Common Blazor ports
+                "http://localhost:5091"  // Your Blazor HTTP port
               )
               .AllowAnyMethod()
               .AllowAnyHeader()
@@ -96,16 +96,55 @@ builder.Services.AddDataInfrastructure(builder.Configuration);
 // Add Caching Infrastructure layer
 builder.Services.AddCachingInfrastructure(builder.Configuration);
 
-// Add JWT Bearer authentication for IdentityServer
+// Read IdentityServer configuration from appsettings
+var identityServerAuthority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
+
+// Add JWT Bearer authentication using configuration
 builder.Services.AddAuthentication(options =>
 {
- options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
- options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5003";
- options.Audience = "CleanCutAPI";
- options.RequireHttpsMetadata = true;
+    options.Authority = identityServerAuthority; // Use configuration value
+    // Don't set a single audience, let the validation parameters handle it
+    options.RequireHttpsMetadata = true;
+    
+    // Add events for debugging
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(context.Exception, "JWT Authentication failed: {Message}", context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("JWT Token validated successfully for user: {User}", 
+                context.Principal?.Identity?.Name ?? "Unknown");
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("JWT Challenge triggered. Error: {Error}, Description: {Description}", 
+                context.Error, context.ErrorDescription);
+            return Task.CompletedTask;
+        }
+    };
+    
+    // Accept multiple audiences
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = identityServerAuthority,
+        ValidAudiences = new[] { "CleanCutAPI", "https://localhost:5001/resources" } // Accept both
+    };
 });
 
 // Add authorization and require authentication globally
@@ -144,13 +183,13 @@ if (app.Environment.IsDevelopment())
     // Serve static files first (before routing)
     app.UseStaticFiles();
     
-    // Add custom routes for landing pages
-    app.MapGet("/", () => Results.Redirect("/versions.html"));
-    app.MapGet("/index.html", () => Results.Redirect("/versions.html"));
-    app.MapGet("/versions", () => Results.Redirect("/versions.html"));
+    // Add custom routes for landing pages (allow anonymous access for development)
+    app.MapGet("/", () => Results.Redirect("/versions.html")).AllowAnonymous();
+    app.MapGet("/index.html", () => Results.Redirect("/versions.html")).AllowAnonymous();
+    app.MapGet("/versions", () => Results.Redirect("/versions.html")).AllowAnonymous();
     
-    // Map OpenAPI endpoint
-    app.MapOpenApi();
+    // Map OpenAPI endpoint (allow anonymous access for development)
+    app.MapOpenApi().AllowAnonymous();
     
     // Add Swagger UI (shows all endpoints from both versions)
     app.UseSwaggerUI(options =>

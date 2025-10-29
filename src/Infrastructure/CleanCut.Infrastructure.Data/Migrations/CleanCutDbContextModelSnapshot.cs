@@ -52,51 +52,7 @@ namespace CleanCut.Infrastructure.Data.Migrations
                     b.ToTable("Countries");
                 });
 
-            modelBuilder.Entity("CleanCut.Domain.Entities.Product", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsAvailable")
-                        .HasDatabaseName("IX_Products_IsAvailable");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_Products_UserId");
-
-                    b.HasIndex("UserId", "IsAvailable")
-                        .HasDatabaseName("IX_Products_UserId_IsAvailable");
-
-                    b.ToTable("Products", (string)null);
-                });
-
-            modelBuilder.Entity("CleanCut.Domain.Entities.User", b =>
+            modelBuilder.Entity("CleanCut.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -129,23 +85,67 @@ namespace CleanCut.Infrastructure.Data.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("IX_Users_Email");
+                        .HasDatabaseName("IX_Customers_Email");
 
                     b.HasIndex("IsActive")
-                        .HasDatabaseName("IX_Users_IsActive");
+                        .HasDatabaseName("IX_Customers_IsActive");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("CleanCut.Domain.Entities.Product", b =>
                 {
-                    b.HasOne("CleanCut.Domain.Entities.User", "User")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("IX_Products_UserId");
+
+                    b.HasIndex("IsAvailable")
+                        .HasDatabaseName("IX_Products_IsAvailable");
+
+                    b.HasIndex("CustomerId", "IsAvailable")
+                        .HasDatabaseName("IX_Products_UserId_IsAvailable");
+
+                    b.ToTable("Products", (string)null);
+                });
+
+            modelBuilder.Entity("CleanCut.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("CleanCut.Domain.Entities.Customer", "Customer")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Customer");
                 });
 #pragma warning restore 612, 618
         }

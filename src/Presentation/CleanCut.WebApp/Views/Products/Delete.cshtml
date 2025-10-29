@@ -1,4 +1,4 @@
-@model CleanCut.Application.DTOs.ProductDto
+@model CleanCut.Application.DTOs.ProductInfo
 
 @{
     ViewData["Title"] = "Delete Product";
@@ -50,11 +50,11 @@
                                         <th>Price:</th>
                                         <td><strong class="text-success">@Model.Price.ToString("C")</strong></td>
                                     </tr>
-                                    @if (Model.User != null)
+                                    @if (Model.Customer != null)
                                     {
                                         <tr>
                                             <th>Owner:</th>
-                                            <td>@Model.User.FirstName @Model.User.LastName</td>
+                                            <td>@Model.Customer.FirstName @Model.Customer.LastName</td>
                                         </tr>
                                     }
                                     <tr>

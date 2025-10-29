@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using CleanCut.Application.DTOs;
-using CleanCut.Application.Queries.Users.GetAllUsers;
+using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Domain.Repositories;
 using MediatR;
 using System;

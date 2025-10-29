@@ -159,20 +159,20 @@
                     </div>
 
                     <!-- Owner Information -->
-                    @if (OriginalProduct.User != null)
+                    @if (OriginalProduct.Customer != null)
                     {
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-user me-2"></i>Owner
+                                    <i class="fas fa-Customer me-2"></i>Owner
                                 </h5>
                             </div>
                             <div class="card-body text-center">
                                 <div class="avatar-medium mx-auto mb-2">
-                                    @OriginalProduct.User.FirstName.Substring(0, 1).ToUpper()
+                                    @OriginalProduct.Customer.FirstName.Substring(0, 1).ToUpper()
                                 </div>
-                                <h6 class="fw-bold mb-1">@OriginalProduct.User.FirstName @OriginalProduct.User.LastName</h6>
-                                <p class="text-muted small mb-0">@OriginalProduct.User.Email</p>
+                                <h6 class="fw-bold mb-1">@OriginalProduct.Customer.FirstName @OriginalProduct.Customer.LastName</h6>
+                                <p class="text-muted small mb-0">@OriginalProduct.Customer.Email</p>
                             </div>
                         </div>
                     }
@@ -366,9 +366,9 @@
 
             Logger.LogInformation("Product updated successfully: {ProductId}", updatedProduct.Id);
 
-            // Navigate back to management page with success message and filter to current user
-            var userId = OriginalProduct?.UserId ?? Guid.Empty;
-            Navigation.NavigateTo($"/products/management?userId={userId}&refresh={DateTime.UtcNow.Ticks}");
+            // Navigate back to management page with success message and filter to current Customer
+            var CustomerId = OriginalProduct?.CustomerId ?? Guid.Empty;
+            Navigation.NavigateTo($"/products/management?CustomerId={CustomerId}&refresh={DateTime.UtcNow.Ticks}");
         }
         catch (Exception ex)
         {
@@ -446,7 +446,7 @@
             {
                 // Product not found on server - API returned false
                 Logger.LogWarning("Product {ProductId} not found on server during delete", ProductToDelete.Id);
-                Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted by another user.";
+                Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted by another Customer.";
                 IsSuccess = false;
             }
         }

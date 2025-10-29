@@ -1,6 +1,7 @@
 ﻿using System;
 using CleanCut.BlazorWebApp.Services;
 using CleanCut.BlazorWebApp.Services.HttpClients;
+using CleanCut.BlazorWebApp.Services.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,18 +15,40 @@ public static class ServiceCollectionExtensions
         var v1 = configuration.GetSection("ApiClients:Products:V1").Get<ProductApiOptions>() ?? new ProductApiOptions();
         var v2 = configuration.GetSection("ApiClients:Products:V2").Get<ProductApiOptions>() ?? new ProductApiOptions();
 
-        // Register typed clients using configuration values
+        // Register the authenticated message handler
+        services.AddScoped<AuthenticatedHttpMessageHandler>();
+
+        // Register typed clients using configuration values with authentication
         services.AddHttpClient<IProductApiClientV1, ProductApiClientV1>(client =>
         {
             client.BaseAddress = new Uri(v1.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(v1.TimeoutSeconds);
-        });
+        })
+        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         services.AddHttpClient<IProductApiClientV2, ProductApiClientV2>(client =>
         {
             client.BaseAddress = new Uri(v2.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(v2.TimeoutSeconds);
-        });
+        })
+        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+        // Add authenticated HTTP client for other API services
+        services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
+        {
+            var baseUrl = configuration["ApiClients:BaseUrl"] ?? "https://localhost:7142";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+        services.AddHttpClient<ICountryApiService, CountryApiService>(client =>
+        {
+            var baseUrl = configuration["ApiClients:BaseUrl"] ?? "https://localhost:7142";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         // Adapter/service registration
         services.AddScoped<IProductApiService, ProductApiService>();

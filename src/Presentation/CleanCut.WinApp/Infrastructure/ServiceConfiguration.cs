@@ -2,7 +2,7 @@ using CleanCut.Application;
 using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data;
 using CleanCut.WinApp.Presenters;
-using CleanCut.WinApp.Views.Users;
+using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Products;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,11 +32,11 @@ public static class ServiceConfiguration
         services.AddDataInfrastructure(configuration);
         services.AddCachingInfrastructure(configuration);
         
-        // User Management MVP components
-        services.AddScoped<IUserListView, UserListForm>();
-        services.AddScoped<IUserEditView, UserEditForm>();
-        services.AddScoped<UserListPresenter>();
-        services.AddScoped<UserEditPresenter>();
+        // Customer Management MVP components
+        services.AddScoped<ICustomerListView, CustomerListForm>();
+        services.AddScoped<ICustomerEditView, CustomerEditForm>();
+        services.AddScoped<CustomerListPresenter>();
+        services.AddScoped<CustomerEditPresenter>();
         
         // Product Management MVP components
         services.AddScoped<IProductListView, ProductListForm>();

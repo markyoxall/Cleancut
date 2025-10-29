@@ -4,7 +4,7 @@
 @using System.ComponentModel.DataAnnotations
 @inject ILogger<ProductCreate> Logger
 @inject IProductApiService ProductApi
-@inject IUserApiService UserApi
+@inject ICustomerApiService CustomerApi
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveServerRenderMode(prerender: true))
 
@@ -63,14 +63,14 @@
 
                 <div class="mb-3">
                     <label for="userId" class="form-label">Owner <span class="text-danger">*</span></label>
-                    <InputSelect id="userId" class="form-select" @bind-Value="Model.UserId">
+                    <InputSelect id="userId" class="form-select" @bind-Value="Model.CustomerId">
                         <option value="">Select an owner...</option>
-                        @foreach (var user in Users)
+                        @foreach (var user in Customers)
                         {
                             <option value="@user.Id">@user.FirstName @user.LastName (@user.Email)</option>
                         }
                     </InputSelect>
-                    <ValidationMessage For="@(() => Model.UserId)" class="text-danger" />
+                    <ValidationMessage For="@(() => Model.CustomerId)" class="text-danger" />
                 </div>
 
                 <div class="d-flex justify-content-between">
@@ -91,7 +91,7 @@
 </div>
 
 @code {
-    private List<UserInfo> Users { get; set; } = new();
+    private List<CustomerInfo> Customers { get; set; } = new();
     private ProductCreateModel Model { get; set; } = new();
     private bool IsLoading { get; set; }
     private string? Message { get; set; }
@@ -100,15 +100,15 @@
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("Product Create page loading");
-        await LoadUsersAsync();
+        await LoadCustomersAsync();
     }
 
-    private async Task LoadUsersAsync()
+    private async Task LoadCustomersAsync()
     {
         try
         {
-            Users = await UserApi.GetAllUsersAsync();
-            Logger.LogInformation("Loaded {UserCount} users for create form", Users.Count);
+            Customers = await CustomerApi.GetAllCustomersAsync();
+            Logger.LogInformation("Loaded {CustomerCount} users for create form", Customers.Count);
         }
         catch (Exception ex)
         {
@@ -123,14 +123,14 @@
         IsLoading = true;
         try
         {
-            Logger.LogInformation("Creating product: {ProductName} for user {UserId}", Model.Name, Model.UserId);
+            Logger.LogInformation("Creating product: {ProductName} for user {CustomerId}", Model.Name, Model.CustomerId);
 
             var request = new CreateProductRequest
             {
                 Name = Model.Name,
                 Description = Model.Description,
                 Price = Model.Price,
-                UserId = Model.UserId
+                CustomerId = Model.CustomerId
             };
 
             var createdProduct = await ProductApi.CreateProductAsync(request);
@@ -138,7 +138,7 @@
             Logger.LogInformation("Product created successfully with ID {ProductId}", createdProduct.Id);
 
             // Navigate back to management page with user filter and refresh parameter
-            Navigation.NavigateTo($"/products/management?userId={Model.UserId}&refresh={DateTime.UtcNow.Ticks}");
+            Navigation.NavigateTo($"/products/management?userId={Model.CustomerId}&refresh={DateTime.UtcNow.Ticks}");
         }
         catch (Exception ex)
         {
@@ -175,6 +175,6 @@
         public decimal Price { get; set; }
 
         [Required(ErrorMessage = "Owner is required")]
-        public Guid UserId { get; set; }
+        public Guid CustomerId { get; set; }
     }
 }

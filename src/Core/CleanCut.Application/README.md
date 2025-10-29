@@ -113,20 +113,20 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, OrderDto>
 ### Query Pattern
 ```csharp
 // Query
-public class GetCustomerQuery : IRequest<CustomerDto>
+public class GetCustomerQuery : IRequest<CustomerInfo>
 {
     public Guid CustomerId { get; set; }
 }
 
 // Handler
-public class GetCustomerHandler : IRequestHandler<GetCustomerQuery, CustomerDto>
+public class GetCustomerHandler : IRequestHandler<GetCustomerQuery, CustomerInfo>
 {
     private readonly ICustomerRepository _customerRepository;
     
-    public async Task<CustomerDto> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
+    public async Task<CustomerInfo> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
     {
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
-        return _mapper.Map<CustomerDto>(customer);
+        return _mapper.Map<CustomerInfo>(customer);
     }
 }
 ```

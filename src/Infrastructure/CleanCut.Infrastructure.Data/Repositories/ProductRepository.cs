@@ -14,10 +14,10 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
     {
     }
 
-    public async Task<IReadOnlyList<Product>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Product>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Where(x => x.UserId == userId)
+            .Where(x => x.CustomerId == customerId)
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
     }

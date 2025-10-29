@@ -52,7 +52,7 @@
         <!-- Real-time Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-6 col-xl-3 mb-3">
-                <div class="card border-0 shadow-sm h-100 @(Users.Any() ? "border-primary" : "")">
+                <div class="card border-0 shadow-sm h-100 @(Customers.Any() ? "border-primary" : "")">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0">
@@ -61,10 +61,10 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold text-primary fs-4">@Users.Count</div>
-                                <div class="text-muted">Total Users</div>
+                                <div class="fw-bold text-primary fs-4">@Customers.Count</div>
+                                <div class="text-muted">Total Customers</div>
                                 <small class="text-success">
-                                    <i class="fas fa-user-check me-1"></i>@Users.Count(u => u.IsActive) Active
+                                    <i class="fas fa-user-check me-1"></i>@Customers.Count(u => u.IsActive) Active
                                 </small>
                             </div>
                         </div>
@@ -124,8 +124,8 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold text-warning fs-4">@AverageProductsPerUser.ToString("F1")</div>
-                                <div class="text-muted">Avg Products/User</div>
+                                <div class="fw-bold text-warning fs-4">@AverageProductsPerCustomer.ToString("F1")</div>
+                                <div class="text-muted">Avg Products/Customer</div>
                                 <small class="text-warning">
                                     <i class="fas fa-calculator me-1"></i>Performance
                                 </small>
@@ -149,7 +149,7 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <h6>Current Selection</h6>
-                                <p><strong>User:</strong> @(SelectedUserLocal != null ? $"{SelectedUserLocal.FirstName} {SelectedUserLocal.LastName}" : "None selected")</p>
+                                <p><strong>Customer:</strong> @(SelectedCustomerLocal != null ? $"{SelectedCustomerLocal.FirstName} {SelectedCustomerLocal.LastName}" : "None selected")</p>
                                 <p><strong>Product:</strong> @(SelectedProductLocal?.Name ?? "None selected")</p>
                             </div>
                             <div class="col-md-4">
@@ -196,9 +196,9 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateUser">
+                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateCustomer">
                                     <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Add User</span>
+                                    <span class="fw-bold">Add Customer</span>
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
@@ -208,9 +208,9 @@
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageUsers">
+                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageCustomers">
                                     <i class="fas fa-users fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Manage Users</span>
+                                    <span class="fw-bold">Manage Customers</span>
                                 </button>
                             </div>
                             <div class="col-md-6 col-lg-3">
@@ -249,7 +249,7 @@
                                     </div>
                                     <div class="flex-grow-1">
                                         <div class="fw-bold">@product.Name</div>
-                                        <small class="text-muted">by @(product.User?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
+                                        <small class="text-muted">by @(product.Customer?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
                                     </div>
                                     <div class="text-success fw-bold me-2">@product.Price.ToString("C")</div>
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => SelectProduct(product)">
@@ -273,19 +273,19 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-users me-2"></i>Active Users
+                            <i class="fas fa-users me-2"></i>Active Customers
                         </h5>
                         <button type="button" class="btn btn-sm btn-outline-info"
-                                @onclick="NavigateToAllUsers">
+                                @onclick="NavigateToAllCustomers">
                             View All
                         </button>
                     </div>
                     <div class="card-body">
-                        @if (ActiveUsersList.Any())
+                        @if (ActiveCustomersList.Any())
                         {
-                            @foreach (var user in ActiveUsersList.Take(5))
+                            @foreach (var user in ActiveCustomersList.Take(5))
                             {
-                                <div class="d-flex align-items-center py-2 @(SelectedUserLocal?.Id == user.Id ? "bg-light" : "")">
+                                <div class="d-flex align-items-center py-2 @(SelectedCustomerLocal?.Id == user.Id ? "bg-light" : "")">
                                     <div class="avatar-small-user me-3">
                                         @user.FirstName.Substring(0, 1).ToUpper()
                                     </div>
@@ -296,7 +296,7 @@
                                     <div class="text-success me-2">
                                         <i class="fas fa-check-circle"></i>
                                     </div>
-                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => SelectUser(user)">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => SelectCustomer(user)">
                                         <i class="fas fa-hand-pointer"></i>
                                     </button>
                                 </div>
@@ -344,19 +344,19 @@
 
 @code {
     // Local selection (since feature states don't expose selection)
-    private UserInfo? SelectedUserLocal;
+    private CustomerInfo? SelectedCustomerLocal;
     private ProductInfo? SelectedProductLocal;
 
     // Dashboard statistics computed from state
     private decimal TotalValue => Products.Sum(p => p.Price);
-    private double AverageProductsPerUser => Users.Count > 0 ? (double)Products.Count / Users.Count : 0;
+    private double AverageProductsPerCustomer => Customers.Count > 0 ? (double)Products.Count / Customers.Count : 0;
 
     // Recent data computed from state
     private List<ProductInfo> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
-    private List<UserInfo> ActiveUsersList => Users.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
+    private List<CustomerInfo> ActiveCustomersList => Customers.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
 
     // Convenience accessors to feature state collections
-    private List<UserInfo> Users => UsersState.Users?.ToList() ?? new();
+    private List<CustomerInfo> Customers => CustomersState.Customers?.ToList() ?? new();
     private List<ProductInfo> Products => ProductsState.Products?.ToList() ?? new();
 
     protected override async Task OnInitializedAsync()
@@ -364,10 +364,10 @@
         Logger.LogInformation("Enhanced Dashboard loading");
 
         // Subscribe to feature events for this component's handlers
-        UsersState.UsersChanged += OnUsersChanged;
+        CustomersState.CustomersChanged += OnCustomersChanged;
         ProductsState.ProductsChanged += OnProductsChanged;
 
-        UsersState.MessageChanged += OnFeatureMessage;
+        CustomersState.MessageChanged += OnFeatureMessage;
         ProductsState.MessageChanged += OnFeatureMessage;
         CountriesState.CountriesChanged += OnCountriesChanged;
 
@@ -379,18 +379,18 @@
         await ExecuteWithLoading(async () =>
         {
             // Load all data through feature states
-            await UsersState.LoadAsync();
+            await CustomersState.LoadAsync();
 
             // Load products for each user (conservative approach)
-            foreach (var user in Users)
+            foreach (var user in Customers)
             {
                 try
                 {
-                    await ProductsState.LoadByUserAsync(user.Id);
+                    await ProductsState.LoadByCustomerAsync(user.Id);
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning(ex, "Failed to load products for user {UserId}", user.Id);
+                    Logger.LogWarning(ex, "Failed to load products for user {CustomerId}", user.Id);
                 }
             }
 
@@ -418,16 +418,16 @@
 
     private void InvalidateAllCaches()
     {
-        UsersState.Invalidate();
+        CustomersState.Invalidate();
         ProductsState.Invalidate();
         CountriesState.Invalidate();
         SetLocalMessage("Caches invalidated", true);
     }
 
     // Event handlers for state changes
-    private void OnUsersChanged(List<UserInfo> users)
+    private void OnCustomersChanged(List<CustomerInfo> users)
     {
-        Logger.LogInformation("Dashboard: Users changed - {Count} users", users.Count);
+        Logger.LogInformation("Dashboard: Customers changed - {Count} users", users.Count);
         InvokeAsync(StateHasChanged);
     }
 
@@ -454,27 +454,27 @@
         SetLocalMessage($"Selected product: {product.Name}", true);
     }
 
-    private void SelectUser(UserInfo user)
+    private void SelectCustomer(CustomerInfo user)
     {
-        SelectedUserLocal = user;
+        SelectedCustomerLocal = user;
         SetLocalMessage($"Selected user: {user.FirstName} {user.LastName}", true);
     }
 
     // Navigation methods
-    private void NavigateToCreateUser() => Navigation.NavigateTo("/users/create");
+    private void NavigateToCreateCustomer() => Navigation.NavigateTo("/users/create");
     private void NavigateToCreateProduct() => Navigation.NavigateTo("/products/create");
-    private void NavigateToManageUsers() => Navigation.NavigateTo("/users/management-enhanced");
+    private void NavigateToManageCustomers() => Navigation.NavigateTo("/users/management-enhanced");
     private void NavigateToManageProducts() => Navigation.NavigateTo("/products/management");
     private void NavigateToAllProducts() => Navigation.NavigateTo("/products/management");
-    private void NavigateToAllUsers() => Navigation.NavigateTo("/users/management-enhanced");
+    private void NavigateToAllCustomers() => Navigation.NavigateTo("/users/management-enhanced");
 
     public override void Dispose()
     {
-        UsersState.UsersChanged -= OnUsersChanged;
+        CustomersState.CustomersChanged -= OnCustomersChanged;
         ProductsState.ProductsChanged -= OnProductsChanged;
         CountriesState.CountriesChanged -= OnCountriesChanged;
 
-        UsersState.MessageChanged -= OnFeatureMessage;
+        CustomersState.MessageChanged -= OnFeatureMessage;
         ProductsState.MessageChanged -= OnFeatureMessage;
         CountriesState.MessageChanged -= OnFeatureMessage;
 

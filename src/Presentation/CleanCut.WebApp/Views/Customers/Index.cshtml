@@ -1,0 +1,268 @@
+@model CleanCut.WebApp.Models.Customers.CustomerListViewModel
+
+@{
+    ViewData["Title"] = "Customer Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-users text-primary"></i> Customer Management
+    </h2>
+    <a href="@Url.Action("Create", "Customers")" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Customer
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+        <i class="fas @(Model.IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Search and Filter Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-search"></i> Search & Filter
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" action="@Url.Action("Index", "Customers")">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="searchTerm" class="form-label">Search Customers</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           value="@Model.SearchTerm" placeholder="Search by name or email...">
+                </div>
+                <div class="col-md-4">
+                    <label for="isActiveFilter" class="form-label">Status Filter</label>
+                    <select class="form-select" id="isActiveFilter" name="isActiveFilter">
+                        <option value="">All Customers</option>
+                        <option value="true" selected="@(Model.IsActiveFilter == true)">Active Only</option>
+                        <option value="false" selected="@(Model.IsActiveFilter == false)">Inactive Only</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Customers Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Customers (@Model.TotalCustomers)</h5>
+        @if (Model.Customers.Any())
+        {
+            <small class="text-muted">
+                Showing @Model.Customers.Count customers
+            </small>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Customers.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Updated</th>
+                            <th width="200">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Customers)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-2">
+                                            @user.FirstName.Substring(0, 1).ToUpper()
+                                        </div>
+                                        <div>
+                                            <strong>@user.FirstName @user.LastName</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="mailto:@user.Email" class="text-decoration-none">
+                                        @user.Email
+                                    </a>
+                                </td>
+                                <td>
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-times"></i> Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @user.CreatedAt.ToString("MMM d, yyyy")
+                                    </small>
+                                </td>
+                                <td>
+                                    @if (user.UpdatedAt.HasValue)
+                                    {
+                                        <small class="text-muted">
+                                            @user.UpdatedAt.Value.ToString("MMM d, yyyy")
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">-</small>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Customer actions">
+                                        <a href="@Url.Action("Details", "Customers", new { id = user.Id })" 
+                                           class="btn btn-outline-info user-action-btn" 
+                                           title="View Details" 
+                                           data-bs-toggle="tooltip"
+                                           data-user-id="@user.Id"
+                                           data-action="Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "Customers", new { id = user.Id })" 
+                                           class="btn btn-outline-primary user-action-btn" 
+                                           title="Edit" 
+                                           data-bs-toggle="tooltip"
+                                           data-user-id="@user.Id"
+                                           data-action="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", "Customers", new { id = user.Id })" 
+                                           class="btn btn-outline-danger user-action-btn" 
+                                           title="Delete" 
+                                           data-bs-toggle="tooltip"
+                                           data-user-id="@user.Id"
+                                           data-action="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No customers found</h5>
+                <p class="text-muted">
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.IsActiveFilter.HasValue)
+                    {
+                        <text>Try adjusting your search criteria or </text>
+                        <a href="@Url.Action("Index", "Customers")" class="text-decoration-none">clear filters</a>
+                    }
+                    else
+                    {
+                        <text>Get started by creating your first customer</text>
+                    }
+                </p>
+                <a href="@Url.Action("Create", "Customers")" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Customer
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .avatar-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .user-action-btn.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+    </style>
+    
+    <script>
+        // Track recent clicks to prevent duplicates
+        const recentClicks = new Set();
+        
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Add click handlers to user action buttons
+            document.querySelectorAll('.user-action-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    const userId = this.getAttribute('data-user-id');
+                    const action = this.getAttribute('data-action');
+                    const clickKey = userId + '_' + action;
+                    
+                    console.log('??? Customer action clicked:', { userId, action, href: this.href });
+                    
+                    // Check for duplicate clicks within 2 seconds
+                    if (recentClicks.has(clickKey)) {
+                        console.log('?? Duplicate click detected, preventing:', clickKey);
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    // Add to recent clicks and remove after 2 seconds
+                    recentClicks.add(clickKey);
+                    setTimeout(() => recentClicks.delete(clickKey), 2000);
+                    
+                    // Disable the button temporarily
+                    this.classList.add('disabled');
+                    setTimeout(() => this.classList.remove('disabled'), 1000);
+                    
+                    // Log the navigation attempt
+                    console.log('? Navigating to:', this.href);
+                    
+                    // Let the default navigation happen
+                    return true;
+                });
+            });
+        });
+        
+        // Global click tracking
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.user-action-btn')) {
+                console.log('?? Global click on user action button detected');
+            }
+        });
+        
+        // Track page unload to see if navigation is happening
+        window.addEventListener('beforeunload', function(e) {
+            console.log('?? Page is unloading - navigation successful');
+        });
+    </script>
+}

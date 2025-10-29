@@ -43,15 +43,15 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="UserId" class="form-label required"></label>
-                                <select asp-for="UserId" class="form-select">
+                                <label asp-for="CustomerId" class="form-label required"></label>
+                                <select asp-for="CustomerId" class="form-select">
                                     <option value="">Select an owner</option>
-                                    @foreach (var user in Model.AvailableUsers)
+                                    @foreach (var user in Model.AvailableCustomers)
                                     {
                                         <option value="@user.Id">@user.FirstName @user.LastName</option>
                                     }
                                 </select>
-                                <span asp-validation-for="UserId" class="text-danger"></span>
+                                <span asp-validation-for="CustomerId" class="text-danger"></span>
                             </div>
                         </div>
                     </div>

@@ -10,10 +10,12 @@ public class ProductInfo
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public bool IsAvailable { get; set; }
-    public Guid UserId { get; set; }
+
+    // Renamed owner reference from UserId to CustomerId
+    public Guid CustomerId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     
-    // Optional user information
-    public UserInfo? User { get; set; }
+    // Optional customer information
+    public CustomerInfo? Customer { get; set; }
 }

@@ -24,7 +24,7 @@ public static class DatabaseSeeder
             await context.Database.EnsureCreatedAsync();
 
             // Check if data already exists
-            if (await context.Users.AnyAsync())
+            if (await context.Customers.AnyAsync())
             {
                 logger.LogInformation("Database already seeded");
                 return;
@@ -50,7 +50,7 @@ public static class DatabaseSeeder
 
             // Seed Users (50 users for better pagination testing)
             var users = GenerateUsers();
-            await context.Users.AddRangeAsync(users);
+            await context.Customers.AddRangeAsync(users);
             await context.SaveChangesAsync();
             logger.LogInformation("Seeded {Count} users", users.Count);
 
@@ -70,17 +70,17 @@ public static class DatabaseSeeder
         }
     }
 
-    private static List<User> GenerateUsers()
+    private static List<Customer> GenerateUsers()
     {
-        var users = new List<User>();
+        var users = new List<Customer>();
 
         // Add the original users with known GUIDs for testing
-        var originalUser = new User("John", "Doe", "john.doe@example.com");
+        var originalUser = new Customer("John", "Doe", "john.doe@example.com");
         SetEntityId(originalUser, Guid.Parse("11111111-1111-1111-1111-111111111111"));
         users.Add(originalUser);
 
-        users.Add(new User("Jane", "Smith", "jane.smith@example.com"));
-        users.Add(new User("Bob", "Johnson", "bob.johnson@example.com"));
+        users.Add(new Customer("Jane", "Smith", "jane.smith@example.com"));
+        users.Add(new Customer("Bob", "Johnson", "bob.johnson@example.com"));
 
         // Add comprehensive user data
         var userTemplates = new[]
@@ -138,7 +138,7 @@ public static class DatabaseSeeder
         {
             try
             {
-                users.Add(new User(firstName, lastName, email));
+                users.Add(new Customer(firstName, lastName, email));
             }
             catch (Exception ex)
             {
@@ -150,7 +150,7 @@ public static class DatabaseSeeder
         return users;
     }
 
-    private static List<Product> GenerateProducts(List<User> users)
+    private static List<Product> GenerateProducts(List<Customer> users)
     {
         var products = new List<Product>();
         var random = new Random(42); // Fixed seed for consistent test data

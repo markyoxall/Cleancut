@@ -5,7 +5,7 @@ namespace CleanCut.BlazorWebApp.State;
 
 public class UiStateService : IUiStateService
 {
-    private readonly IUsersState _users;
+    private readonly ICustomersState _users;
     private readonly IProductsState _products;
     private readonly ICountriesState _countries;
     private readonly ILogger<UiStateService> _logger;
@@ -15,10 +15,10 @@ public class UiStateService : IUiStateService
     private bool _isSuccess;
 
     // local selection
-    private UserInfo? _selectedUser;
+    private CustomerInfo? _selectedUser;
     private ProductInfo? _selectedProduct;
 
-    public UiStateService(IUsersState users, IProductsState products, ICountriesState countries, ILogger<UiStateService> logger)
+    public UiStateService(ICustomersState users, IProductsState products, ICountriesState countries, ILogger<UiStateService> logger)
     {
         _users = users;
         _products = products;
@@ -40,7 +40,7 @@ public class UiStateService : IUiStateService
     public string? CurrentMessage => _currentMessage;
     public bool IsSuccess => _isSuccess;
 
-    public UserInfo? SelectedUser => _selectedUser;
+    public CustomerInfo? SelectedUser => _selectedUser;
     public ProductInfo? SelectedProduct => _selectedProduct;
 
     public event Action? StateChanged;
@@ -67,7 +67,7 @@ public class UiStateService : IUiStateService
         NotifyStateChanged();
     }
 
-    public void SetSelectedUser(UserInfo? user)
+    public void SetSelectedUser(CustomerInfo? user)
     {
         _selectedUser = user;
         NotifyStateChanged();

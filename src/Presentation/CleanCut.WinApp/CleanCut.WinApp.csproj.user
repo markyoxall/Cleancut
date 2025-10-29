@@ -13,10 +13,10 @@
     <Compile Update="Views\Products\ProductListForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Views\Users\UserEditForm.cs">
+    <Compile Update="Views\Customers\CustomerEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Views\Users\UserListForm.cs">
+    <Compile Update="Views\Customers\CustomerListForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

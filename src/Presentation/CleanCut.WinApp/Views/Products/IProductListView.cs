@@ -35,7 +35,7 @@ public interface IProductListView : MVP.IView
     /// <summary>
     /// Display the list of products
     /// </summary>
-    void DisplayProducts(IEnumerable<ProductDto> products);
+    void DisplayProducts(IEnumerable<ProductInfo> products);
     
     /// <summary>
     /// Clear the products list
@@ -50,5 +50,5 @@ public interface IProductListView : MVP.IView
     /// <summary>
     /// Set the available users for filtering
     /// </summary>
-    void SetAvailableUsers(IEnumerable<UserDto> users);
+    void SetAvailableUsers(IEnumerable<CustomerInfo> users);
 }

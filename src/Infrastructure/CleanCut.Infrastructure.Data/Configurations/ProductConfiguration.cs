@@ -33,7 +33,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.IsAvailable)
             .IsRequired();
 
-        builder.Property(x => x.UserId)
+        builder.Property(x => x.CustomerId)
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
@@ -46,13 +46,13 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Ignore(x => x.DomainEvents);
 
         // Indexes
-        builder.HasIndex(x => x.UserId)
+        builder.HasIndex(x => x.CustomerId)
             .HasDatabaseName("IX_Products_UserId");
 
         builder.HasIndex(x => x.IsAvailable)
             .HasDatabaseName("IX_Products_IsAvailable");
 
-        builder.HasIndex(x => new { x.UserId, x.IsAvailable })
+        builder.HasIndex(x => new { x.CustomerId, x.IsAvailable })
             .HasDatabaseName("IX_Products_UserId_IsAvailable");
     }
 }

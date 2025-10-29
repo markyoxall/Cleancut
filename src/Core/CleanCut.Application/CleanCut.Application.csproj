@@ -20,4 +20,10 @@
     <ProjectReference Include="..\CleanCut.Domain\CleanCut.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Queries\Products\GetProductsByUser\" />
+    <Folder Include="Queries\Users\GetAllUsers\" />
+    <Folder Include="Queries\Users\GetUser\" />
+  </ItemGroup>
+
 </Project>

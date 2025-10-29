@@ -1,6 +1,6 @@
 using AutoMapper;
 using CleanCut.Application.DTOs;
-using CleanCut.WebApp.Models.Users;
+using CleanCut.WebApp.Models.Customers;
 using CleanCut.WebApp.Models.Products;
 
 namespace CleanCut.WebApp.Mappings;
@@ -12,12 +12,12 @@ public class ViewModelMappingProfile : Profile
 {
     public ViewModelMappingProfile()
     {
-        // User mappings
-        CreateMap<UserDto, UserEditViewModel>();
-        CreateMap<UserEditViewModel, UserDto>();
+        // Customer mappings
+        CreateMap<CustomerInfo, CustomerEditViewModel>();
+        CreateMap<CustomerEditViewModel, CustomerInfo>();
         
         // Product mappings
-        CreateMap<ProductDto, ProductEditViewModel>();
-        CreateMap<ProductEditViewModel, ProductDto>();
+        CreateMap<ProductInfo, ProductEditViewModel>();
+        CreateMap<ProductEditViewModel, ProductInfo>();
     }
 }

@@ -11,18 +11,18 @@ namespace CleanCut.WebApp.Controllers;
 public class ProductsController : Controller
 {
     private readonly IProductApiService _productApiService;
-    private readonly IUserApiService _userApiService;
+    private readonly ICustomerApiService _customerApiService;
     private readonly IMapper _mapper;
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(
         IProductApiService productApiService, 
-        IUserApiService userApiService,
+        ICustomerApiService customerApiService,
         IMapper mapper, 
         ILogger<ProductsController> logger)
     {
         _productApiService = productApiService ?? throw new ArgumentNullException(nameof(productApiService));
-        _userApiService = userApiService ?? throw new ArgumentNullException(nameof(userApiService));
+        _customerApiService = customerApiService ?? throw new ArgumentNullException(nameof(customerApiService));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -31,31 +31,31 @@ public class ProductsController : Controller
     /// Display list of products
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Index(Guid? userId, string? searchTerm, bool? isAvailableFilter)
+    public async Task<IActionResult> Index(Guid? customerId, string? searchTerm, bool? isAvailableFilter)
     {
         try
         {
-            _logger.LogInformation("Loading products list with user filter: {UserId}, search: {SearchTerm}, available: {IsAvailableFilter}", 
-                userId, searchTerm, isAvailableFilter);
+            _logger.LogInformation("Loading products list with customer filter: {CustomerId}, search: {SearchTerm}, available: {IsAvailableFilter}", 
+                customerId, searchTerm, isAvailableFilter);
 
-            // Load users for filter dropdown
-            var users = await _userApiService.GetAllUsersAsync();
+            // Load customers for filter dropdown
+            var customers = await _customerApiService.GetAllCustomersAsync();
             
             // Load products
-            List<Application.DTOs.ProductDto> products;
-            if (userId.HasValue)
+            List<Application.DTOs.ProductInfo> products;
+            if (customerId.HasValue)
             {
-                products = (await _productApiService.GetProductsByUserAsync(userId.Value)).ToList();
+                products = (await _productApiService.GetProductsByCustomerAsync(customerId.Value)).ToList();
             }
-            else if (users.Any())
+            else if (customers.Any())
             {
-                // If no specific user selected, get products for the first user
-                var firstUser = users.First();
-                products = (await _productApiService.GetProductsByUserAsync(firstUser.Id)).ToList();
+                // If no specific customer selected, get products for the first customer
+                var firstCustomer = customers.First();
+                products = (await _productApiService.GetProductsByCustomerAsync(firstCustomer.Id)).ToList();
             }
             else
             {
-                products = new List<Application.DTOs.ProductDto>();
+                products = new List<Application.DTOs.ProductInfo>();
             }
             
             // Apply filters
@@ -75,8 +75,8 @@ public class ProductsController : Controller
             var viewModel = new ProductListViewModel
             {
                 Products = products,
-                Users = users.ToList(),
-                SelectedUserId = userId,
+                Customers = customers.ToList(),
+                SelectedCustomerId = customerId,
                 SearchTerm = searchTerm,
                 IsAvailableFilter = isAvailableFilter,
                 TotalProducts = products.Count
@@ -122,7 +122,7 @@ public class ProductsController : Controller
                 return NotFound("Product not found");
             }
 
-            var owner = product.User ?? await _userApiService.GetUserByIdAsync(product.UserId);
+            var owner = product.Customer ?? await _customerApiService.GetCustomerByIdAsync(product.CustomerId);
 
             var viewModel = new ProductDetailsViewModel
             {
@@ -147,11 +147,11 @@ public class ProductsController : Controller
     {
         try
         {
-            var users = await _userApiService.GetAllUsersAsync();
+            var customers = await _customerApiService.GetAllCustomersAsync();
             
             var viewModel = new ProductEditViewModel
             {
-                AvailableUsers = users.ToList()
+                AvailableCustomers = customers.ToList()
             };
             
             return View(viewModel);
@@ -172,17 +172,17 @@ public class ProductsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            // Reload users for dropdown
-            var users = await _userApiService.GetAllUsersAsync();
-            model.AvailableUsers = users.ToList();
+            // Reload customers for dropdown
+            var customers = await _customerApiService.GetAllCustomersAsync();
+            model.AvailableCustomers = customers.ToList();
             return View(model);
         }
 
         try
         {
-            _logger.LogInformation("Creating new product {ProductName} for user {UserId}", model.Name, model.UserId);
+            _logger.LogInformation("Creating new product {ProductName} for customer {CustomerId}", model.Name, model.CustomerId);
 
-            var createdProduct = await _productApiService.CreateProductAsync(model.Name, model.Description, model.Price, model.UserId);
+            var createdProduct = await _productApiService.CreateProductAsync(model.Name, model.Description, model.Price, model.CustomerId);
 
             _logger.LogInformation("Product created successfully with ID {ProductId}", createdProduct.Id);
             
@@ -195,9 +195,9 @@ public class ProductsController : Controller
             
             ModelState.AddModelError(string.Empty, "An error occurred while creating the product. Please try again.");
             
-            // Reload users for dropdown
-            var users = await _userApiService.GetAllUsersAsync();
-            model.AvailableUsers = users.ToList();
+            // Reload customers for dropdown
+            var customers = await _customerApiService.GetAllCustomersAsync();
+            model.AvailableCustomers = customers.ToList();
             return View(model);
         }
     }
@@ -219,10 +219,10 @@ public class ProductsController : Controller
                 return NotFound("Product not found");
             }
 
-            var users = await _userApiService.GetAllUsersAsync();
+            var customers = await _customerApiService.GetAllCustomersAsync();
             
             var viewModel = _mapper.Map<ProductEditViewModel>(product);
-            viewModel.AvailableUsers = users.ToList();
+            viewModel.AvailableCustomers = customers.ToList();
             
             return View(viewModel);
         }
@@ -247,9 +247,9 @@ public class ProductsController : Controller
 
         if (!ModelState.IsValid)
         {
-            // Reload users for dropdown
-            var users = await _userApiService.GetAllUsersAsync();
-            model.AvailableUsers = users.ToList();
+            // Reload customers for dropdown
+            var customers = await _customerApiService.GetAllCustomersAsync();
+            model.AvailableCustomers = customers.ToList();
             return View(model);
         }
 
@@ -270,9 +270,9 @@ public class ProductsController : Controller
             
             ModelState.AddModelError(string.Empty, "An error occurred while updating the product. Please try again.");
             
-            // Reload users for dropdown
-            var users = await _userApiService.GetAllUsersAsync();
-            model.AvailableUsers = users.ToList();
+            // Reload customers for dropdown
+            var customers = await _customerApiService.GetAllCustomersAsync();
+            model.AvailableCustomers = customers.ToList();
             return View(model);
         }
     }

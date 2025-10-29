@@ -11,10 +11,10 @@ public class Product : BaseEntity
     public string Description { get; private set; } = string.Empty;
     public decimal Price { get; private set; }
     public bool IsAvailable { get; private set; } = true;
-    public Guid UserId { get; private set; }
+    public Guid CustomerId { get; private set; }
 
     // Navigation property
-    public User? User { get; private set; }
+    public Customer? Customer { get; private set; }
 
     // Private constructor for EF Core
     private Product() { }
@@ -36,7 +36,7 @@ public class Product : BaseEntity
         Name = name.Trim();
         Description = description.Trim();
         Price = price;
-        UserId = userId;
+        CustomerId = userId;
     }
 
     public void UpdateDetails(string name, string description)
@@ -73,8 +73,8 @@ public class Product : BaseEntity
         SetUpdatedAt();
     }
 
-    public bool BelongsToUser(Guid userId)
+    public bool BelongsToCustomer(Guid userId)
     {
-        return UserId == userId;
+        return CustomerId == userId;
     }
 }

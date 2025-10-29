@@ -69,8 +69,8 @@ public class DomainEventDispatcherBehavior<TRequest, TResponse> : IPipelineBehav
     {
         return domainEvent switch
         {
-            UserCreatedEvent userCreated => new UserCreatedNotification(userCreated),
-            UserUpdatedEvent userUpdated => new UserUpdatedNotification(userUpdated),
+            CustomerCreatedEvent created => new CustomerCreatedNotification(created),
+            CustomerUpdatedEvent updated => new CustomerUpdatedNotification(updated),
             _ => null
         };
     }

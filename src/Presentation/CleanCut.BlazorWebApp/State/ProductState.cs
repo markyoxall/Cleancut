@@ -74,14 +74,14 @@ public class ProductsState : IProductsState
         }
     }
 
-    public async Task LoadByUserAsync(Guid userId, bool force = false, CancellationToken cancellationToken = default)
+    public async Task LoadByCustomerAsync(Guid userId, bool force = false, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
             throw new OperationCanceledException(cancellationToken);
 
-        if (!force && DateTime.UtcNow - _lastLoaded < _cacheExpiry && _products.Any(p => p.UserId == userId))
+        if (!force && DateTime.UtcNow - _lastLoaded < _cacheExpiry && _products.Any(p => p.CustomerId == userId))
         {
-            _logger.LogDebug("ProductsState: using cached products for user {UserId}", userId);
+            _logger.LogDebug("ProductsState: using cached products for user {CustomerId}", userId);
             return;
         }
 
@@ -90,8 +90,8 @@ public class ProductsState : IProductsState
 
         try
         {
-            _logger.LogInformation("ProductsState: loading products for user {UserId}", userId);
-            var list = await _productApi.GetProductsByUserAsync(userId, cancellationToken);
+            _logger.LogInformation("ProductsState: loading products for user {CustomerId}", userId);
+            var list = await _productApi.GetProductsByCustomerAsync(userId, cancellationToken);
             _products = list.ToList();
             _lastLoaded = DateTime.UtcNow;
 
@@ -103,12 +103,12 @@ public class ProductsState : IProductsState
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("ProductsState: LoadByUserAsync canceled for {UserId}", userId);
+            _logger.LogWarning("ProductsState: LoadByCustomerAsync canceled for {CustomerId}", userId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ProductsState: error loading products for user {UserId}", userId);
+            _logger.LogError(ex, "ProductsState: error loading products for user {CustomerId}", userId);
             MessageChanged?.Invoke("Failed to load products for user", false);
             // swallow to keep UI stable; callers can react to MessageChanged
         }

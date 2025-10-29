@@ -9,7 +9,7 @@ namespace CleanCut.BlazorWebApp.Components.Base;
 /// </summary>
 public abstract class StatefulComponent : ComponentBase, IDisposable
 {
-    [Inject] protected IUsersState UsersState { get; set; } = default!;
+    [Inject] protected ICustomersState CustomersState { get; set; } = default!;
     [Inject] protected IProductsState ProductsState { get; set; } = default!;
     [Inject] protected ICountriesState CountriesState { get; set; } = default!;
     [Inject] protected IUiStateService UiState { get; set; } = default!;
@@ -22,7 +22,7 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
 
     // State management helpers
     // Prefer UiState.IsLoading if available (it aggregates feature-state loading)
-    protected bool IsLoading => (UiState != null) ? (UiState.IsLoading || LocalIsLoading) : (UsersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading || LocalIsLoading);
+    protected bool IsLoading => (UiState != null) ? (UiState.IsLoading || LocalIsLoading) : (CustomersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading || LocalIsLoading);
     // Prefer global UI message, fall back to local
     protected string? Message => UiState?.CurrentMessage ?? LocalMessage;
     protected bool IsSuccess => UiState?.IsSuccess ?? LocalIsSuccess;
@@ -32,16 +32,16 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
         base.OnInitialized();
 
         // Feature state subscriptions (data/caching)
-        UsersState.StateChanged += OnGlobalStateChanged;
+        CustomersState.StateChanged += OnGlobalStateChanged;
         ProductsState.StateChanged += OnGlobalStateChanged;
         CountriesState.StateChanged += OnGlobalStateChanged;
 
-        UsersState.UsersChanged += OnUsersChanged;
+        CustomersState.CustomersChanged += OnCustomersChanged;
         ProductsState.ProductsChanged += OnProductsChanged;
         CountriesState.CountriesChanged += OnCountriesChanged;
 
         // Feature-level messages -> local message handling
-        UsersState.MessageChanged += OnFeatureMessage;
+        CustomersState.MessageChanged += OnFeatureMessage;
         ProductsState.MessageChanged += OnFeatureMessage;
         CountriesState.MessageChanged += OnFeatureMessage;
 
@@ -77,13 +77,13 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
     }
 
     // Virtual hooks for derived components
-    protected virtual Task OnUsersChangedAsync(List<UserInfo> users) => Task.CompletedTask;
+    protected virtual Task OnCustomersChangedAsync(List<CustomerInfo> users) => Task.CompletedTask;
     protected virtual Task OnProductsChangedAsync(List<ProductInfo> products) => Task.CompletedTask;
     protected virtual Task OnCountriesChangedAsync(List<CountryInfo> countries) => Task.CompletedTask;
 
-    private void OnUsersChanged(List<UserInfo> users)
+    private void OnCustomersChanged(List<CustomerInfo> users)
     {
-        _ = OnUsersChangedAsync(users);
+        _ = OnCustomersChangedAsync(users);
         InvokeAsync(StateHasChanged);
     }
 
@@ -180,15 +180,15 @@ public abstract class StatefulComponent : ComponentBase, IDisposable
     public virtual void Dispose()
     {
         // Unsubscribe from feature state events
-        UsersState.StateChanged -= OnGlobalStateChanged;
+        CustomersState.StateChanged -= OnGlobalStateChanged;
         ProductsState.StateChanged -= OnGlobalStateChanged;
         CountriesState.StateChanged -= OnGlobalStateChanged;
 
-        UsersState.UsersChanged -= OnUsersChanged;
+        CustomersState.CustomersChanged -= OnCustomersChanged;
         ProductsState.ProductsChanged -= OnProductsChanged;
         CountriesState.CountriesChanged -= OnCountriesChanged;
 
-        UsersState.MessageChanged -= OnFeatureMessage;
+        CustomersState.MessageChanged -= OnFeatureMessage;
         ProductsState.MessageChanged -= OnFeatureMessage;
         CountriesState.MessageChanged -= OnFeatureMessage;
 

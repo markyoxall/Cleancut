@@ -22,15 +22,15 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
 
     public async Task<ProductInfo> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
-        // Verify user exists
-        var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
-        if (user == null)
+        // Verify customer exists
+        var customer = await _unitOfWork.Customers.GetByIdAsync(request.CustomerId, cancellationToken);
+        if (customer == null)
         {
-            throw new InvalidOperationException($"User with ID '{request.UserId}' not found");
+            throw new InvalidOperationException($"Customer with ID '{request.CustomerId}' not found");
         }
 
         // Create new product
-        var product = new Product(request.Name, request.Description, request.Price, request.UserId);
+        var product = new Product(request.Name, request.Description, request.Price, request.CustomerId);
 
         // Add to repository
         await _unitOfWork.Products.AddAsync(product, cancellationToken);

@@ -837,9 +837,9 @@ public class ViewModelMappingProfile : Profile
     public ViewModelMappingProfile()
     {
         // Customer mappings
-        CreateMap<CustomerDto, CustomerViewModel>();
-        CreateMap<CustomerDto, CustomerDetailsViewModel>();
-        CreateMap<CustomerDto, EditCustomerViewModel>();
+        CreateMap<CustomerInfo, CustomerViewModel>();
+        CreateMap<CustomerInfo, CustomerDetailsViewModel>();
+        CreateMap<CustomerInfo, EditCustomerViewModel>();
         CreateMap<CreateCustomerViewModel, CreateCustomerCommand>();
         CreateMap<EditCustomerViewModel, UpdateCustomerCommand>();
 

@@ -6,19 +6,19 @@ namespace CleanCut.Infrastructure.Caching.Constants;
 public static class CacheKeys
 {
     // Cache key prefixes
-    public const string UserPrefix = "user";
+    public const string CustomerPrefix = "customer";
     public const string ProductPrefix = "product";
     
     // Cache key builders
-    public static string UserById(Guid id) => $"{UserPrefix}:id:{id}";
-    public static string UserByEmail(string email) => $"{UserPrefix}:email:{email.ToLowerInvariant()}";
-    public static string AllUsers() => $"{UserPrefix}:all";
+    public static string CustomerById(Guid id) => $"{CustomerPrefix}:id:{id}";
+    public static string CustomerByEmail(string email) => $"{CustomerPrefix}:email:{email.ToLowerInvariant()}";
+    public static string AllCustomers() => $"{CustomerPrefix}:all";
     
     public static string ProductById(Guid id) => $"{ProductPrefix}:id:{id}";
-    public static string ProductsByUser(Guid userId) => $"{ProductPrefix}:user:{userId}";
+    public static string ProductsByCustomer(Guid customerId) => $"{ProductPrefix}:customer:{customerId}";
     public static string AllProducts() => $"{ProductPrefix}:all";
     
     // Cache patterns for bulk removal
-    public static string UserPattern() => $"{UserPrefix}:*";
+    public static string CustomerPattern() => $"{CustomerPrefix}:*";
     public static string ProductPattern() => $"{ProductPrefix}:*";
 }

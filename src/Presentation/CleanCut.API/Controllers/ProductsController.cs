@@ -4,7 +4,7 @@ using CleanCut.Application.Commands.Products.CreateProduct;
 using CleanCut.Application.Commands.Products.UpdateProduct;
 using CleanCut.Application.Commands.Products.DeleteProduct;
 using CleanCut.Application.Queries.Products.GetProduct;
-using CleanCut.Application.Queries.Products.GetProductsByUser;
+using CleanCut.Application.Queries.Products.GetProductsByCustomer;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
 using CleanCut.Application.Queries.Products.GetAllProducts;
@@ -65,7 +65,7 @@ public class ProductsController : ApiControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<ProductInfo>>> GetProductsByUser(Guid userId, CancellationToken cancellationToken)
     {
-        var query = new GetProductsByUserQuery(userId);
+        var query = new GetProductsByCustomerQuery(userId);
         var products = await  Send(query, cancellationToken);
         return Ok(products);
     }

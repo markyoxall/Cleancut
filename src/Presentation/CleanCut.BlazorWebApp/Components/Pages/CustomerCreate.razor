@@ -1,0 +1,145 @@
+@page "/customers/create"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Services
+@using System.ComponentModel.DataAnnotations
+@inject ILogger<CustomerCreate> Logger
+@inject ICustomerApiService CustomerApi
+@inject NavigationManager Navigation
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Create Customer - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user-plus text-primary"></i> Create New Customer
+        </h2>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="fas fa-arrow-left"></i> Back to Customers
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            <i class="fas @(IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Customer Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="Model" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="Model.FirstName" placeholder="Enter first name" />
+                                    <ValidationMessage For="@(() => Model.FirstName)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="Model.LastName" placeholder="Enter last name" />
+                                    <ValidationMessage For="@(() => Model.LastName)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <InputText id="email" class="form-control" @bind-Value="Model.Email" placeholder="Enter email address" type="email" />
+                            <ValidationMessage For="@(() => Model.Email)" class="text-danger" />
+                            <div class="form-text">This email address will be used for customer identification and must be unique.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                                @if (IsSubmitting)
+                                {
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                }
+                                <i class="fas fa-user-plus"></i> Create Customer
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CustomerCreateModel Model { get; set; } = new();
+    private bool IsSubmitting { get; set; }
+    private string? Message { get; set; }
+    private bool IsSuccess { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        IsSubmitting = true;
+        try
+        {
+            Logger.LogInformation("Creating new customer: {Name}", Model.FirstName + " " + Model.LastName);
+
+            var request = new CreateCustomerRequest
+            {
+                FirstName = Model.FirstName,
+                LastName = Model.LastName,
+                Email = Model.Email
+            };
+
+            var created = await CustomerApi.CreateCustomerAsync(request);
+
+            Logger.LogInformation("Customer created successfully: {CustomerId}", created.Id);
+
+            Navigation.NavigateTo($"/customers/management?refresh={DateTime.UtcNow.Ticks}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating customer {Name}", Model.FirstName + " " + Model.LastName);
+            Message = "An error occurred while creating the customer. Please try again.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Logger.LogInformation("Customer creation cancelled");
+        Navigation.NavigateTo("/customers/management");
+    }
+
+    public class CustomerCreateModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50, ErrorMessage = "Last name cannot exceed 50 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters")]
+        public string Email { get; set; } = string.Empty;
+    }
+}

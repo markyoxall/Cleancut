@@ -1,8 +1,8 @@
 using CleanCut.Application.Commands.Products.CreateProduct;
 using CleanCut.Application.Commands.Products.UpdateProduct;
 using CleanCut.Application.Queries.Products.GetProduct;
-using CleanCut.Application.Queries.Products.GetProductsByUser;
-using CleanCut.Application.Queries.Users.GetAllUsers;
+using CleanCut.Application.Queries.Products.GetProductsByCustomer;
+using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Application.DTOs;
 using CleanCut.WinApp.MVP;
 using CleanCut.WinApp.Views.Products;
@@ -18,8 +18,8 @@ public class ProductListPresenter : BasePresenter<IProductListView>
 {
     private readonly IMediator _mediator;
     private readonly ILogger<ProductListPresenter> _logger;
-    private List<ProductDto> _cachedProducts = new(); // ?? Cache products locally
-    private List<UserDto> _cachedUsers = new(); // ?? Cache users locally
+    private List<ProductInfo> _cachedProducts = new(); // ?? Cache products locally
+    private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
 
     public ProductListPresenter(
         IProductListView view, 
@@ -40,7 +40,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         View.EditProductRequested += OnEditProductRequested;
         View.DeleteProductRequested += OnDeleteProductRequested;
         View.RefreshRequested += OnRefreshRequested;
-        View.ViewProductsByUserRequested += OnViewProductsByUserRequested;
+        View.ViewProductsByCustomerRequested += OnViewProductsByCustomerRequested;
         
         // Load initial data
         _ = LoadInitialDataAsync();
@@ -53,7 +53,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         View.EditProductRequested -= OnEditProductRequested;
         View.DeleteProductRequested -= OnDeleteProductRequested;
         View.RefreshRequested -= OnRefreshRequested;
-        View.ViewProductsByUserRequested -= OnViewProductsByUserRequested;
+        View.ViewProductsByCustomerRequested -= OnViewProductsByCustomerRequested;
         
         base.Cleanup();
     }
@@ -65,15 +65,15 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             _logger.LogInformation("Loading initial product data");
             
             // Load users for filtering
-            var users = await _mediator.Send(new GetAllUsersQuery());
-            _cachedUsers = users.ToList(); // ?? Cache users
-            View.SetAvailableUsers(users);
+            var users = await _mediator.Send(new GetAllCustomersQuery());
+            _cachedCustomers = users.ToList(); // ?? Cache users
+            View.SetAvailableCustomers(users);
             
             // Load products for the first user (or all products if we have a GetAllProducts query)
             if (users.Any())
             {
-                var firstUser = users.First();
-                await LoadProductsByUserAsync(firstUser.Id);
+                var firstCustomer = users.First();
+                await LoadProductsByCustomerAsync(firstCustomer.Id);
             }
             
             _logger.LogInformation("Initial product data loaded");
@@ -92,7 +92,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             editForm.ClearForm();
             
             // ?? Use cached users instead of loading from database
-            editForm.SetAvailableUsers(_cachedUsers);
+            editForm.SetAvailableCustomers(_cachedCustomers);
             
             var presenter = new ProductEditPresenter(editForm, _mediator, _logger);
             presenter.Initialize();
@@ -154,7 +154,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             editForm.Text = "Edit Product";
             
             // ?? Use cached users instead of loading from database
-            editForm.SetAvailableUsers(_cachedUsers);
+            editForm.SetAvailableCustomers(_cachedCustomers);
             
             var presenter = new ProductEditPresenter(editForm, _mediator, _logger);
             presenter.SetEditMode(product);
@@ -239,25 +239,25 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         await LoadInitialDataAsync();
     }
 
-    private async void OnViewProductsByUserRequested(object? sender, Guid userId)
+    private async void OnViewProductsByCustomerRequested(object? sender, Guid userId)
     {
-        await LoadProductsByUserAsync(userId);
+        await LoadProductsByCustomerAsync(userId);
     }
 
-    private async Task LoadProductsByUserAsync(Guid userId)
+    private async Task LoadProductsByCustomerAsync(Guid userId)
     {
         await ExecuteAsync(async () =>
         {
-            _logger.LogInformation("Loading products for user {UserId}", userId);
+            _logger.LogInformation("Loading products for user {CustomerId}", userId);
             
-            var products = await _mediator.Send(new GetProductsByUserQuery(userId));
+            var products = await _mediator.Send(new GetProductsByCustomerQuery(userId));
             
             // ?? Cache products locally for fast access
             _cachedProducts = products.ToList();
             
             View.DisplayProducts(products);
             
-            _logger.LogInformation("Loaded {ProductCount} products for user {UserId}", products.Count(), userId);
+            _logger.LogInformation("Loaded {ProductCount} products for user {CustomerId}", products.Count(), userId);
         });
     }
 }

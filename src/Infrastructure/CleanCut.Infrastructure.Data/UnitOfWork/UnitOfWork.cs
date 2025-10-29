@@ -17,7 +17,7 @@ public class UnitOfWork : IUnitOfWork
     private bool _disposed;
 
     // Lazy initialization of repositories
-    private IUserRepository? _users;
+    private ICustomerRepository? _customers;
     private IProductRepository? _products;
     private ICountryRepository? _countries;
 
@@ -26,7 +26,8 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
     }
 
-    public IUserRepository Users => _users ??= new UserRepository(_context);
+    public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
+
     public IProductRepository Products => _products ??= new ProductRepository(_context);
 
     public ICountryRepository Countries => _countries ??= new CountryRepository(_context);

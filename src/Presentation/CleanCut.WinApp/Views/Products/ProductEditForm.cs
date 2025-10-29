@@ -37,7 +37,7 @@ public partial class ProductEditForm : BaseForm, IProductEditView
 
     public ProductEditModel GetProductData()
     {
-        var selectedUser = _userComboBox.SelectedItem as UserDto;
+        var selectedUser = _userComboBox.SelectedItem as CustomerInfo;
         
         return new ProductEditModel
         {
@@ -65,7 +65,7 @@ public partial class ProductEditForm : BaseForm, IProductEditView
         // Select the user in the combo box
         for (int i = 0; i < _userComboBox.Items.Count; i++)
         {
-            if (_userComboBox.Items[i] is UserDto user && user.Id == product.UserId)
+            if (_userComboBox.Items[i] is CustomerInfo user && user.Id == product.UserId)
             {
                 _userComboBox.SelectedIndex = i;
                 break;
@@ -86,7 +86,7 @@ public partial class ProductEditForm : BaseForm, IProductEditView
         if (_priceNumericUpDown.Value < 0)
             errors.Add("Price", "Price cannot be negative");
 
-        if (_userComboBox.SelectedItem == null || !(_userComboBox.SelectedItem is UserDto))
+        if (_userComboBox.SelectedItem == null || !(_userComboBox.SelectedItem is CustomerInfo))
             errors.Add("User", "Please select a user");
 
         return errors;
@@ -107,7 +107,7 @@ public partial class ProductEditForm : BaseForm, IProductEditView
         _userComboBox.SelectedIndex = -1;
     }
 
-    public void SetAvailableUsers(IEnumerable<UserDto> users)
+    public void SetAvailableUsers(IEnumerable<CustomerInfo> users)
     {
         if (InvokeRequired)
         {

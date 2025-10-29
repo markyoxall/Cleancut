@@ -24,7 +24,7 @@ builder.Services.AddAutoMapper(typeof(ViewModelMappingProfile));
 
 // ?? Configure HttpClient for API calls (instead of direct database access)
 // ?? Configure HttpClient with longer timeout to handle Redis delays
-builder.Services.AddHttpClient<IUserApiService, UserApiService>(client =>
+builder.Services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30); // Increase timeout from default 100 seconds
 });
@@ -35,7 +35,7 @@ builder.Services.AddHttpClient<IProductApiService, ProductApiService>(client =>
 });
 
 // ?? Register API Services
-builder.Services.AddScoped<IUserApiService, UserApiService>();
+builder.Services.AddScoped<ICustomerApiService, CustomerApiService>();
 builder.Services.AddScoped<IProductApiService, ProductApiService>();
 
 // Add health checks

@@ -1,0 +1,167 @@
+@model CleanCut.WebApp.Models.Customers.CustomerDetailsViewModel
+
+@{
+    ViewData["Title"] = "Customer Details";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user text-primary"></i> Customer Details
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="avatar-large mb-3">
+                            @Model.Customer.FirstName.Substring(0, 1).ToUpper()@Model.Customer.LastName.Substring(0, 1).ToUpper()
+                        </div>
+                        <div>
+                            @if (Model.Customer.IsActive)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-times"></i> Inactive
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="150">Full Name:</th>
+                                <td><strong>@Model.Customer.FirstName @Model.Customer.LastName</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>
+                                    <a href="mailto:@Model.Customer.Email" class="text-decoration-none">
+                                        @Model.Customer.Email
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Customer ID:</th>
+                                <td><code>@Model.Customer.Id</code></td>
+                            </tr>
+                            <tr>
+                                <th>Created:</th>
+                                <td>@Model.Customer.CreatedAt.ToString("MMMM d, yyyy 'at' h:mm tt")</td>
+                            </tr>
+                            @if (Model.Customer.UpdatedAt.HasValue)
+                            {
+                                <tr>
+                                    <th>Last Updated:</th>
+                                    <td>@Model.Customer.UpdatedAt.Value.ToString("MMMM d, yyyy 'at' h:mm tt")</td>
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" asp-controller="Customers" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <div>
+                        <a asp-action="Edit" asp-route-id="@Model.Customer.Id" asp-controller="Customers" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Customer
+                        </a>
+                        <a asp-action="Delete" asp-route-id="@Model.Customer.Id" asp-controller="Customers" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-box text-success"></i> Customer Products (@Model.TotalProducts)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.CustomerProducts.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var product in Model.CustomerProducts.Take(5))
+                        {
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">@product.Name</h6>
+                                        <p class="mb-1 text-muted small">@product.Description</p>
+                                        <small class="text-success">@product.Price.ToString("C")</small>
+                                    </div>
+                                    <div>
+                                        @if (product.IsAvailable)
+                                        {
+                                            <span class="badge bg-success">Available</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Unavailable</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    @if (Model.TotalProducts > 5)
+                    {
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Showing 5 of @Model.TotalProducts products</small>
+                        </div>
+                    }
+                    
+                    <div class="text-center mt-3">
+                        <a asp-controller="Products" asp-action="Index" asp-route-userId="@Model.Customer.Id" 
+                           class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-eye"></i> View All Products
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted">
+                        <i class="fas fa-box fa-2x mb-2"></i>
+                        <p>No products yet</p>
+                        <a asp-controller="Products" asp-action="Create" 
+                           class="btn btn-sm btn-success">
+                            <i class="fas fa-plus"></i> Add Product
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            margin: 0 auto;
+        }
+    </style>
+}

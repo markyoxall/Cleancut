@@ -5,11 +5,11 @@ namespace CleanCut.WebApp.Services;
 
 public interface IProductApiService
 {
-    Task<List<ProductDto>> GetAllProductsAsync();
-    Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId);
-    Task<ProductDto?> GetProductByIdAsync(Guid id);
-    Task<ProductDto> CreateProductAsync(string name, string description, decimal price, Guid userId);
-    Task<ProductDto> UpdateProductAsync(Guid id, string name, string description, decimal price);
+    Task<List<ProductInfo>> GetAllProductsAsync();
+    Task<IEnumerable<ProductInfo>> GetProductsByCustomerAsync(Guid customerId);
+    Task<ProductInfo?> GetProductByIdAsync(Guid id);
+    Task<ProductInfo> CreateProductAsync(string name, string description, decimal price, Guid customerId);
+    Task<ProductInfo> UpdateProductAsync(Guid id, string name, string description, decimal price);
     Task<bool> DeleteProductAsync(Guid id);
 }
 
@@ -26,19 +26,19 @@ public class ProductApiService : IProductApiService
         _baseUrl = configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:7142";
     }
 
-    public async Task<List<ProductDto>> GetAllProductsAsync()
+    public async Task<List<ProductInfo>> GetAllProductsAsync()
     {
      
         try
         {
-            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products}", _baseUrl);
+            _logger.LogInformation("Calling API: GET {BaseUrl}/api/v1/products}", _baseUrl);
 
             var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products");
             response.EnsureSuccessStatusCode();
 
-            var products = await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new List<ProductDto>();
+            var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
 
-            _logger.LogInformation("? API returned {ProductCount} products", products.Count);
+            _logger.LogInformation("API returned {ProductCount} products", products.Count);
             return products;
         }
         catch (Exception ex)
@@ -52,32 +52,32 @@ public class ProductApiService : IProductApiService
     }
 
 
-    public async Task<IEnumerable<ProductDto>> GetProductsByUserAsync(Guid userId)
+    public async Task<IEnumerable<ProductInfo>> GetProductsByCustomerAsync(Guid customerId)
     {
         try
         {
-            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products/user/{UserId}", _baseUrl, userId);
+            _logger.LogInformation("Calling API: GET {BaseUrl}/api/v1/products/customer/{CustomerId}", _baseUrl, customerId);
             
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/user/{userId}");
+            var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/customer/{customerId}");
             response.EnsureSuccessStatusCode();
             
-            var products = await response.Content.ReadFromJsonAsync<List<ProductDto>>() ?? new List<ProductDto>();
+            var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
             
-            _logger.LogInformation("? API returned {ProductCount} products for user {UserId}", products.Count, userId);
+            _logger.LogInformation("API returned {ProductCount} products for customer {CustomerId}", products.Count, customerId);
             return products;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "? Error calling Products API for user {UserId}", userId);
+            _logger.LogError(ex, "? Error calling Products API for customer {CustomerId}", customerId);
             throw;
         }
     }
 
-    public async Task<ProductDto?> GetProductByIdAsync(Guid id)
+    public async Task<ProductInfo?> GetProductByIdAsync(Guid id)
     {
         try
         {
-            _logger.LogInformation("?? Calling API: GET {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
+            _logger.LogInformation("Calling API: GET {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
             
             var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/products/{id}");
             
@@ -87,7 +87,7 @@ public class ProductApiService : IProductApiService
             }
             
             response.EnsureSuccessStatusCode();
-            var product = await response.Content.ReadFromJsonAsync<ProductDto>();
+            var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
             
             _logger.LogInformation("? API returned product: {ProductName}", product?.Name);
             return product;
@@ -99,24 +99,24 @@ public class ProductApiService : IProductApiService
         }
     }
 
-    public async Task<ProductDto> CreateProductAsync(string name, string description, decimal price, Guid userId)
+    public async Task<ProductInfo> CreateProductAsync(string name, string description, decimal price, Guid customerId)
     {
         try
         {
-            _logger.LogInformation("?? Calling API: POST {BaseUrl}/api/v1/products", _baseUrl);
+            _logger.LogInformation("Calling API: POST {BaseUrl}/api/v1/products", _baseUrl);
             
             var createRequest = new
             {
                 Name = name,
                 Description = description,
                 Price = price,
-                UserId = userId
+                CustomerId = customerId
             };
             
             var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/products", createRequest);
             response.EnsureSuccessStatusCode();
             
-            var product = await response.Content.ReadFromJsonAsync<ProductDto>();
+            var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
             
             _logger.LogInformation("? API created product: {ProductName} with ID {ProductId}", 
                 product?.Name, product?.Id);
@@ -130,11 +130,11 @@ public class ProductApiService : IProductApiService
         }
     }
 
-    public async Task<ProductDto> UpdateProductAsync(Guid id, string name, string description, decimal price)
+    public async Task<ProductInfo> UpdateProductAsync(Guid id, string name, string description, decimal price)
     {
         try
         {
-            _logger.LogInformation("?? Calling API: PUT {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
+            _logger.LogInformation("Calling API: PUT {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
             
             var updateRequest = new
             {
@@ -146,7 +146,7 @@ public class ProductApiService : IProductApiService
             var response = await _httpClient.PutAsJsonAsync($"{_baseUrl}/api/v1/products/{id}", updateRequest);
             response.EnsureSuccessStatusCode();
             
-            var product = await response.Content.ReadFromJsonAsync<ProductDto>();
+            var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
             
             _logger.LogInformation("? API updated product: {ProductName}", product?.Name);
             
@@ -163,7 +163,7 @@ public class ProductApiService : IProductApiService
     {
         try
         {
-            _logger.LogInformation("?? Calling API: DELETE {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
+            _logger.LogInformation("Calling API: DELETE {BaseUrl}/api/v1/products/{ProductId}", _baseUrl, id);
             
             var response = await _httpClient.DeleteAsync($"{_baseUrl}/api/v1/products/{id}");
             

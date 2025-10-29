@@ -8,9 +8,9 @@ namespace CleanCut.WebApp.Models.Products;
 /// </summary>
 public class ProductListViewModel
 {
-    public List<ProductDto> Products { get; set; } = new();
-    public List<UserDto> Users { get; set; } = new();
-    public Guid? SelectedUserId { get; set; }
+    public List<ProductInfo> Products { get; set; } = new();
+    public List<CustomerInfo> Customers { get; set; } = new();
+    public Guid? SelectedCustomerId { get; set; }
     public string? SearchTerm { get; set; }
     public bool? IsAvailableFilter { get; set; }
     public int TotalProducts { get; set; }
@@ -46,9 +46,9 @@ public class ProductEditViewModel
     
     [Required(ErrorMessage = "Please select a user")]
     [Display(Name = "Owner")]
-    public Guid UserId { get; set; }
+    public Guid CustomerId { get; set; }
     
-    public List<UserDto> AvailableUsers { get; set; } = new();
+    public List<CustomerInfo> AvailableCustomers { get; set; } = new();
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     
@@ -60,6 +60,6 @@ public class ProductEditViewModel
 /// </summary>
 public class ProductDetailsViewModel
 {
-    public ProductDto Product { get; set; } = new();
-    public UserDto? Owner { get; set; }
+    public ProductInfo Product { get; set; } = new();
+    public CustomerInfo? Owner { get; set; }
 }

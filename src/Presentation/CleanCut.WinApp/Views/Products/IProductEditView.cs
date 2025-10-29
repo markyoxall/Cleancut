@@ -40,7 +40,7 @@ public interface IProductEditView : MVP.IView
     /// <summary>
     /// Set the available users for selection
     /// </summary>
-    void SetAvailableUsers(IEnumerable<UserDto> users);
+    void SetAvailableUsers(IEnumerable<CustomerInfo> users);
 }
 
 /// <summary>

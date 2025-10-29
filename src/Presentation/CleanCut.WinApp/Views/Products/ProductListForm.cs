@@ -44,14 +44,14 @@ public partial class ProductListForm : BaseForm, IProductListView
         };
         _refreshButton.Click += (s, e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
         _filterButton.Click += (s, e) => {
-            if (_userFilterComboBox.SelectedItem is UserDto selectedUser)
+            if (_userFilterComboBox.SelectedItem is CustomerInfo selectedUser)
                 ViewProductsByUserRequested?.Invoke(this, selectedUser.Id);
         };
         
         _listView.SelectedIndexChanged += (s, e) => UpdateButtonStates();
     }
 
-    public void DisplayProducts(IEnumerable<ProductDto> products)
+    public void DisplayProducts(IEnumerable<ProductInfo> products)
     {
         if (InvokeRequired)
         {
@@ -70,7 +70,7 @@ public partial class ProductListForm : BaseForm, IProductListView
             item.SubItems.Add(product.Description);
             item.SubItems.Add(product.Price.ToString("C"));
             item.SubItems.Add(product.IsAvailable ? "Available" : "Unavailable");
-            item.SubItems.Add(product.User?.GetFullName() ?? "Unknown User");
+            item.SubItems.Add(product.Customer?.GetFullName() ?? "Unknown User");
             item.SubItems.Add(product.CreatedAt.ToString("yyyy-MM-dd"));
             
             _listView.Items.Add(item);
@@ -100,7 +100,7 @@ public partial class ProductListForm : BaseForm, IProductListView
         return tag as Guid?;
     }
 
-    public void SetAvailableUsers(IEnumerable<UserDto> users)
+    public void SetAvailableUsers(IEnumerable<CustomerInfo> users)
     {
         if (InvokeRequired)
         {
@@ -125,7 +125,7 @@ public partial class ProductListForm : BaseForm, IProductListView
         _editButton.Enabled = hasSelection;
         _deleteButton.Enabled = hasSelection;
         
-        var hasUserSelected = _userFilterComboBox.SelectedItem is UserDto;
+        var hasUserSelected = _userFilterComboBox.SelectedItem is CustomerInfo;
         _filterButton.Enabled = hasUserSelected;
     }
 

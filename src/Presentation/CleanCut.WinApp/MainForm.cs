@@ -1,6 +1,6 @@
 using CleanCut.WinApp.MVP;
 using CleanCut.WinApp.Presenters;
-using CleanCut.WinApp.Views.Users;
+using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Products;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -14,7 +14,7 @@ public partial class MainForm : BaseForm
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainForm> _logger;
-    private UserListPresenter? _userListPresenter;
+    private CustomerListPresenter? _userListPresenter;
     private ProductListPresenter? _productListPresenter;
 
     public MainForm(IServiceProvider serviceProvider, ILogger<MainForm> logger)
@@ -29,10 +29,10 @@ public partial class MainForm : BaseForm
     private void InitializeNavigation()
     {
         // Load the user management by default
-        LoadUserManagement();
+        LoadCustomerManagement();
     }
 
-    private void LoadUserManagement()
+    private void LoadCustomerManagement()
     {
         try
         {
@@ -42,8 +42,8 @@ public partial class MainForm : BaseForm
             CleanupPresenters();
             
             // Create new view and presenter
-            var userListView = _serviceProvider.GetRequiredService<IUserListView>();
-            _userListPresenter = _serviceProvider.GetRequiredService<UserListPresenter>();
+            var userListView = _serviceProvider.GetRequiredService<ICustomerListView>();
+            _userListPresenter = _serviceProvider.GetRequiredService<CustomerListPresenter>();
             
             // Initialize presenter
             _userListPresenter.Initialize();
@@ -108,9 +108,9 @@ public partial class MainForm : BaseForm
         _productListPresenter = null;
     }
 
-    private void OnUserManagementClicked(object? sender, EventArgs e)
+    private void OnCustomerManagementClicked(object? sender, EventArgs e)
     {
-        LoadUserManagement();
+        LoadCustomerManagement();
     }
 
     private void OnProductManagementClicked(object? sender, EventArgs e)
@@ -179,8 +179,8 @@ public partial class MainForm : BaseForm
         // 
         userManagementMenuItem.Name = "userManagementMenuItem";
         userManagementMenuItem.Size = new Size(170, 22);
-        userManagementMenuItem.Text = "User Management";
-        userManagementMenuItem.Click += OnUserManagementClicked;
+        userManagementMenuItem.Text = "Customer Management";
+        userManagementMenuItem.Click += OnCustomerManagementClicked;
         
         // 
         // productManagementMenuItem

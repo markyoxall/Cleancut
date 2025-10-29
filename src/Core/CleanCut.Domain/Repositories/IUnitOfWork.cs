@@ -7,7 +7,9 @@ namespace CleanCut.Domain.Repositories;
 /// </summary>
 public interface IUnitOfWork : IDisposable
 {
-    IUserRepository Users { get; }
+    // Primary (renamed) repository property
+    ICustomerRepository Customers { get; }
+
     IProductRepository Products { get; }
 
     ICountryRepository Countries { get; }

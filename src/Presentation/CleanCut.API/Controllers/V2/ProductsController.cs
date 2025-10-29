@@ -3,7 +3,7 @@ using MediatR;
 using CleanCut.Application.Commands.Products.CreateProduct;
 using CleanCut.Application.Commands.Products.UpdateProduct;
 using CleanCut.Application.Queries.Products.GetProduct;
-using CleanCut.Application.Queries.Products.GetProductsByUser;
+using CleanCut.Application.Queries.Products.GetProductsByCustomer;
 using CleanCut.Application.DTOs;
 
 namespace CleanCut.API.Controllers.V2;
@@ -57,7 +57,7 @@ public class ProductsController : ControllerBase
         // For demonstration, get products for the first seeded user
         var seededUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         
-        var query = new GetProductsByUserQuery(seededUserId);
+        var query = new GetProductsByCustomerQuery(seededUserId);
         var allProducts = await _mediator.Send(query, cancellationToken);
         
         // Apply pagination
@@ -149,7 +149,7 @@ public class ProductsController : ControllerBase
             return BadRequest(problemDetails);
         }
 
-        var query = new GetProductsByUserQuery(userId);
+        var query = new GetProductsByCustomerQuery(userId);
         var allProducts = await _mediator.Send(query, cancellationToken);
         
         // Simple pagination for v2

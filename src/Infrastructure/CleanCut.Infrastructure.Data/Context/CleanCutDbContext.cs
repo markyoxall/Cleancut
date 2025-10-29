@@ -14,7 +14,7 @@ public class CleanCutDbContext : DbContext
     {
     }
 
-    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<Country> Countries { get; set; } = null!;
 
@@ -24,8 +24,8 @@ public class CleanCutDbContext : DbContext
 
         // Ignore all domain event types - they should not be persisted
         modelBuilder.Ignore<DomainEvent>();
-        modelBuilder.Ignore<UserCreatedEvent>();
-        modelBuilder.Ignore<UserUpdatedEvent>();
+        modelBuilder.Ignore<CustomerCreatedEvent>();
+        modelBuilder.Ignore<CustomerUpdatedEvent>();
         
         // Configure BaseEntity to ignore domain events collection for all entities
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

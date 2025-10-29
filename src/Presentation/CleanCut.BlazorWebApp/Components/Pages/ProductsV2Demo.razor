@@ -370,7 +370,7 @@
 
         try
         {
-            userProductsResponse = await ProductApi.GetProductsByUserV2Async(Guid.Parse(userIdToGet), userPage, userPageSize);
+            userProductsResponse = await ProductApi.GetProductsByCustomerV2Async(Guid.Parse(userIdToGet), userPage, userPageSize);
         }
         catch (Exception ex)
         {

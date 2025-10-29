@@ -15,7 +15,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
 {
     private readonly IMediator _mediator;
     private readonly ILogger _logger;
-    private ProductDto? _existingProduct;
+    private ProductInfo? _existingProduct;
     private bool _isEditMode;
 
     public ProductEditPresenter(IProductEditView view, IMediator mediator, ILogger logger) 
@@ -25,7 +25,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public void SetEditMode(ProductDto product)
+    public void SetEditMode(ProductInfo product)
     {
         _existingProduct = product;
         _isEditMode = true;
@@ -37,7 +37,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
             Description = product.Description,
             Price = product.Price,
             IsAvailable = product.IsAvailable,
-            UserId = product.UserId
+            UserId = product.CustomerId
         };
         
         View.SetProductData(editModel);

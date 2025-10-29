@@ -131,25 +131,25 @@
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-user me-2"></i>Owner Information
+                            <i class="fas fa-Customer me-2"></i>Owner Information
                         </h5>
                     </div>
                     <div class="card-body">
-                        @if (Product.User != null)
+                        @if (Product.Customer != null)
                         {
                             <div class="text-center mb-3">
                                 <div class="avatar-large mx-auto mb-3">
-                                    @Product.User.FirstName.Substring(0, 1).ToUpper()
+                                    @Product.Customer.FirstName.Substring(0, 1).ToUpper()
                                 </div>
-                                <h6 class="fw-bold">@Product.User.FirstName @Product.User.LastName</h6>
-                                <p class="text-muted">@Product.User.Email</p>
+                                <h6 class="fw-bold">@Product.Customer.FirstName @Product.Customer.LastName</h6>
+                                <p class="text-muted">@Product.Customer.Email</p>
                             </div>
                             
                             <div class="border-top pt-3">
                                 <div class="mb-2">
                                     <label class="form-label text-muted small">Status</label>
                                     <div>
-                                        @if (Product.User.IsActive)
+                                        @if (Product.Customer.IsActive)
                                         {
                                             <span class="badge bg-success">
                                                 <i class="fas fa-check me-1"></i>Active
@@ -164,11 +164,11 @@
                                     </div>
                                 </div>
                                 
-                                @if (Product.User.CreatedAt != default)
+                                @if (Product.Customer.CreatedAt != default)
                                 {
                                     <div class="mb-2">
                                         <label class="form-label text-muted small">Member Since</label>
-                                        <p class="small mb-0">@Product.User.CreatedAt.ToString("MMMM yyyy")</p>
+                                        <p class="small mb-0">@Product.Customer.CreatedAt.ToString("MMMM yyyy")</p>
                                     </div>
                                 }
                             </div>
@@ -176,7 +176,7 @@
                         else
                         {
                             <div class="text-center text-muted">
-                                <i class="fas fa-user-slash fa-2x mb-2"></i>
+                                <i class="fas fa-Customer-slash fa-2x mb-2"></i>
                                 <p>Owner information not available</p>
                             </div>
                         }
