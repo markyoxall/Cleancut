@@ -44,7 +44,7 @@ public class ProductEditViewModel
     [Display(Name = "Available")]
     public bool IsAvailable { get; set; } = true;
     
-    [Required(ErrorMessage = "Please select a user")]
+    [Required(ErrorMessage = "Please select a customer")]
     [Display(Name = "Owner")]
     public Guid CustomerId { get; set; }
     

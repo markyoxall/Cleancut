@@ -18,22 +18,20 @@ public class CustomerApiService : ICustomerApiService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<CustomerApiService> _logger;
-    private readonly string _baseUrl;
 
-    public CustomerApiService(HttpClient httpClient, ILogger<CustomerApiService> logger, IConfiguration configuration)
+    public CustomerApiService(HttpClient httpClient, ILogger<CustomerApiService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _baseUrl = configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:7142";
     }
 
     public async Task<IEnumerable<CustomerInfo>> GetAllCustomersAsync()
     {
         try
         {
-            _logger.LogInformation("Calling API: GET {BaseUrl}/api/customers", _baseUrl);
+            _logger.LogInformation("Calling API: GET /api/customers");
 
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/customers");
+            var response = await _httpClient.GetAsync("/api/customers");
             response.EnsureSuccessStatusCode();
 
             var customers = await response.Content.ReadFromJsonAsync<List<CustomerInfo>>() ?? new List<CustomerInfo>();
@@ -52,8 +50,8 @@ public class CustomerApiService : ICustomerApiService
     {
         try
         {
-            _logger.LogInformation("Calling API: GET {BaseUrl}/api/customers/{Id}", _baseUrl, id);
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/customers/{id}");
+            _logger.LogInformation("Calling API: GET /api/customers/{Id}", id);
+            var response = await _httpClient.GetAsync($"/api/customers/{id}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;
@@ -72,10 +70,10 @@ public class CustomerApiService : ICustomerApiService
     {
         try
         {
-            _logger.LogInformation("Calling API: POST {BaseUrl}/api/customers", _baseUrl);
+            _logger.LogInformation("Calling API: POST /api/customers");
 
             var createRequest = new { FirstName = firstName, LastName = lastName, Email = email };
-            var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/customers", createRequest);
+            var response = await _httpClient.PostAsJsonAsync("/api/customers", createRequest);
             response.EnsureSuccessStatusCode();
 
             var customer = await response.Content.ReadFromJsonAsync<CustomerInfo>();
@@ -92,9 +90,9 @@ public class CustomerApiService : ICustomerApiService
     {
         try
         {
-            _logger.LogInformation("Calling API: PUT {BaseUrl}/api/customers/{Id}", _baseUrl, id);
+            _logger.LogInformation("Calling API: PUT /api/customers/{Id}", id);
             var updateRequest = new { Id = id.ToString(), FirstName = firstName, LastName = lastName, Email = email };
-            var response = await _httpClient.PutAsJsonAsync($"{_baseUrl}/api/customers/{id}", updateRequest);
+            var response = await _httpClient.PutAsJsonAsync($"/api/customers/{id}", updateRequest);
             response.EnsureSuccessStatusCode();
 
             var customer = await response.Content.ReadFromJsonAsync<CustomerInfo>();
@@ -111,8 +109,8 @@ public class CustomerApiService : ICustomerApiService
     {
         try
         {
-            _logger.LogInformation("Calling API: DELETE {BaseUrl}/api/customers/{Id}", _baseUrl, id);
-            var response = await _httpClient.DeleteAsync($"{_baseUrl}/api/customers/{id}");
+            _logger.LogInformation("Calling API: DELETE /api/customers/{Id}", id);
+            var response = await _httpClient.DeleteAsync($"/api/customers/{id}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return false;

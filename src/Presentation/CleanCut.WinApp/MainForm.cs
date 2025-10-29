@@ -28,7 +28,7 @@ public partial class MainForm : BaseForm
 
     private void InitializeNavigation()
     {
-        // Load the user management by default
+        // Load the customer management by default
         LoadCustomerManagement();
     }
 
@@ -36,29 +36,29 @@ public partial class MainForm : BaseForm
     {
         try
         {
-            _logger.LogInformation("Loading user management");
+            _logger.LogInformation("Loading customer management");
             
             // Clean up existing presenters
-            CleanupPresenters();
-            
+     CleanupPresenters();
+
             // Create new view and presenter
             var userListView = _serviceProvider.GetRequiredService<ICustomerListView>();
             _userListPresenter = _serviceProvider.GetRequiredService<CustomerListPresenter>();
-            
-            // Initialize presenter
+      
+      // Initialize presenter
             _userListPresenter.Initialize();
-            
-            // Show the form
+          
+     // Show the form
             if (userListView is Form form)
             {
-                form.MdiParent = this;
-                form.Show();
+       form.MdiParent = this;
+             form.Show();
             }
-        }
+ }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading user management");
-            ShowError($"Failed to load user management: {ex.Message}");
+         _logger.LogError(ex, "Error loading customer management");
+     ShowError($"Failed to load customer management: {ex.Message}");
         }
     }
 
@@ -66,51 +66,52 @@ public partial class MainForm : BaseForm
     {
         try
         {
-            _logger.LogInformation("Loading product management");
-            
-            // Clean up existing presenters
+ _logger.LogInformation("Loading product management");
+   
+ // Clean up existing presenters
             CleanupPresenters();
-            
+        
             // Create new view and presenter
             var productListView = _serviceProvider.GetRequiredService<IProductListView>();
-            _productListPresenter = _serviceProvider.GetRequiredService<ProductListPresenter>();
+        _productListPresenter = _serviceProvider.GetRequiredService<ProductListPresenter>();
             
             // Initialize presenter
-            _productListPresenter.Initialize();
-            
-            // Show the form
-            if (productListView is Form form)
-            {
-                form.MdiParent = this;
+       _productListPresenter.Initialize();
+
+      // Show the form
+   if (productListView is Form form)
+         {
+      form.MdiParent = this;
                 form.Show();
             }
-        }
+ }
         catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading product management");
-            ShowError($"Failed to load product management: {ex.Message}");
+  {
+   _logger.LogError(ex, "Error loading product management");
+ ShowError($"Failed to load product management: {ex.Message}");
         }
     }
 
     private void CleanupPresenters()
     {
-        // Close any existing MDI child windows
-        foreach (Form childForm in MdiChildren)
+        // ? Close and dispose any existing MDI child windows
+   foreach (Form childForm in MdiChildren)
         {
-            childForm.Close();
-        }
+    childForm.Close();
+      childForm.Dispose(); // Explicitly dispose
+    }
 
-        // Clean up presenters
+        // ? Clean up presenters
         _userListPresenter?.Cleanup();
         _userListPresenter = null;
         
         _productListPresenter?.Cleanup();
-        _productListPresenter = null;
+ _productListPresenter = null;
     }
 
     private void OnCustomerManagementClicked(object? sender, EventArgs e)
     {
-        LoadCustomerManagement();
+ LoadCustomerManagement();
     }
 
     private void OnProductManagementClicked(object? sender, EventArgs e)
@@ -119,14 +120,14 @@ public partial class MainForm : BaseForm
     }
 
     private void OnExitClicked(object? sender, EventArgs e)
-    {
+  {
         Close();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         CleanupPresenters();
-        base.OnFormClosed(e);
+   base.OnFormClosed(e);
     }
 
     private void InitializeComponent()
@@ -139,7 +140,7 @@ public partial class MainForm : BaseForm
         var exitMenuItem = new ToolStripMenuItem();
         
         SuspendLayout();
-        
+ 
         // 
         // menuStrip
         // 
@@ -149,15 +150,15 @@ public partial class MainForm : BaseForm
         menuStrip.Size = new Size(1024, 24);
         menuStrip.TabIndex = 0;
         menuStrip.Text = "menuStrip";
-        
-        // 
+      
+      // 
         // fileMenu
         // 
         fileMenu.DropDownItems.Add(exitMenuItem);
         fileMenu.Name = "fileMenu";
         fileMenu.Size = new Size(37, 20);
         fileMenu.Text = "File";
-        
+    
         // 
         // exitMenuItem
         // 
@@ -165,41 +166,41 @@ public partial class MainForm : BaseForm
         exitMenuItem.Size = new Size(93, 22);
         exitMenuItem.Text = "Exit";
         exitMenuItem.Click += OnExitClicked;
-        
-        // 
+    
+     // 
         // managementMenu
         // 
         managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem });
-        managementMenu.Name = "managementMenu";
-        managementMenu.Size = new Size(90, 20);
-        managementMenu.Text = "Management";
-        
+      managementMenu.Name = "managementMenu";
+  managementMenu.Size = new Size(90, 20);
+   managementMenu.Text = "Management";
+  
         // 
         // userManagementMenuItem
-        // 
+   // 
         userManagementMenuItem.Name = "userManagementMenuItem";
-        userManagementMenuItem.Size = new Size(170, 22);
-        userManagementMenuItem.Text = "Customer Management";
-        userManagementMenuItem.Click += OnCustomerManagementClicked;
+   userManagementMenuItem.Size = new Size(170, 22);
+ userManagementMenuItem.Text = "Customer Management";
+      userManagementMenuItem.Click += OnCustomerManagementClicked;
         
-        // 
+      // 
         // productManagementMenuItem
         // 
-        productManagementMenuItem.Name = "productManagementMenuItem";
-        productManagementMenuItem.Size = new Size(170, 22);
+    productManagementMenuItem.Name = "productManagementMenuItem";
+   productManagementMenuItem.Size = new Size(170, 22);
         productManagementMenuItem.Text = "Product Management";
-        productManagementMenuItem.Click += OnProductManagementClicked;
-        
+     productManagementMenuItem.Click += OnProductManagementClicked;
+  
+  // 
+    // MainForm
         // 
-        // MainForm
-        // 
-        ClientSize = new Size(1024, 768);
-        Controls.Add(menuStrip);
-        IsMdiContainer = true;
-        MainMenuStrip = menuStrip;
-        Text = "CleanCut Desktop Application";
+     ClientSize = new Size(1024, 768);
+    Controls.Add(menuStrip);
+  IsMdiContainer = true;
+  MainMenuStrip = menuStrip;
+   Text = "CleanCut Desktop Application";
         WindowState = FormWindowState.Maximized;
-        
+     
         ResumeLayout(false);
         PerformLayout();
     }

@@ -62,22 +62,22 @@ public class ProductListPresenter : BasePresenter<IProductListView>
     {
         await ExecuteAsync(async () =>
         {
-            _logger.LogInformation("Loading initial product data");
-            
-            // Load users for filtering
+          _logger.LogInformation("Loading initial product data");
+          
+   // Load users for filtering
             var users = await _mediator.Send(new GetAllCustomersQuery());
-            _cachedCustomers = users.ToList(); // ?? Cache users
-            View.SetAvailableCustomers(users);
-            
-            // Load products for the first user (or all products if we have a GetAllProducts query)
-            if (users.Any())
-            {
-                var firstCustomer = users.First();
-                await LoadProductsByCustomerAsync(firstCustomer.Id);
-            }
-            
-            _logger.LogInformation("Initial product data loaded");
-        });
+    _cachedCustomers = users.ToList(); // ?? Cache users
+    View.SetAvailableCustomers(users);
+    
+      // Load products for the first user (or all products if we have a GetAllProducts query)
+          if (users.Any())
+ {
+  var firstCustomer = users.First();
+   await LoadProductsByCustomerAsync(firstCustomer.Id);
+     }
+      
+   _logger.LogInformation("Initial product data loaded");
+ });
     }
 
     private async void OnAddProductRequested(object? sender, EventArgs e)
@@ -93,34 +93,34 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             
             // ?? Use cached users instead of loading from database
             editForm.SetAvailableCustomers(_cachedCustomers);
-            
+     
             var presenter = new ProductEditPresenter(editForm, _mediator, _logger);
             presenter.Initialize();
-            
+    
             // ?? Show dialog immediately
             var result = editForm.ShowDialog();
             if (result == DialogResult.OK)
             {
-                // ?? Refresh in background
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await LoadInitialDataAsync();
-                        
-                        if (View is Control control)
-                        {
-                            control.Invoke(() => View.ShowSuccess("Product created successfully."));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error refreshing products after add");
-                    }
-                });
-            }
-            
-            presenter.Cleanup();
+               // ?? Refresh in background
+             _ = Task.Run(async () =>
+     {
+      try
+    {
+      await LoadInitialDataAsync();
+         
+    if (View is Control control)
+       {
+   control.Invoke(() => View.ShowSuccess("Product created successfully."));
+         }
+   }
+    catch (Exception ex)
+  {
+      _logger.LogError(ex, "Error refreshing products after add");
+         }
+    });
+     }
+   
+presenter.Cleanup();
         }
         catch (Exception ex)
         {
@@ -132,64 +132,58 @@ public class ProductListPresenter : BasePresenter<IProductListView>
     private async void OnEditProductRequested(object? sender, Guid productId)
     {
         try
+    {
+     _logger.LogInformation("Edit product requested for product {ProductId}", productId);
+   
+      // ?? OPTIMIZATION: Get product from cache instead of database
+var product = _cachedProducts.FirstOrDefault(p => p.Id == productId);
+     if (product == null)
         {
-            _logger.LogInformation("Edit product requested for product {ProductId}", productId);
-            
-            // ?? OPTIMIZATION: Get product from cache instead of database
-            var product = _cachedProducts.FirstOrDefault(p => p.Id == productId);
-            if (product == null)
-            {
-                _logger.LogWarning("Product {ProductId} not found in cache, fetching from database", productId);
-                product = await _mediator.Send(new GetProductQuery(productId));
-                
-                if (product == null)
-                {
-                    View.ShowError("Product not found.");
-                    return;
-                }
-            }
-            
+View.ShowError("Product not found.");
+     return;
+     }
+      
             // ?? Create form and presenter on UI thread (fast)
-            var editForm = new ProductEditForm();
-            editForm.Text = "Edit Product";
-            
-            // ?? Use cached users instead of loading from database
-            editForm.SetAvailableCustomers(_cachedCustomers);
-            
-            var presenter = new ProductEditPresenter(editForm, _mediator, _logger);
-            presenter.SetEditMode(product);
-            presenter.Initialize();
-            
-            // ?? Show dialog immediately
-            var result = editForm.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                // ?? Refresh in background
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await LoadInitialDataAsync();
-                        
-                        if (View is Control control)
-                        {
-                            control.Invoke(() => View.ShowSuccess("Product updated successfully."));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error refreshing products after edit");
-                    }
-                });
-            }
-            
+  var editForm = new ProductEditForm();
+    editForm.Text = "Edit Product";
+      
+          // ?? Use cached users instead of loading from database
+       editForm.SetAvailableCustomers(_cachedCustomers);
+     
+  var presenter = new ProductEditPresenter(editForm, _mediator, _logger);
+   presenter.SetEditMode(product);
+     presenter.Initialize();
+ 
+    // ?? Show dialog immediately
+       var result = editForm.ShowDialog();
+        if (result == DialogResult.OK)
+      {
+        // ?? Refresh in background
+     _ = Task.Run(async () =>
+     {
+     try
+ {
+     await LoadInitialDataAsync();
+  
+            if (View is Control control)
+ {
+    control.Invoke(() => View.ShowSuccess("Product updated successfully."));
+  }
+    }
+     catch (Exception ex)
+     {
+   _logger.LogError(ex, "Error refreshing products after edit");
+      }
+      });
+  }
+        
             presenter.Cleanup();
-        }
+      }
         catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in edit product operation");
-            View.ShowError($"Failed to open product edit dialog: {ex.Message}");
-        }
+    {
+        _logger.LogError(ex, "Error in edit product operation");
+     View.ShowError($"Failed to open product edit dialog: {ex.Message}");
+  }
     }
 
     private async void OnDeleteProductRequested(object? sender, Guid productId)
@@ -202,7 +196,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             var product = _cachedProducts.FirstOrDefault(p => p.Id == productId);
             if (product == null)
             {
-                View.ShowError("Product not found.");
+                HandleError(new InvalidOperationException("Product not found."));
                 return;
             }
             

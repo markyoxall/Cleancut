@@ -92,6 +92,23 @@ ClientName = "Temp Blazor App",
          
    // Optional: Allow offline access if needed for long-running operations
  AllowOfflineAccess = false // Not needed for client credentials
-  }
+  },
+
+      // ✅ NEW: CleanCut MVC WebApp Client for client credentials flow
+        new Client
+        {
+   ClientId = "CleanCutWebApp",
+            ClientName = "CleanCut MVC WebApp",
+    ClientSecrets = { new Secret("WebAppSecret2024!".Sha256()) },
+
+            // ✅ Use client credentials for API access (machine-to-machine)
+            AllowedGrantTypes = GrantTypes.ClientCredentials,
+
+  // ✅ Only need API scopes for client credentials flow
+        AllowedScopes = { "CleanCutAPI" },
+
+      // Optional: Allow offline access if needed for long-running operations
+            AllowOfflineAccess = false // Not needed for client credentials
+        }
         };
 }

@@ -31,18 +31,18 @@
     <div class="card-body">
         <form method="get" asp-action="Index">
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label for="userId" class="form-label">Filter by Owner</label>
-                    <select class="form-select" id="userId" name="userId">
-                        <option value="">All Customers</option>
-                        @foreach (var user in Model.Customers)
-                        {
-                            <option value="@user.Id" selected="@(Model.SelectedCustomerId == user.Id)">
-                                @user.FirstName @user.LastName
-                            </option>
-                        }
-                    </select>
-                </div>
+            <div class="col-md-4">
+          <label for="customerId" class="form-label">Filter by Owner</label>
+  <select class="form-select" id="customerId" name="customerId">
+<option value="">All Customers</option>
+        @foreach (var customer in Model.Customers)
+     {
+    <option value="@customer.Id" selected="@(Model.SelectedCustomerId == customer.Id)">
+             @customer.FirstName @customer.LastName
+        </option>
+                    }
+          </select>
+       </div>
                 <div class="col-md-4">
                     <label for="searchTerm" class="form-label">Search Products</label>
                     <input type="text" class="form-control" id="searchTerm" name="searchTerm" 

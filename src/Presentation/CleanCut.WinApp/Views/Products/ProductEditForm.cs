@@ -123,6 +123,14 @@ public partial class ProductEditForm : BaseForm, IProductEditView
         }
     }
 
+    /// <summary>
+    /// Set available customers for selection (alias for SetAvailableUsers to match updated terminology)
+    /// </summary>
+    public void SetAvailableCustomers(IEnumerable<CustomerInfo> customers)
+    {
+        SetAvailableUsers(customers);
+    }
+
     private void InitializeComponent()
     {
         _nameLabel = new Label();

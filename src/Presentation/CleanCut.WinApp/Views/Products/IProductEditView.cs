@@ -41,6 +41,11 @@ public interface IProductEditView : MVP.IView
     /// Set the available users for selection
     /// </summary>
     void SetAvailableUsers(IEnumerable<CustomerInfo> users);
+    
+    /// <summary>
+    /// Set the available customers for selection (alias for SetAvailableUsers to match updated terminology)
+    /// </summary>
+    void SetAvailableCustomers(IEnumerable<CustomerInfo> customers);
 }
 
 /// <summary>

@@ -10,7 +10,7 @@ public abstract class BasePresenter<TView> where TView : IView
 
     protected BasePresenter(TView view)
     {
-        View = view ?? throw new ArgumentNullException(nameof(view));
+      View = view ?? throw new ArgumentNullException(nameof(view));
     }
 
     /// <summary>
@@ -18,14 +18,14 @@ public abstract class BasePresenter<TView> where TView : IView
     /// </summary>
     public virtual void Initialize()
     {
-        // Override in derived classes for initialization logic
+ // Override in derived classes for initialization logic
     }
 
     /// <summary>
     /// Cleanup resources when the presenter is disposed
     /// </summary>
     public virtual void Cleanup()
-    {
+ {
         // Override in derived classes for cleanup logic
     }
 
@@ -35,52 +35,52 @@ public abstract class BasePresenter<TView> where TView : IView
     protected virtual void HandleError(Exception ex)
     {
         // Log the error (you can inject ILogger here)
-        Console.WriteLine($"Error: {ex.Message}");
+ Console.WriteLine($"Error: {ex.Message}");
         
-        // ?? Show error message on UI thread
+      // ?? Show error message on UI thread
         if (View is Control control && control.InvokeRequired)
         {
-            control.Invoke(() => View.ShowError($"An error occurred: {ex.Message}"));
+      control.Invoke(() => View.ShowError($"An error occurred: {ex.Message}"));
         }
         else
         {
-            View.ShowError($"An error occurred: {ex.Message}");
+        View.ShowError($"An error occurred: {ex.Message}");
         }
     }
 
     /// <summary>
     /// Execute an async operation with error handling and loading state
     /// </summary>
-    protected async Task ExecuteAsync(Func<Task> operation)
+  protected async Task ExecuteAsync(Func<Task> operation)
     {
         try
         {
             // ?? Set loading state on UI thread
-            if (View is Control control && control.InvokeRequired)
-            {
+if (View is Control control && control.InvokeRequired)
+  {
                 control.Invoke(() => View.SetLoading(true));
-            }
+   }
             else
             {
-                View.SetLoading(true);
-            }
+      View.SetLoading(true);
+     }
             
-            await operation();
+   await operation();
         }
         catch (Exception ex)
         {
-            HandleError(ex);
-        }
+    HandleError(ex);
+ }
         finally
         {
             // ?? Clear loading state on UI thread
-            if (View is Control control && control.InvokeRequired)
+      if (View is Control control && control.InvokeRequired)
             {
-                control.Invoke(() => View.SetLoading(false));
-            }
+   control.Invoke(() => View.SetLoading(false));
+    }
             else
             {
-                View.SetLoading(false);
+         View.SetLoading(false);
             }
         }
     }
@@ -93,33 +93,33 @@ public abstract class BasePresenter<TView> where TView : IView
         try
         {
             // ?? Set loading state on UI thread
-            if (View is Control control && control.InvokeRequired)
-            {
-                control.Invoke(() => View.SetLoading(true));
+     if (View is Control control && control.InvokeRequired)
+  {
+      control.Invoke(() => View.SetLoading(true));
             }
             else
             {
-                View.SetLoading(true);
+    View.SetLoading(true);
             }
             
-            return await operation();
-        }
-        catch (Exception ex)
+ return await operation();
+  }
+  catch (Exception ex)
         {
             HandleError(ex);
-            return default;
+       return default;
         }
-        finally
+   finally
         {
             // ?? Clear loading state on UI thread
-            if (View is Control control && control.InvokeRequired)
+     if (View is Control control && control.InvokeRequired)
             {
-                control.Invoke(() => View.SetLoading(false));
-            }
+       control.Invoke(() => View.SetLoading(false));
+         }
             else
-            {
-                View.SetLoading(false);
-            }
+      {
+        View.SetLoading(false);
+        }
         }
     }
 
@@ -130,11 +130,11 @@ public abstract class BasePresenter<TView> where TView : IView
     {
         try
         {
-            operation();
-        }
+  operation();
+  }
         catch (Exception ex)
-        {
-            HandleError(ex);
+    {
+       HandleError(ex);
         }
     }
 }

@@ -28,9 +28,9 @@ public interface IProductListView : MVP.IView
     event EventHandler? RefreshRequested;
     
     /// <summary>
-    /// Event raised when user wants to view products by user
+    /// Event raised when user wants to view products by customer
     /// </summary>
-    event EventHandler<Guid>? ViewProductsByUserRequested;
+    event EventHandler<Guid>? ViewProductsByCustomerRequested;
     
     /// <summary>
     /// Display the list of products
@@ -48,7 +48,7 @@ public interface IProductListView : MVP.IView
     Guid? GetSelectedProductId();
     
     /// <summary>
-    /// Set the available users for filtering
+    /// Set the available customers for filtering
     /// </summary>
-    void SetAvailableUsers(IEnumerable<CustomerInfo> users);
+    void SetAvailableCustomers(IEnumerable<CustomerInfo> customers);
 }

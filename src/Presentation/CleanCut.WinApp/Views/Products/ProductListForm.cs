@@ -12,7 +12,7 @@ public partial class ProductListForm : BaseForm, IProductListView
     public event EventHandler<Guid>? EditProductRequested;
     public event EventHandler<Guid>? DeleteProductRequested;
     public event EventHandler? RefreshRequested;
-    public event EventHandler<Guid>? ViewProductsByUserRequested;
+    public event EventHandler<Guid>? ViewProductsByCustomerRequested;
 
     private ListView _listView = null!;
     private ComboBox _userFilterComboBox = null!;
@@ -45,7 +45,7 @@ public partial class ProductListForm : BaseForm, IProductListView
         _refreshButton.Click += (s, e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
         _filterButton.Click += (s, e) => {
             if (_userFilterComboBox.SelectedItem is CustomerInfo selectedUser)
-                ViewProductsByUserRequested?.Invoke(this, selectedUser.Id);
+                ViewProductsByCustomerRequested?.Invoke(this, selectedUser.Id);
         };
         
         _listView.SelectedIndexChanged += (s, e) => UpdateButtonStates();
@@ -117,6 +117,14 @@ public partial class ProductListForm : BaseForm, IProductListView
         }
         
         _userFilterComboBox.SelectedIndex = 0;
+    }
+
+    /// <summary>
+    /// Set available customers for filtering (alias for SetAvailableUsers to match updated terminology)
+    /// </summary>
+    public void SetAvailableCustomers(IEnumerable<CustomerInfo> customers)
+    {
+        SetAvailableUsers(customers);
     }
 
     private void UpdateButtonStates()
