@@ -1,7 +1,5 @@
 ﻿@page "/"
 @using CleanCut.Application.DTOs
-@using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
 @implements IDisposable
 @inject ILogger<Home> Logger
 @inject NavigationManager Navigation
@@ -9,7 +7,6 @@
 @inject IProductsState ProductsState
 @inject ICountriesState CountriesState
 @inject IUiStateService UiState
-@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -24,29 +21,71 @@
                     <h1 class="display-6 fw-bold text-primary">
                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </h1>
-                    <AuthorizeView>
-                        <Authorized>
-                            <p class="text-muted">Welcome back, @GetUserName(context.User)!</p>
-                        </Authorized>
-                        <NotAuthorized>
-                            <p class="text-muted">Welcome to CleanCut Management System</p>
-                        </NotAuthorized>
-                    </AuthorizeView>
+                    <p class="text-muted">Welcome to CleanCut Management System</p>
                 </div>
                 <div class="text-end">
                     <small class="text-muted">Last updated: @DateTime.Now.ToString("MMM dd, yyyy HH:mm")</small>
-                    <AuthorizeView>
-                        <Authorized>
-                            <br><small class="text-success"><i class="fas fa-lock me-1"></i>Authenticated</small>
-                        </Authorized>
-                        <NotAuthorized>
-                            <br><small class="text-warning"><i class="fas fa-unlock me-1"></i>Not Authenticated</small>
-                        </NotAuthorized>
-                    </AuthorizeView>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Quick Actions for Demo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-rocket me-2"></i>Quick Tests
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-3">
+                            <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToProducts">
+                                <i class="fas fa-search fa-2x d-block mb-2"></i>
+                                <span class="fw-bold">Test Product Search</span>
+                                <small class="d-block text-light">(Simplified)</small>
+                            </button>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <button type="button" class="btn btn-success w-100 p-3" @onclick="OpenSwagger">
+                                <i class="fas fa-code fa-2x d-block mb-2"></i>
+                                <span class="fw-bold">API Documentation</span>
+                                <small class="d-block text-light">(Swagger UI)</small>
+                            </button>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <button type="button" class="btn btn-info w-100 p-3" @onclick="TestApiCall">
+                                <i class="fas fa-rocket fa-2x d-block mb-2"></i>
+                                <span class="fw-bold">Test API Call</span>
+                                <small class="d-block text-light">(With Token)</small>
+                            </button>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <button type="button" class="btn btn-warning w-100 p-3" @onclick="LoadDashboardDataAsync">
+                                <i class="fas fa-sync fa-2x d-block mb-2"></i>
+                                <span class="fw-bold">Load Dashboard</span>
+                                <small class="d-block text-light">(All Data)</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(testResult))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert @(testSuccess ? "alert-success" : "alert-danger")">
+                    <h5>Test Result:</h5>
+                    <p>@testResult</p>
+                </div>
+            </div>
+        </div>
+    }
 
     @if (IsLoading)
     {
@@ -66,64 +105,6 @@
                 <button type="button" class="btn-close" @onclick="UiState.ClearMessage"></button>
             </div>
         }
-
-        <!-- Authentication Status Card -->
-        <AuthorizeView>
-            <Authorized>
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm border-success">
-                            <div class="card-body bg-light-success">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="rounded-circle bg-success p-3">
-                                            <i class="fas fa-shield-alt fa-lg text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h5 class="mb-1 text-success">Authentication Status: Active</h5>
-                                        <p class="mb-1">You are successfully authenticated and can access all API features.</p>
-                                        <small class="text-muted">User: @GetUserEmail(context.User) • Logged in at @DateTime.Now.ToString("HH:mm")</small>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <span class="badge bg-success fs-6">
-                                            <i class="fas fa-check me-1"></i>Connected
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm border-warning">
-                            <div class="card-body bg-light-warning">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="rounded-circle bg-warning p-3">
-                                            <i class="fas fa-exclamation-triangle fa-lg text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h5 class="mb-1 text-warning">Authentication Required</h5>
-                                        <p class="mb-1">Please log in to access API features and manage your data.</p>
-                                        <small class="text-muted">You'll be redirected to IdentityServer for secure authentication.</small>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <a href="/Account/Login" class="btn btn-warning">
-                                            <i class="fas fa-sign-in-alt me-2"></i>Login
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </NotAuthorized>
-        </AuthorizeView>
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
@@ -211,168 +192,12 @@
                 </div>
             </div>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-rocket me-2"></i>Quick Actions
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateCustomer">
-                                    <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Add Customer</span>
-                                </button>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-success w-100 p-3" @onclick="NavigateToCreateProduct">
-                                    <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Add Product</span>
-                                </button>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageCustomers">
-                                    <i class="fas fa-users fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Manage Customers</span>
-                                </button>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <button type="button" class="btn btn-warning w-100 p-3" @onclick="NavigateToManageProducts">
-                                    <i class="fas fa-box fa-2x d-block mb-2"></i>
-                                    <span class="fw-bold">Manage Products</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="row">
-            <div class="col-lg-8 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-history me-2"></i>Recent Products
-                        </h5>
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                @onclick="NavigateToAllProducts">
-                            View All
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        @if (RecentProducts.Any())
-                        {
-                            @foreach (var product in RecentProducts.Take(5))
-                            {
-                                <div class="d-flex align-items-center py-2 border-bottom">
-                                    <div class="avatar-small me-3">
-                                        <i class="fas fa-box"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold">@product.Name</div>
-                                        <small class="text-muted">by @(product.Customer?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
-                                    </div>
-                                    <div class="text-success fw-bold">@product.Price.ToString("C")</div>
-                                </div>
-                            }
-                        }
-                        else
-                        {
-                            <div class="text-center py-3">
-                                <i class="fas fa-box fa-2x text-muted mb-2"></i>
-                                <p class="text-muted">No products yet</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-users me-2"></i>Active Customers
-                        </h5>
-                        <button type="button" class="btn btn-sm btn-outline-info"
-                                @onclick="NavigateToAllCustomers">
-                            View All
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        @if (ActiveCustomersList.Any())
-                        {
-                            @foreach (var customer in ActiveCustomersList.Take(5))
-                            {
-                                <div class="d-flex align-items-center py-2">
-                                    <div class="avatar-small-customer me-3">
-                                        @customer.FirstName.Substring(0, 1).ToUpper()
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold">@customer.FirstName @customer.LastName</div>
-                                        <small class="text-muted">@customer.Email</small>
-                                    </div>
-                                    <div class="text-success">
-                                        <i class="fas fa-check-circle"></i>
-                                    </div>
-                                </div>
-                            }
-                        }
-                        else
-                        {
-                            <div class="text-center py-3">
-                                <i class="fas fa-users fa-2x text-muted mb-2"></i>
-                                <p class="text-muted">No active customers</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
     }
 </div>
 
-<style>
-    .avatar-small {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #28a745;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-
-    .avatar-small-customer {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #0d6efd;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-
-    .bg-light-success {
-        background-color: rgba(40, 167, 69, 0.1) !important;
-    }
-
-    .bg-light-warning {
-        background-color: rgba(255, 193, 7, 0.1) !important;
-    }
-</style>
-
 @code {
+    private string testResult = "";
+    private bool testSuccess = false;
     private bool IsLoading => (UiState != null) ? UiState.IsLoading : (CustomersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
     private List<CustomerInfo> Customers => CustomersState?.Customers?.ToList() ?? new();
     private List<ProductInfo> Products => ProductsState?.Products?.ToList() ?? new();
@@ -383,9 +208,6 @@
     private int AvailableProducts => Products.Count(p => p.IsAvailable);
     private decimal TotalValue => Products.Sum(p => p.Price);
     private double AverageProductsPerCustomer => TotalCustomers > 0 ? (double)TotalProducts / TotalCustomers : 0;
-
-    private List<ProductInfo> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
-    private List<CustomerInfo> ActiveCustomersList => Customers.Where(c => c.IsActive).OrderByDescending(c => c.CreatedAt).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -402,6 +224,7 @@
         if (UiState != null)
             UiState.MessageChanged += OnUiMessage;
 
+        // Load dashboard data automatically
         await LoadDashboardDataAsync();
     }
 
@@ -421,23 +244,30 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void ClearPageMessage()
+    // Navigation methods
+    private void NavigateToProducts() => Navigation.NavigateTo("/products");
+    private void OpenSwagger() => Navigation.NavigateTo("https://localhost:7142/swagger", true);
+
+    private async Task TestApiCall()
     {
-        UiState?.ClearMessage();
-    }
+        try
+        {
+            testResult = "Testing API call...";
+            testSuccess = false;
+            StateHasChanged();
 
-    public void Dispose()
-    {
-        CustomersState.CustomersChanged -= OnCustomersChanged;
-        ProductsState.ProductsChanged -= OnProductsChanged;
-        CountriesState.CountriesChanged -= OnCountriesChanged;
+            // This would make an actual API call
+            await Task.Delay(1000);
 
-        CustomersState.MessageChanged -= OnFeatureMessage;
-        ProductsState.MessageChanged -= OnFeatureMessage;
-        CountriesState.MessageChanged -= OnFeatureMessage;
-
-        if (UiState != null)
-            UiState.MessageChanged -= OnUiMessage;
+            testResult = "API call successful! Your authentication is working.";
+            testSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            testResult = $"API call failed: {ex.Message}";
+            testSuccess = false;
+        }
+        StateHasChanged();
     }
 
     private async Task LoadDashboardDataAsync()
@@ -503,27 +333,17 @@
         }
     }
 
-    // Authentication helper methods
-    private string GetUserName(ClaimsPrincipal user)
+    public void Dispose()
     {
-        return user.FindFirst("name")?.Value
-            ?? user.FindFirst(ClaimTypes.Name)?.Value
-            ?? user.FindFirst("preferred_username")?.Value
-          ?? "User";
-}
+        CustomersState.CustomersChanged -= OnCustomersChanged;
+        ProductsState.ProductsChanged -= OnProductsChanged;
+        CountriesState.CountriesChanged -= OnCountriesChanged;
 
-    private string GetUserEmail(ClaimsPrincipal user)
-    {
-        return user.FindFirst(ClaimTypes.Email)?.Value
-            ?? user.FindFirst("email")?.Value
-    ?? "No email";
+        CustomersState.MessageChanged -= OnFeatureMessage;
+        ProductsState.MessageChanged -= OnFeatureMessage;
+        CountriesState.MessageChanged -= OnFeatureMessage;
+
+        if (UiState != null)
+            UiState.MessageChanged -= OnUiMessage;
     }
-
-    // Navigation methods
-    private void NavigateToCreateCustomer() => Navigation.NavigateTo("/customers/create");
-    private void NavigateToCreateProduct() => Navigation.NavigateTo("/products/create");
-    private void NavigateToManageCustomers() => Navigation.NavigateTo("/customers/management");
-    private void NavigateToManageProducts() => Navigation.NavigateTo("/products/management");
-    private void NavigateToAllProducts() => Navigation.NavigateTo("/products/management");
-    private void NavigateToAllCustomers() => Navigation.NavigateTo("/customers/management");
 }

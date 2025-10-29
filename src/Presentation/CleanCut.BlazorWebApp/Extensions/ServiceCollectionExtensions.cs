@@ -15,6 +15,10 @@ public static class ServiceCollectionExtensions
         var v1 = configuration.GetSection("ApiClients:Products:V1").Get<ProductApiOptions>() ?? new ProductApiOptions();
         var v2 = configuration.GetSection("ApiClients:Products:V2").Get<ProductApiOptions>() ?? new ProductApiOptions();
 
+        // Register the token service for client credentials authentication
+        services.AddHttpClient<ITokenService, TokenService>();
+        services.AddScoped<ITokenService, TokenService>();
+
         // Register the authenticated message handler
         services.AddScoped<AuthenticatedHttpMessageHandler>();
 
@@ -52,9 +56,6 @@ public static class ServiceCollectionExtensions
 
         // Adapter/service registration
         services.AddScoped<IProductApiService, ProductApiService>();
-
-        // Register IHttpContextAccessor for access token retrieval
-        services.AddHttpContextAccessor();
 
         return services;
     }

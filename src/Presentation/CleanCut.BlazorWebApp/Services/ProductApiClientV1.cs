@@ -1,5 +1,4 @@
 using CleanCut.Application.DTOs;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -10,160 +9,117 @@ namespace CleanCut.BlazorWebApp.Services;
 public class ProductApiClientV1 : IProductApiClientV1
 {
   private readonly HttpClient _http;
-    private readonly ILogger<ProductApiClientV1> _logger;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+ private readonly ILogger<ProductApiClientV1> _logger;
 
-    public ProductApiClientV1(HttpClient http, ILogger<ProductApiClientV1> logger, IHttpContextAccessor httpContextAccessor)
+    public ProductApiClientV1(HttpClient http, ILogger<ProductApiClientV1> logger)
     {
         _http = http;
-        _logger = logger;
-        _httpContextAccessor = httpContextAccessor;
+   _logger = logger;
     }
 
-    private async Task<bool> AttachAccessTokenAsync()
+    public async Task<List<ProductInfo>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-   var httpContext = _httpContextAccessor.HttpContext;
-   if (httpContext?.User?.Identity?.IsAuthenticated == true)
-            {
-          // In Blazor Server with SaveTokens=true, use GetTokenAsync
-    var accessToken = await httpContext.GetTokenAsync("access_token");
-   if (!string.IsNullOrEmpty(accessToken))
-            {
-         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-_logger.LogDebug("Bearer token attached to Product API request (length: {Length})", accessToken.Length);
-      return true;
-    }
-       else
-         {
-      _logger.LogWarning("User is authenticated but access token is null or empty in SaveTokens storage");
-        }
-       }
-    else
-        {
-  _logger.LogWarning("User is not authenticated for Product API calls");
-        }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving access token for Product API");
-        }
+   _logger.LogDebug("V1: GET /api/v1/products");
 
-        // Clear any existing authorization header if no token
-        _http.DefaultRequestHeaders.Authorization = null;
-        return false;
-    }
-
- public async Task<List<ProductInfo>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        var hasToken = await AttachAccessTokenAsync();
-      _logger.LogDebug("V1: GET /api/v1/products (Token: {HasToken})", hasToken);
-
-     try
-        {
-       var resp = await _http.GetAsync("api/v1/products", cancellationToken);
-            resp.EnsureSuccessStatusCode();
- return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
-        }
+  try
+  {
+ var resp = await _http.GetAsync("api/v1/products", cancellationToken);
+       resp.EnsureSuccessStatusCode();
+    return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
+     }
         catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
-     {
-            _logger.LogWarning("Unauthorized request - user may need to login");
-         throw new UnauthorizedAccessException("Please login to access the API", ex);
-      }
-    }
+  {
+     _logger.LogWarning("Unauthorized request - check token validity");
+     throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
+        }
+  }
 
     public async Task<ProductInfo?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-      var hasToken = await AttachAccessTokenAsync();
-        _logger.LogDebug("V1: GET /api/v1/products/{Id} (Token: {HasToken})", id, hasToken);
+        _logger.LogDebug("V1: GET /api/v1/products/{Id}", id);
 
         try
         {
-        var resp = await _http.GetAsync($"api/v1/products/{id}", cancellationToken);
-   if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-            resp.EnsureSuccessStatusCode();
+ var resp = await _http.GetAsync($"api/v1/products/{id}", cancellationToken);
+     if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+resp.EnsureSuccessStatusCode();
     return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken);
-        }
-        catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+      }
+      catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
         {
-     _logger.LogWarning("Unauthorized request - user may need to login");
-      throw new UnauthorizedAccessException("Please login to access the API", ex);
+  _logger.LogWarning("Unauthorized request - check token validity");
+    throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
         }
     }
 
     public async Task<List<ProductInfo>> GetByCustomerAsync(Guid customerId, CancellationToken cancellationToken = default)
     {
-        var hasToken = await AttachAccessTokenAsync();
-        _logger.LogDebug("V1: GET /api/v1/products/customer/{CustomerId} (Token: {HasToken})", customerId, hasToken);
+        _logger.LogDebug("V1: GET /api/v1/products/user/{CustomerId}", customerId);
 
-        try
-      {
-            var resp = await _http.GetAsync($"api/v1/products/customer/{customerId}", cancellationToken);
-            resp.EnsureSuccessStatusCode();
-     return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
-    }
-     catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
-        {
-     _logger.LogWarning("Unauthorized request - user may need to login");
-     throw new UnauthorizedAccessException("Please login to access the API", ex);
-   }
-    }
-
-  public async Task<ProductInfo> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
+try
  {
-        var hasToken = await AttachAccessTokenAsync();
-        _logger.LogDebug("V1: POST /api/v1/products (Token: {HasToken})", hasToken);
-
-    try
-    {
-            var resp = await _http.PostAsJsonAsync("api/v1/products", request, cancellationToken);
-            resp.EnsureSuccessStatusCode();
-            return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
-      ?? throw new InvalidOperationException("Failed to create product (v1)");
+ var resp = await _http.GetAsync($"api/v1/products/user/{customerId}", cancellationToken);
+     resp.EnsureSuccessStatusCode();
+     return await resp.Content.ReadFromJsonAsync<List<ProductInfo>>(cancellationToken: cancellationToken) ?? new();
         }
-        catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
-        {
-    _logger.LogWarning("Unauthorized request - user may need to login");
-            throw new UnauthorizedAccessException("Please login to access the API", ex);
-      }
+     catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+ {
+     _logger.LogWarning("Unauthorized request - check token validity");
+   throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
+}
+    }
+
+    public async Task<ProductInfo> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
+    {
+    _logger.LogDebug("V1: POST /api/v1/products");
+
+   try
+     {
+var resp = await _http.PostAsJsonAsync("api/v1/products", request, cancellationToken);
+   resp.EnsureSuccessStatusCode();
+      return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
+   ?? throw new InvalidOperationException("Failed to create product (v1)");
+     }
+    catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+ {
+     _logger.LogWarning("Unauthorized request - check token validity");
+     throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
+  }
     }
 
     public async Task<ProductInfo> UpdateAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default)
     {
-  var hasToken = await AttachAccessTokenAsync();
-        _logger.LogDebug("V1: PUT /api/v1/products/{Id} (Token: {HasToken})", id, hasToken);
+        _logger.LogDebug("V1: PUT /api/v1/products/{Id}", id);
 
-        try
-     {
-        var resp = await _http.PutAsJsonAsync($"api/v1/products/{id}", request, cancellationToken);
-     resp.EnsureSuccessStatusCode();
-      return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
-        ?? throw new InvalidOperationException("Failed to update product (v1)");
-        }
-        catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
- {
-         _logger.LogWarning("Unauthorized request - user may need to login");
-    throw new UnauthorizedAccessException("Please login to access the API", ex);
-        }
+     try
+       {
+       var resp = await _http.PutAsJsonAsync($"api/v1/products/{id}", request, cancellationToken);
+  resp.EnsureSuccessStatusCode();
+ return await resp.Content.ReadFromJsonAsync<ProductInfo>(cancellationToken: cancellationToken)
+   ?? throw new InvalidOperationException("Failed to update product (v1)");
   }
+  catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+      {
+  _logger.LogWarning("Unauthorized request - check token validity");
+     throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
+        }
+    }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-   var hasToken = await AttachAccessTokenAsync();
-        _logger.LogDebug("V1: DELETE /api/v1/products/{Id} (Token: {HasToken})", id, hasToken);
+  _logger.LogDebug("V1: DELETE /api/v1/products/{Id}", id);
 
-        try
+    try
      {
        var resp = await _http.DeleteAsync($"api/v1/products/{id}", cancellationToken);
-      if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return false;
-       resp.EnsureSuccessStatusCode();
-         return resp.IsSuccessStatusCode;
+   if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return false;
+  resp.EnsureSuccessStatusCode();
+   return resp.IsSuccessStatusCode;
         }
-        catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
-   {
-            _logger.LogWarning("Unauthorized request - user may need to login");
-         throw new UnauthorizedAccessException("Please login to access the API", ex);
+  catch (HttpRequestException ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+      {
+     _logger.LogWarning("Unauthorized request - check token validity");
+       throw new UnauthorizedAccessException("Token may be expired or invalid", ex);
         }
     }
 }

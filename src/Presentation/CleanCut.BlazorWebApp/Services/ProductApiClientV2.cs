@@ -1,7 +1,5 @@
 using CleanCut.Application.DTOs;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading;
 
@@ -11,27 +9,15 @@ public class ProductApiClientV2 : IProductApiClientV2
 {
     private readonly HttpClient _http;
     private readonly ILogger<ProductApiClientV2> _logger;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ProductApiClientV2(HttpClient http, ILogger<ProductApiClientV2> logger, IHttpContextAccessor httpContextAccessor)
+    public ProductApiClientV2(HttpClient http, ILogger<ProductApiClientV2> logger)
     {
         _http = http;
         _logger = logger;
-        _httpContextAccessor = httpContextAccessor;
-    }
-
-    private async Task AttachAccessTokenAsync()
-    {
-        var accessToken = await _httpContextAccessor.HttpContext.GetTokenAsync("access_token");
-        if (!string.IsNullOrEmpty(accessToken))
-        {
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        }
     }
 
     public async Task<V2ProductListResponse> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        await AttachAccessTokenAsync();
         _logger.LogDebug("V2: GET /api/v2/products?page={Page}&pageSize={PageSize}", page, pageSize);
         var resp = await _http.GetAsync($"api/v2/products?page={page}&pageSize={pageSize}", cancellationToken);
         resp.EnsureSuccessStatusCode();
@@ -41,7 +27,6 @@ public class ProductApiClientV2 : IProductApiClientV2
 
     public async Task<V2ProductResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await AttachAccessTokenAsync();
         _logger.LogDebug("V2: GET /api/v2/products/{Id}", id);
         var resp = await _http.GetAsync($"api/v2/products/{id}", cancellationToken);
         if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
@@ -51,7 +36,6 @@ public class ProductApiClientV2 : IProductApiClientV2
 
     public async Task<V2ProductListResponse> GetByCustomerAsync(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        await AttachAccessTokenAsync();
         _logger.LogDebug("V2: GET /api/v2/products/user/{UserId}?page={Page}&pageSize={PageSize}", userId, page, pageSize);
         var resp = await _http.GetAsync($"api/v2/products/user/{userId}?page={page}&pageSize={pageSize}", cancellationToken);
         resp.EnsureSuccessStatusCode();
@@ -61,7 +45,6 @@ public class ProductApiClientV2 : IProductApiClientV2
 
     public async Task<V2StatsResponse> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
-        await AttachAccessTokenAsync();
         _logger.LogDebug("V2: GET /api/v2/products/statistics");
         var resp = await _http.GetAsync("api/v2/products/statistics", cancellationToken);
         resp.EnsureSuccessStatusCode();
