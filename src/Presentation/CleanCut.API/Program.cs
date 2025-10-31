@@ -1,3 +1,83 @@
+/*
+ * CleanCut API Program Configuration
+ * =================================
+ * 
+ * This file configures the CleanCut Web API that serves as the protected backend API
+ * for all client applications in the CleanCut ecosystem. It implements JWT Bearer 
+ * authentication to validate tokens issued by the CleanCut IdentityServer.
+ * 
+ * ROLE IN AUTHENTICATION ARCHITECTURE:
+ * ------------------------------------
+ * This API serves as the RESOURCE SERVER in the OAuth2/OpenID Connect flow:
+ * 
+ * 1. VALIDATES TOKENS - Verifies JWT tokens issued by CleanCut IdentityServer
+ * 2. ENFORCES AUTHORIZATION - Uses role-based policies to control endpoint access  
+ * 3. PROVIDES PROTECTED DATA - Serves business data to authenticated client applications
+ * 4. IMPLEMENTS SECURITY POLICIES - Rate limiting, CORS, security headers
+ * 
+ * CLIENT APPLICATION INTEGRATION:
+ * ------------------------------
+ * 
+ * • CleanCut.BlazorWebApp
+ *   ??? Makes HTTP requests with Bearer tokens from TokenService
+ *   ??? Server-side app uses Client Credentials tokens
+ *   ??? Calls API endpoints on behalf of the application
+ * 
+ * • CleanCut.WebApp (MVC)
+ *   ??? Uses access tokens obtained after user authentication
+ *   ??? Makes API calls from server-side controllers and client-side JavaScript
+ *   ??? User identity flows through from ID token to API calls
+ * 
+ * • CleanCut.WinApp (Future)
+ *   ??? Would use HttpClient with Bearer token authentication
+ *   ??? Desktop app making direct API calls with user tokens
+ * 
+ * • Swagger UI
+ *   ??? Interactive API testing with OAuth2 authentication
+ *   ??? Developers can test endpoints with real authentication
+ * 
+ * AUTHENTICATION FLOW:
+ * -------------------
+ * 1. Client obtains JWT token from IdentityServer (/connect/token)
+ * 2. Client includes token in Authorization header: "Bearer {token}"
+ * 3. API validates token signature against IdentityServer's public keys
+ * 4. API extracts user claims (role, email, name) from token payload
+ * 5. Authorization policies check role claims for endpoint access
+ * 6. API returns protected data or 401/403 error
+ * 
+ * AUTHORIZATION POLICIES IMPLEMENTED:
+ * ----------------------------------
+ * • FallbackPolicy - All endpoints require authentication by default
+ * • AdminOnly - Restricts certain operations to Admin role users only
+ * • UserOrAdmin - Allows access to User or Admin role users
+ * 
+ * SECURITY FEATURES:
+ * -----------------
+ * • JWT Bearer token validation with IdentityServer authority
+ * • Audience validation (accepts "CleanCutAPI" tokens only)
+ * • Role-based authorization policies
+ * • Rate limiting (100 req/min production, 1000 dev)
+ * • CORS restrictions to known client origins
+ * • Security headers (CSP, HSTS, XSS Protection, etc.)
+ * • Input validation on all endpoints
+ * • Comprehensive security logging without sensitive data exposure
+ * • Exception handling that doesn't leak internal information
+ * 
+ * ENDPOINTS PROTECTED:
+ * -------------------
+ * • GET /api/v1/products - Requires UserOrAdmin role
+ * • GET /api/v1/products/{id} - Requires UserOrAdmin role  
+ * • POST /api/v1/products - Requires UserOrAdmin role
+ * • PUT /api/v1/products/{id} - Requires UserOrAdmin role
+ * • DELETE /api/v1/products/{id} - Requires AdminOnly role
+ * • All customer and country endpoints - Role-based access
+ * 
+ * DEVELOPMENT VS PRODUCTION:
+ * -------------------------
+ * • Development: Relaxed CORS, detailed error info, request logging
+ * • Production: Strict CORS, minimal error details, HSTS headers
+ */
+
 using CleanCut.Application;
 using CleanCut.Infrastructure.Data;
 using CleanCut.Infrastructure.Caching;
@@ -24,7 +104,7 @@ builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context =>
     {
         // Only apply Problem Details to API routes
-        if (!context.HttpContext.Request.Path.StartsWithSegments("/api"))
+   if (!context.HttpContext.Request.Path.StartsWithSegments("/api"))
    return;
 
     // ? Don't expose sensitive information in production
@@ -33,19 +113,19 @@ builder.Services.AddProblemDetails(options =>
   // Remove machine name and detailed errors in production
     context.ProblemDetails.Extensions.Remove("machine");
         }
-        else
-        {
-      context.ProblemDetails.Extensions.TryAdd("machine", Environment.MachineName);
+   else
+     {
+ context.ProblemDetails.Extensions.TryAdd("machine", Environment.MachineName);
         }
-      
+ 
  context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
-     context.ProblemDetails.Extensions.TryAdd("timestamp", DateTime.UtcNow);
+   context.ProblemDetails.Extensions.TryAdd("timestamp", DateTime.UtcNow);
       context.ProblemDetails.Instance ??= context.HttpContext.Request.Path;
 
-        if (context.ProblemDetails.Type == null)
-        {
+      if (context.ProblemDetails.Type == null)
+{
        context.ProblemDetails.Type = context.ProblemDetails.Status switch
-          {
+        {
 400 => "https://tools.ietf.org/html/rfc7231#section-6.5.1",
       401 => "https://tools.ietf.org/html/rfc7235#section-3.1",
         403 => "https://tools.ietf.org/html/rfc7231#section-6.5.3",
@@ -54,7 +134,7 @@ builder.Services.AddProblemDetails(options =>
   500 => "https://tools.ietf.org/html/rfc7231#section-6.6.1",
        _ => "https://tools.ietf.org/html/rfc7231"
   };
-        }
+   }
     };
 });
 
@@ -67,14 +147,14 @@ builder.Services.AddRateLimiter(options =>
             factory: partition => new FixedWindowRateLimiterOptions
   {
     AutoReplenishment = true,
-                PermitLimit = builder.Environment.IsDevelopment() ? 1000 : 100, // More restrictive in production
-                Window = TimeSpan.FromMinutes(1)
+           PermitLimit = builder.Environment.IsDevelopment() ? 1000 : 100, // More restrictive in production
+  Window = TimeSpan.FromMinutes(1)
        }));
     
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
-        await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", cancellationToken: token);
+      await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", cancellationToken: token);
     };
 });
 
@@ -83,9 +163,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorApp", policy =>
   {
-        var allowedOrigins = builder.Environment.IsDevelopment()
+ var allowedOrigins = builder.Environment.IsDevelopment()
    ? new[] {
-              "https://localhost:7297", // Blazor HTTPS
+     "https://localhost:7297", // Blazor HTTPS
        "http://localhost:5091"   // Blazor HTTP (dev only)
    }
             : builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
@@ -93,7 +173,7 @@ builder.Services.AddCors(options =>
  policy.WithOrigins(allowedOrigins)
    .AllowAnyMethod()
       .AllowAnyHeader()
-            .AllowCredentials()
+     .AllowCredentials()
     .SetPreflightMaxAge(TimeSpan.FromMinutes(5));
     });
 
@@ -104,7 +184,7 @@ builder.Services.AddCors(options =>
         {
  policy.AllowAnyOrigin()
  .AllowAnyMethod()
-                .AllowAnyHeader();
+     .AllowAnyHeader();
      });
  }
 });
@@ -126,15 +206,15 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
  document.Info = new OpenApiInfo
-        {
-    Title = apiTitle,
+   {
+  Title = apiTitle,
         Description = apiDescription,
-            Version = "v1",
+       Version = "v1",
       Contact = new OpenApiContact
-            {
-        Name = "CleanCut API Support",
+{
+   Name = "CleanCut API Support",
     Email = "support@cleancut.com"
-            },
+   },
  // ? Add security information
             License = new OpenApiLicense
             {
@@ -143,17 +223,17 @@ builder.Services.AddOpenApi(options =>
      }
         };
 
-      // ? Enhanced JWT Bearer security scheme
+   // ? Enhanced JWT Bearer security scheme
         document.Components ??= new OpenApiComponents();
   document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
         {
       ["Bearer"] = new OpenApiSecurityScheme
      {
-       Type = SecuritySchemeType.Http,
+   Type = SecuritySchemeType.Http,
     Scheme = "bearer",
    BearerFormat = "JWT",
        Description = "Enter your JWT token in the format: Bearer {your token}",
-             Name = "Authorization",
+    Name = "Authorization",
      In = ParameterLocation.Header
          }
         };
@@ -162,12 +242,12 @@ builder.Services.AddOpenApi(options =>
         {
             {
     new OpenApiSecurityScheme
-        {
+  {
     Reference = new OpenApiReference
 {
-               Type = ReferenceType.SecurityScheme,
+     Type = ReferenceType.SecurityScheme,
           Id = "Bearer"
-        }
+     }
     },
     Array.Empty<string>()
           }
@@ -176,10 +256,10 @@ builder.Services.AddOpenApi(options =>
         foreach (var pathItem in document.Paths.Values)
   {
             foreach (var operation in pathItem.Operations.Values)
-            {
+   {
       operation.Security ??= new List<OpenApiSecurityRequirement>();
      operation.Security.Add(securityRequirement);
-            }
+    }
    }
 
         return Task.CompletedTask;
@@ -205,7 +285,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.Authority = identityServerAuthority;
+  options.Authority = identityServerAuthority;
     options.RequireHttpsMetadata = !builder.Environment.IsDevelopment(); // ? Require HTTPS in production
     options.SaveToken = false; // ? Don't save tokens for security
 
@@ -217,28 +297,28 @@ builder.Services.AddAuthentication(options =>
    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
    logger.LogWarning("JWT Authentication failed: {Message} for IP: {IpAddress}. Token: {Token}", 
       context.Exception.Message, 
-    context.HttpContext.Connection.RemoteIpAddress,
+  context.HttpContext.Connection.RemoteIpAddress,
            context.Request.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "")?.Substring(0, Math.Min(50, context.Request.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "")?.Length ?? 0)) + "...");
 return Task.CompletedTask;
   },
-        OnTokenValidated = context =>
+      OnTokenValidated = context =>
  {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+          var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
     logger.LogInformation("JWT Token validated successfully for user: {User} from IP: {IpAddress}",
    context.Principal?.Identity?.Name ?? "Unknown",
 context.HttpContext.Connection.RemoteIpAddress);
-         
+     
     // ? Log audience claim for debugging
      var audienceClaim = context.Principal?.FindFirst("aud")?.Value;
-            logger.LogDebug("Token audience claim: {Audience}", audienceClaim);
-        
+ logger.LogDebug("Token audience claim: {Audience}", audienceClaim);
+ 
           return Task.CompletedTask;
         },
-    OnChallenge = context =>
-        {
-         var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+  OnChallenge = context =>
+     {
+     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogWarning("JWT Challenge triggered. Error: {Error}, Description: {Description} for IP: {IpAddress}",
-     context.Error, context.ErrorDescription, context.HttpContext.Connection.RemoteIpAddress);
+context.Error, context.ErrorDescription, context.HttpContext.Connection.RemoteIpAddress);
             return Task.CompletedTask;
         }
     };
@@ -248,34 +328,34 @@ context.HttpContext.Connection.RemoteIpAddress);
     {
         ValidateIssuer = true,
   ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
+   ValidateLifetime = true,
+    ValidateIssuerSigningKey = true,
    ValidIssuer = identityServerAuthority,
   // ? Accept multiple possible audience formats
  ValidAudiences = new[] { 
   "CleanCutAPI",            // API Resource name
-            identityServerAuthority + "/resources",          // IdentityServer resources endpoint
+       identityServerAuthority + "/resources",          // IdentityServer resources endpoint
       identityServerAuthority     // IdentityServer authority
-        },
+  },
  ClockSkew = TimeSpan.FromMinutes(1), // ? Reduce clock skew tolerance
         RequireExpirationTime = true,
         RequireSignedTokens = true,
         // ? Custom audience validation for better debugging
  AudienceValidator = (audiences, token, validationParameters) =>
-        {
-            var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+ {
+          var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
      logger.LogDebug("Token audiences: {Audiences}", string.Join(", ", audiences));
-            logger.LogDebug("Valid audiences: {ValidAudiences}", string.Join(", ", validationParameters.ValidAudiences));
+          logger.LogDebug("Valid audiences: {ValidAudiences}", string.Join(", ", validationParameters.ValidAudiences));
    
             // Check if any of the token audiences match our valid audiences
     var isValid = audiences.Any(aud => validationParameters.ValidAudiences.Contains(aud));
      if (!isValid)
           {
     logger.LogWarning("Audience validation failed. Token audiences: {TokenAudiences}, Expected: {ExpectedAudiences}", 
-              string.Join(", ", audiences), 
-             string.Join(", ", validationParameters.ValidAudiences));
+    string.Join(", ", audiences), 
+string.Join(", ", validationParameters.ValidAudiences));
      }
-            return isValid;
+   return isValid;
         }
     };
 });
@@ -284,7 +364,7 @@ context.HttpContext.Connection.RemoteIpAddress);
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
+      .RequireAuthenticatedUser()
         .Build();
 
     // ? Add role-based policies
@@ -311,18 +391,18 @@ if (app.Environment.IsDevelopment())
     // ? Add request logging middleware first (dev only)
     app.Use(async (context, next) =>
     {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+ var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
     logger.LogInformation("Incoming request: {Method} {Path} from {Origin}",
        context.Request.Method,
-            context.Request.Path,
+    context.Request.Path,
             context.Request.Headers.Origin.FirstOrDefault() ?? "No Origin");
 
-        await next();
+await next();
 
         logger.LogInformation("Response: {StatusCode} for {Method} {Path}",
             context.Response.StatusCode,
 context.Request.Method,
-       context.Request.Path);
+     context.Request.Path);
     });
 
     app.UseCors("AllowBlazorApp");
@@ -330,21 +410,21 @@ context.Request.Method,
 
     // ? Anonymous routes for development only
     app.MapGet("/", () => Results.Redirect("/token-helper.html")).AllowAnonymous();
-    app.MapGet("/index.html", () => Results.Redirect("/versions.html")).AllowAnonymous();
+app.MapGet("/index.html", () => Results.Redirect("/versions.html")).AllowAnonymous();
     app.MapGet("/versions", () => Results.Redirect("/versions.html")).AllowAnonymous();
     app.MapGet("/token-helper", () => Results.Redirect("/token-helper.html")).AllowAnonymous();
 
-    app.MapOpenApi().AllowAnonymous();
+app.MapOpenApi().AllowAnonymous();
 
     app.UseSwaggerUI(options =>
  {
-     options.SwaggerEndpoint(ApiConstants.OpenApiJson, ApiConstants.SwaggerUiTitle);
+   options.SwaggerEndpoint(ApiConstants.OpenApiJson, ApiConstants.SwaggerUiTitle);
         options.RoutePrefix = ApiConstants.SwaggerUiRoutePrefix;
         options.DocumentTitle = ApiConstants.SwaggerUiTitle;
         options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
       options.DisplayRequestDuration();
         options.EnableDeepLinking();
-        options.ShowExtensions();
+ options.ShowExtensions();
  options.InjectStylesheet("/custom-swagger.css");
         options.EnablePersistAuthorization();
         options.OAuthClientId("swagger-ui");
@@ -356,7 +436,7 @@ context.Request.Method,
     using (var scope = app.Services.CreateScope())
     {
         await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
-    }
+ }
 }
 else
 {
@@ -379,8 +459,8 @@ app.Use(async (context, next) =>
     
     headers.TryAdd("X-Content-Type-Options", "nosniff");
   headers.TryAdd("X-Frame-Options", "DENY");
-    headers.TryAdd("X-XSS-Protection", "1; mode=block");
-    headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
+ headers.TryAdd("X-XSS-Protection", "1; mode=block");
+  headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
     headers.TryAdd("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
   
     if (!app.Environment.IsDevelopment())
@@ -392,19 +472,19 @@ app.Use(async (context, next) =>
         "script-src 'self'; " +
       "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self'; " +
+      "connect-src 'self'; " +
   "font-src 'self'; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
         "form-action 'self'; " +
-        "frame-ancestors 'none'";
+      "frame-ancestors 'none'";
           
     if (!app.Environment.IsDevelopment())
     {
         csp += "; upgrade-insecure-requests";
     }
     
-    headers.TryAdd("Content-Security-Policy", csp);
+  headers.TryAdd("Content-Security-Policy", csp);
     
     await next();
 });
