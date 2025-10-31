@@ -5,110 +5,206 @@ namespace CleanCut.Infranstructure.Identity;
 public static class Config
 {
     public static IEnumerable<IdentityResource> IdentityResources =>
-     new IdentityResource[]
+        new IdentityResource[]
+   {
+  new IdentityResources.OpenId(),
+            new IdentityResources.Profile(),
+        };
+
+    // ✅ Add API Resources for proper audience claims
+    public static IEnumerable<ApiResource> ApiResources =>
+     new ApiResource[]
         {
-        new IdentityResources.OpenId(),
-new IdentityResources.Profile(),
+ new ApiResource("CleanCutAPI", "CleanCut API")
+    {
+    Scopes = { "CleanCutAPI" },
+  UserClaims = { "role", "email", "name" }
+       }
         };
 
     public static IEnumerable<ApiScope> ApiScopes =>
-    new ApiScope[]
+        new ApiScope[]
         {
-     new ApiScope("scope1"),
-  new ApiScope("scope2"),
-     new ApiScope("CleanCutAPI", "CleanCut API Access")
-     };
+            // ✅ Production-ready API scopes with proper claims
+        new ApiScope("CleanCutAPI", "CleanCut API Access", new[] { "role", "email", "name" })
+      };
 
     public static IEnumerable<Client> Clients =>
-    new Client[]
+    GetClientsFromConfiguration();
+
+    // ✅ Load clients from configuration with fallbacks
+    private static IEnumerable<Client> GetClientsFromConfiguration()
     {
-            // Machine-to-machine client
-       new Client
+    var configuration = GetConfiguration();
+    
+    return new Client[]
 {
-    ClientId = "m2m.client",
+            // ✅ Machine-to-machine client
+      new Client
+            {
+     ClientId = "m2m.client",
          ClientName = "Client Credentials Client",
-     AllowedGrantTypes = GrantTypes.ClientCredentials,
-       ClientSecrets = { new Secret("511536EF-F270-4058-80CA-1C89C192F69A".Sha256()) },
-      AllowedScopes = { "CleanCutAPI" } // Updated to include your API
-    },
-
-  // Interactive testing client (no PKCE needed)
-         new Client
-     {
-      ClientId = "interactive",
-         ClientSecrets = { new Secret("49C1A7E1-0C79-4A89-A3D6-A37998FB86B0".Sha256()) },
-  AllowedGrantTypes = GrantTypes.Code,
-   RequirePkce = false, // ✅ No PKCE for confidential client
+   AllowedGrantTypes = GrantTypes.ClientCredentials,
+      ClientSecrets = { new Secret(GetClientSecret(configuration, "m2m.client").Sha256()) },
+        AllowedScopes = { "CleanCutAPI" },
        
-          RedirectUris = { "https://localhost:44300/signin-oidc" },
-    FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
-      PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
+    // ✅ Enterprise security settings
+        AccessTokenLifetime = 3600, // 1 hour
+        AllowOfflineAccess = false,
+                RefreshTokenUsage = TokenUsage.OneTimeOnly,
+         RefreshTokenExpiration = TokenExpiration.Sliding
+     },
 
-       AllowOfflineAccess = true,
-   AllowedScopes = { "openid", "profile", "CleanCutAPI" } // Added CleanCutAPI
-       },
+      // ✅ Blazor Server App with proper security
+          new Client
+  {
+          ClientId = "CleanCutBlazorWebApp",
+ ClientName = "CleanCut Blazor Server WebApp",
+       ClientSecrets = { new Secret(GetClientSecret(configuration, "CleanCutBlazorWebApp").Sha256()) },
 
-        // Simple API testing client
-  new Client
-        {
-ClientId = "api-testing",
-    ClientName = "API Testing Client",
-   ClientSecrets = { new Secret("testing-secret-123".Sha256()) },
-         AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
-     RequirePkce = false,
-   AllowOfflineAccess = true,
-                AllowedScopes = { "openid", "profile", "CleanCutAPI" }
-    },
-  
-// ✅ FIXED: CleanCut Blazor Server App (Client Credentials for API access)
-  new Client
-         {
-        ClientId = "CleanCutBlazorWebApp",
-        ClientName = "CleanCut Blazor Server WebApp",
-    ClientSecrets = { new Secret("BlazorServerSecret2024!".Sha256()) },
-
-     // ✅ Use client credentials for API access (machine-to-machine)
-         AllowedGrantTypes = GrantTypes.ClientCredentials,
- 
-          // ✅ Only need API scopes for client credentials flow
- AllowedScopes = { "CleanCutAPI" },
-         
-   // Optional: Allow offline access if needed for long-running operations
-           AllowOfflineAccess = false // Not needed for client credentials
-            },
-
-// ✅ FIXED: TempBlazorApp Client - Now supports client credentials flow
-  new Client
-       {
-ClientId = "TempBlazorApp",
-ClientName = "Temp Blazor App",
-         ClientSecrets = { new Secret("TempSecret2024!".Sha256()) },
-  
-       // ✅ FIXED: Use client credentials for API access (machine-to-machine)
-         AllowedGrantTypes = GrantTypes.ClientCredentials,
- 
-   // ✅ Only need API scopes for client credentials flow
-        AllowedScopes = { "CleanCutAPI" },
-         
-   // Optional: Allow offline access if needed for long-running operations
- AllowOfflineAccess = false // Not needed for client credentials
-  },
-
-      // ✅ NEW: CleanCut MVC WebApp Client for client credentials flow
-        new Client
-        {
-   ClientId = "CleanCutWebApp",
-            ClientName = "CleanCut MVC WebApp",
-    ClientSecrets = { new Secret("WebAppSecret2024!".Sha256()) },
-
-            // ✅ Use client credentials for API access (machine-to-machine)
+      // ✅ Use client credentials for server-to-server API calls
             AllowedGrantTypes = GrantTypes.ClientCredentials,
+     
+      // ✅ API access scope
+                AllowedScopes = { "CleanCutAPI" },
+        
+         // ✅ Security settings
+    AllowOfflineAccess = false,
+     AccessTokenLifetime = 3600, // 1 hour
+RefreshTokenUsage = TokenUsage.OneTimeOnly,
+          RefreshTokenExpiration = TokenExpiration.Sliding
+         },
 
-  // ✅ Only need API scopes for client credentials flow
-        AllowedScopes = { "CleanCutAPI" },
+            // ✅ Web App client for user authentication
+new Client
+            {
+    ClientId = "CleanCutWebApp",
+         ClientName = "CleanCut MVC WebApp",
+     ClientSecrets = { new Secret(GetClientSecret(configuration, "CleanCutWebApp").Sha256()) },
 
-      // Optional: Allow offline access if needed for long-running operations
-            AllowOfflineAccess = false // Not needed for client credentials
-        }
+           // ✅ Use Authorization Code flow for user authentication
+     AllowedGrantTypes = GrantTypes.Code,
+         RequirePkce = true,
+
+     // ✅ Redirect configuration
+     RedirectUris = GetRedirectUris(configuration, "CleanCutWebApp"),
+      PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "CleanCutWebApp"),
+      
+             // ✅ Scopes for user authentication and API access
+            AllowedScopes = { "openid", "profile", "CleanCutAPI" },
+
+         // ✅ Security settings
+           AllowOfflineAccess = true,
+     AccessTokenLifetime = 3600,
+                RefreshTokenUsage = TokenUsage.OneTimeOnly,
+     RefreshTokenExpiration = TokenExpiration.Sliding,
+       
+       // ✅ Additional security
+       RequireConsent = false,
+    AllowPlainTextPkce = false
+},
+
+ // ✅ Add Swagger UI client for testing
+        new Client
+{
+    ClientId = "swagger-ui",
+       ClientName = "Swagger UI",
+           AllowedGrantTypes = GrantTypes.Implicit,
+     AllowAccessTokensViaBrowser = true,
+         RequireClientSecret = false,
+           
+          RedirectUris = { "https://localhost:7142/swagger/oauth2-redirect.html" },
+        PostLogoutRedirectUris = { "https://localhost:7142/swagger/" },
+       
+  AllowedScopes = { "openid", "profile", "CleanCutAPI" },
+       
+ // ✅ CORS for Swagger
+         AllowedCorsOrigins = { "https://localhost:7142" }
+    }
         };
+ }
+  
+    // ✅ Secure configuration loading methods
+    private static string GetClientSecret(IConfiguration configuration, string clientId)
+    {
+  // ✅ Try to load from secure configuration first
+        var secret = configuration[$"IdentityServer:Clients:{clientId}:Secret"];
+        
+        // ✅ Fallback to default secrets for development only
+    if (string.IsNullOrEmpty(secret) && IsEnvironmentDevelopment(configuration))
+   {
+       secret = GetDevelopmentClientSecret(clientId);
+        }
+     
+        if (string.IsNullOrEmpty(secret))
+ {
+  throw new InvalidOperationException($"Client secret for {clientId} not found in configuration. Please configure 'IdentityServer:Clients:{clientId}:Secret'");
+        }
+   
+    return secret;
+    }
+    
+    private static bool IsEnvironmentDevelopment(IConfiguration configuration)
+    {
+        var environment = configuration["ASPNETCORE_ENVIRONMENT"];
+        return string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase);
+    }
+    
+    private static string GetDevelopmentClientSecret(string clientId)
+    {
+        // ✅ Development-only fallback secrets
+        return clientId switch
+        {
+       "m2m.client" => "511536EF-F270-4058-80CA-1C89C192F69A",
+            "CleanCutBlazorWebApp" => "BlazorServerSecret2024!",
+            "CleanCutWebApp" => "WebAppSecret2024!",
+            _ => throw new InvalidOperationException($"No development secret configured for client {clientId}")
+        };
+    }
+    
+    private static List<string> GetRedirectUris(IConfiguration configuration, string clientId)
+    {
+  var uris = configuration.GetSection($"IdentityServer:Clients:{clientId}:RedirectUris").Get<List<string>>();
+        return uris ?? GetDefaultRedirectUris(clientId);
+    }
+ 
+    private static List<string> GetPostLogoutRedirectUris(IConfiguration configuration, string clientId)
+    {
+     var uris = configuration.GetSection($"IdentityServer:Clients:{clientId}:PostLogoutRedirectUris").Get<List<string>>();
+        return uris ?? GetDefaultPostLogoutRedirectUris(clientId);
+    }
+    
+    private static IConfiguration GetConfiguration()
+    {
+      // ✅ Access configuration safely with proper fallbacks
+        var configuration = new ConfigurationBuilder()
+         .SetBasePath(Directory.GetCurrentDirectory())
+      .AddJsonFile("appsettings.json", optional: false)
+          .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true)
+            .AddEnvironmentVariables()
+     .Build();
+     
+        return configuration;
+    }
+    
+    // ✅ Default configurations for development
+    private static List<string> GetDefaultRedirectUris(string clientId)
+    {
+        return clientId switch
+      {
+            "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signin-oidc", "http://localhost:5091/signin-oidc" },
+          "CleanCutWebApp" => new List<string> { "https://localhost:7144/signin-oidc" },
+      _ => new List<string>()
+        };
+    }
+    
+    private static List<string> GetDefaultPostLogoutRedirectUris(string clientId)
+    {
+        return clientId switch
+        {
+    "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signout-callback-oidc", "http://localhost:5091/signout-callback-oidc" },
+            "CleanCutWebApp" => new List<string> { "https://localhost:7144/signout-callback-oidc" },
+    _ => new List<string>()
+   };
+    }
 }

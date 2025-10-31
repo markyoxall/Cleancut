@@ -1,0 +1,156 @@
+@page "/debug-services"
+@using CleanCut.BlazorWebApp.Services.Auth
+@inject ITokenService TokenService
+@inject IApiCallLogService CallLogService
+@inject ILogger<DebugServices> Logger
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Debug Services - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+     <h1 class="display-6 fw-bold text-primary">
+        <i class="fas fa-bug me-2"></i>Debug Services
+       </h1>
+       <p class="text-muted">Test service injection and basic functionality</p>
+     </div>
+    </div>
+
+ <div class="row mb-4">
+      <div class="col-12">
+            <div class="card">
+  <div class="card-header">
+     <h5 class="card-title mb-0">
+             <i class="fas fa-cogs me-2"></i>Service Tests
+     </h5>
+         </div>
+         <div class="card-body">
+  <button class="btn btn-primary me-2" @onclick="TestTokenService">
+     <i class="fas fa-key me-2"></i>Test Token Service
+   </button>
+     <button class="btn btn-secondary me-2" @onclick="TestLogService">
+   <i class="fas fa-list me-2"></i>Test Log Service
+   </button>
+       <button class="btn btn-info me-2" @onclick="AddTestLog">
+    <i class="fas fa-plus me-2"></i>Add Test Log
+      </button>
+        </div>
+     </div>
+   </div>
+    </div>
+
+    <div class="row">
+   <div class="col-12">
+      <div class="card">
+    <div class="card-header">
+     <h5 class="card-title mb-0">
+       <i class="fas fa-info-circle me-2"></i>Test Results
+        </h5>
+    </div>
+       <div class="card-body">
+ <pre style="background-color: #f8f9fa; padding: 1rem; border-radius: 0.375rem; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.875rem;">@testResults</pre>
+          </div>
+     </div>
+</div>
+    </div>
+</div>
+
+@code {
+    private string testResults = "Click buttons above to test services...";
+
+    private async Task TestTokenService()
+ {
+     testResults = "Testing Token Service...\n";
+     StateHasChanged();
+
+        try
+        {
+     var token = await TokenService.GetAccessTokenAsync();
+      if (!string.IsNullOrEmpty(token))
+   {
+         testResults += $"? Token Service: SUCCESS\n";
+   testResults += $"   Token Length: {token.Length} characters\n";
+          testResults += $"   Token Preview: {token[..Math.Min(50, token.Length)]}...\n";
+        }
+   else
+            {
+         testResults += "? Token Service: FAILED - No token returned\n";
+         }
+      }
+        catch (Exception ex)
+ {
+         testResults += $"? Token Service: ERROR - {ex.Message}\n";
+      }
+    
+     StateHasChanged();
+   }
+
+    private async Task TestLogService()
+   {
+  testResults = "Testing API Call Log Service...\n";
+     StateHasChanged();
+
+   try
+   {
+        var logs = await CallLogService.GetRecentCallsAsync(10);
+         testResults += $"? Log Service: SUCCESS\n";
+      testResults += $"Current log count: {logs.Count}\n";
+        
+      if (logs.Any())
+          {
+            testResults += "   Recent logs:\n";
+         foreach (var log in logs.Take(3))
+ {
+   testResults += $"     - {log.Method} {log.Url} -> {log.StatusCode}\n";
+          }
+}
+       else
+      {
+           testResults += "   No logs found (make some API calls first)\n";
+         }
+      }
+        catch (Exception ex)
+  {
+         testResults += $"? Log Service: ERROR - {ex.Message}\n";
+      }
+
+    StateHasChanged();
+    }
+
+    private async Task AddTestLog()
+    {
+       testResults = "Adding test log entry...\n";
+   StateHasChanged();
+
+   try
+      {
+        var testLog = new ApiCallLog
+        {
+      Timestamp = DateTime.UtcNow,
+            RequestId = Guid.NewGuid().ToString("N")[..8],
+   Method = "GET",
+     Url = "/api/test/debug",
+  HasToken = true,
+      TokenType = "Bearer",
+          TokenPreview = "eyJ0eXAiOiJ...test...token",
+ TokenLength = 500,
+   StatusCode = 200,
+           IsSuccess = true,
+            Duration = TimeSpan.FromMilliseconds(150)
+     };
+
+     await CallLogService.LogApiCallAsync(testLog);
+   testResults += "? Test log added successfully\n";
+      testResults += $" Log ID: {testLog.RequestId}\n";
+      testResults += $"   Timestamp: {testLog.Timestamp:yyyy-MM-dd HH:mm:ss}\n";
+        }
+       catch (Exception ex)
+  {
+   testResults += $"? Add Test Log: ERROR - {ex.Message}\n";
+        }
+
+     StateHasChanged();
+   }
+}

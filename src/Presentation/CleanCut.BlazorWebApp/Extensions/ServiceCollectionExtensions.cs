@@ -14,74 +14,82 @@ public static class ServiceCollectionExtensions
         // Read per-version config (fallbacks provided)
         var v1 = configuration.GetSection("ApiClients:Products:V1").Get<ProductApiOptions>() ?? new ProductApiOptions();
         var v2 = configuration.GetSection("ApiClients:Products:V2").Get<ProductApiOptions>() ?? new ProductApiOptions();
-        
+ 
         // Read customer API config with consistent pattern
         var customerConfig = configuration.GetSection("ApiClients:Customer").Get<CustomerApiOptions>() ?? new CustomerApiOptions();
         
         // Read country API config with consistent pattern  
-        var countryConfig = configuration.GetSection("ApiClients:Country").Get<CountryApiOptions>() ?? new CountryApiOptions();
+      var countryConfig = configuration.GetSection("ApiClients:Country").Get<CountryApiOptions>() ?? new CountryApiOptions();
      
         // Fallback to general ApiClients:BaseUrl if Customer section doesn't exist
         if (customerConfig.BaseUrl == "https://localhost:7142") // default value, try config
-        {
+     {
             var fallbackBaseUrl = configuration["ApiClients:BaseUrl"];
-            if (!string.IsNullOrEmpty(fallbackBaseUrl))
-            {
-                customerConfig.BaseUrl = fallbackBaseUrl;
-            }
+       if (!string.IsNullOrEmpty(fallbackBaseUrl))
+       {
+    customerConfig.BaseUrl = fallbackBaseUrl;
+    }
         }
         
         // Fallback to general ApiClients:BaseUrl if Country section doesn't exist
         if (countryConfig.BaseUrl == "https://localhost:7142") // default value, try config
         {
-            var fallbackBaseUrl = configuration["ApiClients:BaseUrl"];
+      var fallbackBaseUrl = configuration["ApiClients:BaseUrl"];
             if (!string.IsNullOrEmpty(fallbackBaseUrl))
             {
-                countryConfig.BaseUrl = fallbackBaseUrl;
-            }
+ countryConfig.BaseUrl = fallbackBaseUrl;
+       }
         }
 
         // Register the token service for client credentials authentication
-        services.AddHttpClient<ITokenService, TokenService>();
+   services.AddHttpClient<ITokenService, TokenService>();
         services.AddScoped<ITokenService, TokenService>();
 
-        // Register the authenticated message handler
+   // Register the API call log service as singleton to maintain state across requests
+        services.AddSingleton<IApiCallLogService, ApiCallLogService>();
+
+        // Register the message handlers (logging first, then auth) - MUST be scoped for HttpClient
+        services.AddScoped<TokenLoggingHttpMessageHandler>();
         services.AddScoped<AuthenticatedHttpMessageHandler>();
 
-        // Register typed clients using configuration values with authentication
+ // Register typed clients using configuration values with authentication and logging
         services.AddHttpClient<IProductApiClientV1, ProductApiClientV1>(client =>
         {
-            client.BaseAddress = new Uri(v1.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(v1.TimeoutSeconds);
+    client.BaseAddress = new Uri(v1.BaseUrl);
+  client.Timeout = TimeSpan.FromSeconds(v1.TimeoutSeconds);
         })
+        .AddHttpMessageHandler<TokenLoggingHttpMessageHandler>()
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         services.AddHttpClient<IProductApiClientV2, ProductApiClientV2>(client =>
         {
             client.BaseAddress = new Uri(v2.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(v2.TimeoutSeconds);
+      client.Timeout = TimeSpan.FromSeconds(v2.TimeoutSeconds);
         })
-        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+.AddHttpMessageHandler<TokenLoggingHttpMessageHandler>()
+     .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         // ✅ FIXED: Use consistent pattern for Customer API
-        services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
+     services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
         {
             client.BaseAddress = new Uri(customerConfig.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(customerConfig.TimeoutSeconds);
-        })
+  client.Timeout = TimeSpan.FromSeconds(customerConfig.TimeoutSeconds);
+})
+        .AddHttpMessageHandler<TokenLoggingHttpMessageHandler>()
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         // ✅ FIXED: Use consistent pattern for Country API  
         services.AddHttpClient<ICountryApiService, CountryApiService>(client =>
         {
             client.BaseAddress = new Uri(countryConfig.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(countryConfig.TimeoutSeconds);
+      client.Timeout = TimeSpan.FromSeconds(countryConfig.TimeoutSeconds);
         })
+  .AddHttpMessageHandler<TokenLoggingHttpMessageHandler>()
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         // Adapter/service registration
         services.AddScoped<IProductApiService, ProductApiService>();
 
-        return services;
+      return services;
     }
 }
