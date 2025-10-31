@@ -188,21 +188,19 @@ public class TokenService : ITokenService
         {
   try
   {
-     var accessToken = await httpContext.GetTokenAsync("access_token");
-                var idToken = await httpContext.GetTokenAsync("id_token");
-          var refreshToken = await httpContext.GetTokenAsync("refresh_token");
+   var accessToken = await httpContext.GetTokenAsync("access_token");
+    var idToken = await httpContext.GetTokenAsync("id_token");
+     var refreshToken = await httpContext.GetTokenAsync("refresh_token");
      
-        status.AppendLine($"User Access Token: {(!string.IsNullOrEmpty(accessToken) ? "Available" : "Not available")}
-");
+        status.AppendLine($"User Access Token: {(!string.IsNullOrEmpty(accessToken) ? "Available" : "Not available")}");
           status.AppendLine($"ID Token: {(!string.IsNullOrEmpty(idToken) ? "Available" : "Not available")}");
- status.AppendLine($"Refresh Token: {(!string.IsNullOrEmpty(refreshToken) ? "Available" : "Not available")}
-");
+ status.AppendLine($"Refresh Token: {(!string.IsNullOrEmpty(refreshToken) ? "Available" : "Not available")}");
     
  if (!string.IsNullOrEmpty(accessToken))
      {
              status.AppendLine($"Access Token Length: {accessToken.Length}");
-         // Don't log actual token content for security
-        }
+       // Don't log actual token content for security
+   }
     }
         catch (Exception ex)
             {

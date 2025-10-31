@@ -34,10 +34,10 @@ public class ProductApiClientV2 : IProductApiClientV2
         return await resp.Content.ReadFromJsonAsync<V2ProductResponse>(cancellationToken: cancellationToken);
     }
 
-    public async Task<V2ProductListResponse> GetByCustomerAsync(Guid userId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<V2ProductListResponse> GetByCustomerAsync(Guid customerId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("V2: GET /api/v2/products/user/{UserId}?page={Page}&pageSize={PageSize}", userId, page, pageSize);
-        var resp = await _http.GetAsync($"api/v2/products/user/{userId}?page={page}&pageSize={pageSize}", cancellationToken);
+        _logger.LogDebug("V2: GET /api/v2/products/customer/{CustomerId}?page={Page}&pageSize={PageSize}", customerId, page, pageSize);
+        var resp = await _http.GetAsync($"api/v2/products/customer/{customerId}?page={page}&pageSize={pageSize}", cancellationToken);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<V2ProductListResponse>(cancellationToken: cancellationToken)
                ?? new V2ProductListResponse { Data = new List<ProductInfo>(), Pagination = new PaginationInfo { Page = page, PageSize = pageSize }, ApiVersion = "v2", Timestamp = DateTime.UtcNow };

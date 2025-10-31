@@ -28,40 +28,40 @@ public class ProductApiService : IProductApiService
     {
         try
         {
-  _logger.LogInformation("Calling API: GET /api/v1/products");
+            _logger.LogInformation("Calling API: GET /api/v1/products");
 
-          var response = await _httpClient.GetAsync("/api/v1/products");
-        response.EnsureSuccessStatusCode();
+            var response = await _httpClient.GetAsync("/api/v1/products");
+            response.EnsureSuccessStatusCode();
 
-         var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
+            var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
 
             _logger.LogInformation("API returned {ProductCount} products", products.Count);
- return products;
+            return products;
         }
         catch (Exception ex)
-  {
+        {
             _logger.LogError(ex, "? Error calling Products API for all products");
-     throw;
+            throw;
         }
     }
 
     public async Task<IEnumerable<ProductInfo>> GetProductsByCustomerAsync(Guid customerId)
     {
-   try
- {
-     // Fixed: changed from "customer" to "user" to match API endpoint
-       _logger.LogInformation("Calling API: GET /api/v1/products/user/{CustomerId}", customerId);
-   
-       var response = await _httpClient.GetAsync($"/api/v1/products/user/{customerId}");
-       response.EnsureSuccessStatusCode();
-            
-          var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
-   
-          _logger.LogInformation("API returned {ProductCount} products for customer {CustomerId}", products.Count, customerId);
+        try
+        {
+            // FIXED: Use customer endpoint instead of user endpoint
+            _logger.LogInformation("Calling API: GET /api/v1/products/customer/{CustomerId}", customerId);
+
+            var response = await _httpClient.GetAsync($"/api/v1/products/customer/{customerId}");
+            response.EnsureSuccessStatusCode();
+
+            var products = await response.Content.ReadFromJsonAsync<List<ProductInfo>>() ?? new List<ProductInfo>();
+
+            _logger.LogInformation("API returned {ProductCount} products for customer {CustomerId}", products.Count, customerId);
             return products;
- }
+        }
         catch (Exception ex)
-    {
+        {
             _logger.LogError(ex, "? Error calling Products API for customer {CustomerId}", customerId);
             throw;
         }
@@ -69,27 +69,27 @@ public class ProductApiService : IProductApiService
 
     public async Task<ProductInfo?> GetProductByIdAsync(Guid id)
     {
-     try
+        try
         {
-    _logger.LogInformation("Calling API: GET /api/v1/products/{ProductId}", id);
-            
+            _logger.LogInformation("Calling API: GET /api/v1/products/{ProductId}", id);
+
             var response = await _httpClient.GetAsync($"/api/v1/products/{id}");
-     
-    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
- {
-         return null;
-          }
-            
-     response.EnsureSuccessStatusCode();
-   var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
-  
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
+
             _logger.LogInformation("? API returned product: {ProductName}", product?.Name);
-      return product;
+            return product;
         }
-   catch (Exception ex)
+        catch (Exception ex)
         {
-     _logger.LogError(ex, "? Error calling Products API for ID {ProductId}", id);
-     throw;
+            _logger.LogError(ex, "? Error calling Products API for ID {ProductId}", id);
+            throw;
         }
     }
 
@@ -97,58 +97,58 @@ public class ProductApiService : IProductApiService
     {
         try
         {
-        _logger.LogInformation("Calling API: POST /api/v1/products");
-      
-        var createRequest = new
- {
-           Name = name,
-       Description = description,
-     Price = price,
-    CustomerId = customerId
+            _logger.LogInformation("Calling API: POST /api/v1/products");
+
+            var createRequest = new
+            {
+                Name = name,
+                Description = description,
+                Price = price,
+                CustomerId = customerId
             };
-      
-        var response = await _httpClient.PostAsJsonAsync("/api/v1/products", createRequest);
-        response.EnsureSuccessStatusCode();
-      
-         var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
-     
-            _logger.LogInformation("? API created product: {ProductName} with ID {ProductId}", 
-      product?.Name, product?.Id);
-            
-    return product ?? throw new InvalidOperationException("Failed to create product");
-     }
+
+            var response = await _httpClient.PostAsJsonAsync("/api/v1/products", createRequest);
+            response.EnsureSuccessStatusCode();
+
+            var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
+
+            _logger.LogInformation("? API created product: {ProductName} with ID {ProductId}",
+                product?.Name, product?.Id);
+
+            return product ?? throw new InvalidOperationException("Failed to create product");
+        }
         catch (Exception ex)
         {
-   _logger.LogError(ex, "? Error creating product via API");
+            _logger.LogError(ex, "? Error creating product via API");
             throw;
         }
     }
 
     public async Task<ProductInfo> UpdateProductAsync(Guid id, string name, string description, decimal price)
     {
-   try
-    {
+        try
+        {
             _logger.LogInformation("Calling API: PUT /api/v1/products/{ProductId}", id);
-     
-         var updateRequest = new
-       {
-   Name = name,
-          Description = description,
-           Price = price
+
+            var updateRequest = new
+            {
+                Name = name,
+                Description = description,
+                Price = price
             };
-            
+
             var response = await _httpClient.PutAsJsonAsync($"/api/v1/products/{id}", updateRequest);
             response.EnsureSuccessStatusCode();
-            
+
             var product = await response.Content.ReadFromJsonAsync<ProductInfo>();
-            
-      _logger.LogInformation("? API updated product: {ProductName}", product?.Name);
-         
+
+            _logger.LogInformation("? API updated product: {ProductName}", product?.Name);
+
             return product ?? throw new InvalidOperationException("Failed to update product");
         }
         catch (Exception ex)
         {
-  _logger.LogError(ex, "? Error updating product via API");
+            _logger.LogError(ex, "? Error updating product via API");
             throw;
         }
     }
@@ -157,24 +157,24 @@ public class ProductApiService : IProductApiService
     {
         try
         {
-        _logger.LogInformation("Calling API: DELETE /api/v1/products/{ProductId}", id);
-    
-        var response = await _httpClient.DeleteAsync($"/api/v1/products/{id}");
-        
+            _logger.LogInformation("Calling API: DELETE /api/v1/products/{ProductId}", id);
+
+            var response = await _httpClient.DeleteAsync($"/api/v1/products/{id}");
+
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-     return false;
-    }
- 
-       response.EnsureSuccessStatusCode();
-            
-   _logger.LogInformation("? API deleted product with ID {ProductId}", id);
+                return false;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            _logger.LogInformation("? API deleted product with ID {ProductId}", id);
             return true;
-    }
-   catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "? Error deleting product via API");
-      throw;
+            throw;
         }
     }
 }
