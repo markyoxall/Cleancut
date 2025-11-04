@@ -1,279 +1,411 @@
-# CleanCut.WebApp - Web Application Presentation Layer
+# CleanCut.WebApp - MVC/Razor Pages with OAuth2 Authentication
 
-## Purpose in Clean Architecture
+## Overview
 
-The **Web Application Layer** provides a **browser-based user interface** for your application. It serves HTML pages, handles user interactions, and communicates with the Application Layer to execute business use cases. This layer focuses on user experience and web-specific concerns like navigation, forms, and client-side functionality.
+The **CleanCut.WebApp** is an **ASP.NET Core MVC/Razor Pages** application that demonstrates traditional web application development with modern OAuth2/OpenID Connect authentication. It serves as a confidential client in the authentication ecosystem, providing server-side rendered pages with secure user authentication.
 
-## Key Principles
+## Role in Authentication Architecture
 
-### 1. **User-Centric Design**
-- Focus on user experience and usability
-- Responsive design for different screen sizes
-- Accessible and inclusive interface design
+```mermaid
+graph TB
+    USER[User Browser] -->|HTTP Requests| WEBAPP[MVC WebApp]
+    WEBAPP -->|OAuth2/OIDC<br/>Authorization Code + PKCE| IDENTITY[IdentityServer]
+    WEBAPP -->|Bearer Token<br/>API Calls| API[CleanCut.API]
+    
+    subgraph "WebApp Components"
+        CONTROLLERS[Controllers]
+    VIEWS[Razor Views]
+        MODELS[ViewModels]
+        AUTH[Authentication]
+    end
+    
+    WEBAPP --> CONTROLLERS
+    CONTROLLERS --> VIEWS
+    CONTROLLERS --> MODELS
+    CONTROLLERS --> AUTH
+```
 
-### 2. **MVC Pattern**
-- Controllers handle user input and navigation
-- Views render the user interface
-- Models represent data for the view layer
+## Authentication Flow
 
-### 3. **Client-Server Separation**
-- Clean separation between server-side rendering and client-side behavior
-- Progressive enhancement for better performance
-- Graceful degradation for accessibility
+### **OAuth2/OpenID Connect Implementation**
+1. **User visits** protected page in MVC application
+2. **Authentication required** ? Redirect to IdentityServer
+3. **User authenticates** with credentials
+4. **Authorization Code + PKCE** flow completes
+5. **Tokens stored** securely in authentication cookies
+6. **User returns** to MVC application with authenticated session
+7. **API calls** include Bearer tokens from stored access token
 
-### 4. **Web Standards Compliance**
-- Semantic HTML markup
-- CSS best practices
-- Modern JavaScript features
+### **Client Configuration**
+```csharp
+Client Type: Confidential Client  
+Grant Type: Authorization Code + PKCE
+Client ID: CleanCutWebApp
+Client Secret: WebAppSecret2024! (development)
+Scopes: openid, profile, CleanCutAPI
+Redirect URIs: https://localhost:7144/signin-oidc
+```
 
-## Folder Structure
+## Key Features
+
+### **?? Authentication & Authorization**
+- ? **OpenID Connect Authentication** with automatic redirects
+- ? **Role-based Authorization** throughout controllers
+- ? **JWT Bearer Integration** for API calls
+- ? **Secure Session Management** with authentication cookies
+- ? **PKCE Implementation** for enhanced security
+
+### **?? Modern MVC Features**
+- ? **Razor Pages** with server-side rendering
+- ? **Model-View-Controller** pattern implementation  
+- ? **Strongly-typed ViewModels** for type safety
+- ? **Data Annotations Validation** with client-side validation
+- ? **Responsive Bootstrap UI** with custom styling
+
+### **?? API Integration**
+- ? **HttpClient Integration** with automatic Bearer token injection
+- ? **CRUD Operations** through secured API endpoints
+- ? **Error Handling** with user-friendly messages
+- ? **Form Validation** with server and client-side validation
+
+## Project Structure
 
 ```
 CleanCut.WebApp/
-??? Areas/               # Feature-based organization
-?   ??? Admin/
-?   ?   ??? Controllers/
-?   ?   ??? Views/
-?   ?   ??? Models/
-?   ??? Customer/
-?       ??? Controllers/
-?       ??? Views/
-?       ??? Models/
-??? Controllers/         # Main application controllers
-?   ??? HomeController.cs
-?   ??? CustomerController.cs
-?   ??? OrderController.cs
+??? Controllers/      # MVC Controllers
+? ??? HomeController.cs
+?   ??? ProductsController.cs
+?   ??? CustomersController.cs
 ?   ??? AccountController.cs
-??? Views/               # Razor view templates
+?
+??? Views/        # Razor View Templates
 ?   ??? Shared/
 ?   ?   ??? _Layout.cshtml
 ?   ?   ??? _LoginPartial.cshtml
 ?   ?   ??? Error.cshtml
 ?   ??? Home/
-?   ??? Customer/
-?   ??? Order/
-??? wwwroot/             # Static files
+?   ??? Products/
+?   ??? Customers/
+?   ??? Account/
+?
+??? Models/   # ViewModels and DTOs
+?   ??? ViewModels/
+?   ?   ??? ProductViewModel.cs
+?   ?   ??? CustomerViewModel.cs
+?   ?   ??? HomeViewModel.cs
+?   ??? ErrorViewModel.cs
+?
+??? Services/        # Application Services
+?   ??? IApiService.cs
+?   ??? ApiService.cs
+?
+??? wwwroot/         # Static Assets
 ?   ??? css/
 ?   ??? js/
 ?   ??? images/
 ?   ??? lib/
-??? ViewModels/          # View-specific models
-?   ??? CustomerViewModel.cs
-?   ??? OrderViewModel.cs
-?   ??? DashboardViewModel.cs
-??? Services/            # View-related services
-?   ??? ViewModelService.cs
-?   ??? NavigationService.cs
-??? Extensions/          # Extension methods
-?   ??? ControllerExtensions.cs
-?   ??? ViewExtensions.cs
-??? Configuration/       # Web app configuration
+?
+??? Configuration/   # App Configuration
     ??? AutoMapperProfile.cs
-    ??? ViewLocationExpander.cs
 ```
 
-## What Goes Here
+## Authentication Implementation
 
-### Controllers
-- Handle HTTP requests and user interactions
-- Coordinate with Application Layer
-- Prepare data for views
-- Handle form submissions and navigation
-
-### Views
-- Razor templates for rendering HTML
-- Layout pages and partial views
-- Client-side templates and components
-
-### ViewModels
-- Data models specifically designed for views
-- Aggregate data from multiple sources
-- Handle view-specific logic and formatting
-
-### Static Assets
-- CSS stylesheets and frameworks
-- JavaScript files and libraries
-- Images, fonts, and other media
-
-## Example Patterns
-
-### MVC Controller
+### **Program.cs Configuration**
 ```csharp
-public class CustomerController : Controller
+// Authentication setup
+builder.Services.AddAuthentication(options =>
 {
-    private readonly IMediator _mediator;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CustomerController> _logger;
+    options.DefaultScheme = "Cookies";
+    options.DefaultChallengeScheme = "oidc";
+})
+.AddCookie("Cookies", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.LogoutPath = "/Account/Logout";
+})
+.AddOpenIdConnect("oidc", options =>
+{
+    options.Authority = "https://localhost:5001";
+    options.ClientId = "CleanCutWebApp";
+ options.ClientSecret = "WebAppSecret2024!";
+    options.ResponseType = "code";
+    options.UsePkce = true;
+  options.SaveTokens = true;
+    options.GetClaimsFromUserInfoEndpoint = true;
+ 
+    options.Scope.Clear();
+    options.Scope.Add("openid");
+    options.Scope.Add("profile");
+    options.Scope.Add("CleanCutAPI");
+});
+```
 
-    public CustomerController(IMediator mediator, IMapper mapper, ILogger<CustomerController> logger)
+### **Controller Authorization**
+```csharp
+[Authorize] // Requires authentication for entire controller
+public class ProductsController : Controller
+{
+    [Authorize(Roles = "Admin")] // Admin-only action
+ public async Task<IActionResult> Delete(Guid id)
     {
-        _mediator = mediator;
-        _mapper = mapper;
+        // Implementation
+    }
+ 
+    [Authorize(Roles = "User,Admin")] // User or Admin access
+    public async Task<IActionResult> Create()
+    {
+        // Implementation
+    }
+}
+```
+
+### **View Authorization**
+```html
+@* Conditional rendering based on authentication *@
+@if (User.Identity.IsAuthenticated)
+{
+    <p>Welcome, @User.Identity.Name!</p>
+ 
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="Delete" class="btn btn-danger">Delete</a>
+    }
+}
+else
+{
+    <a asp-action="Login" asp-controller="Account">Login</a>
+}
+```
+
+## API Integration
+
+### **HTTP Client Configuration**
+```csharp
+// Automatic Bearer token injection
+builder.Services.AddHttpClient<IApiService, ApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7142");
+})
+.AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+```
+
+### **Authenticated HTTP Handler**
+```csharp
+public class AuthenticatedHttpMessageHandler : DelegatingHandler
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+  protected override async Task<HttpResponseMessage> SendAsync(
+  HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+ var httpContext = _httpContextAccessor.HttpContext;
+  var accessToken = await httpContext.GetTokenAsync("access_token");
+        
+        if (!string.IsNullOrEmpty(accessToken))
+        {
+       request.Headers.Authorization = 
+        new AuthenticationHeaderValue("Bearer", accessToken);
+   }
+        
+        return await base.SendAsync(request, cancellationToken);
+    }
+}
+```
+
+### **API Service Implementation**
+```csharp
+public interface IApiService
+{
+    Task<List<ProductViewModel>> GetProductsAsync();
+    Task<ProductViewModel> GetProductAsync(Guid id);
+    Task<ProductViewModel> CreateProductAsync(CreateProductViewModel model);
+    Task<bool> DeleteProductAsync(Guid id);
+}
+
+public class ApiService : IApiService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<ApiService> _logger;
+
+    public ApiService(HttpClient httpClient, ILogger<ApiService> logger)
+    {
+        _httpClient = httpClient;
         _logger = logger;
     }
 
-    // GET: /Customer
-    public async Task<IActionResult> Index(CustomerSearchViewModel searchModel)
+    public async Task<List<ProductViewModel>> GetProductsAsync()
     {
-        var query = new SearchCustomersQuery
+        try
         {
-            SearchTerm = searchModel.SearchTerm,
-            PageNumber = searchModel.PageNumber,
-            PageSize = searchModel.PageSize,
-            SortBy = searchModel.SortBy,
-            SortDirection = searchModel.SortDirection
-        };
-
-        var result = await _mediator.Send(query);
-        
-        var viewModel = new CustomerListViewModel
+     var response = await _httpClient.GetAsync("/api/v1/products");
+            response.EnsureSuccessStatusCode();
+      
+     var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<ProductViewModel>>(json, 
+   new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (HttpRequestException ex)
         {
-            Customers = _mapper.Map<List<CustomerViewModel>>(result.Data),
-            SearchModel = searchModel,
-            TotalCount = result.TotalCount,
-            TotalPages = result.TotalPages,
-            HasNextPage = result.HasNextPage,
-            HasPreviousPage = result.HasPreviousPage
-        };
+     _logger.LogError(ex, "Error calling API to get products");
+throw;
+        }
+    }
+    
+// Additional methods...
+}
+```
 
-        return View(viewModel);
+## Controller Examples
+
+### **Home Controller**
+```csharp
+public class HomeController : Controller
+{
+    private readonly ILogger<HomeController> _logger;
+    private readonly IApiService _apiService;
+
+    public HomeController(ILogger<HomeController> logger, IApiService apiService)
+    {
+ _logger = logger;
+        _apiService = apiService;
     }
 
-    // GET: /Customer/Details/5
+    public async Task<IActionResult> Index()
+    {
+     var model = new HomeViewModel();
+        
+    if (User.Identity.IsAuthenticated)
+      {
+     try
+         {
+    model.RecentProducts = await _apiService.GetProductsAsync();
+     model.UserName = User.Identity.Name;
+      model.UserRoles = User.Claims
+    .Where(c => c.Type == ClaimTypes.Role)
+  .Select(c => c.Value)
+     .ToList();
+ }
+     catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error loading dashboard data");
+      model.ErrorMessage = "Unable to load dashboard data";
+    }
+  }
+    
+    return View(model);
+    }
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+     return View(new ErrorViewModel 
+        { 
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier 
+        });
+    }
+}
+```
+
+### **Products Controller**
+```csharp
+[Authorize]
+public class ProductsController : Controller
+{
+    private readonly IApiService _apiService;
+ private readonly ILogger<ProductsController> _logger;
+
+    public ProductsController(IApiService apiService, ILogger<ProductsController> logger)
+    {
+        _apiService = apiService;
+    _logger = logger;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        try
+    {
+     var products = await _apiService.GetProductsAsync();
+    return View(products);
+ }
+        catch (HttpRequestException ex) when (ex.Message.Contains("401"))
+        {
+          return Challenge(); // Redirect to login
+    }
+        catch (Exception ex)
+        {
+   _logger.LogError(ex, "Error loading products");
+TempData["ErrorMessage"] = "Unable to load products";
+    return View(new List<ProductViewModel>());
+        }
+    }
+
     public async Task<IActionResult> Details(Guid id)
     {
-        var query = new GetCustomerQuery { CustomerId = id };
-        var customer = await _mediator.Send(query);
-
-        if (customer == null)
+        try
         {
+      var product = await _apiService.GetProductAsync(id);
+        if (product == null)
+  return NotFound();
+  
+            return View(product);
+   }
+        catch (Exception ex)
+  {
+   _logger.LogError(ex, "Error loading product {ProductId}", id);
             return NotFound();
         }
-
-        var viewModel = _mapper.Map<CustomerDetailsViewModel>(customer);
-        return View(viewModel);
     }
 
-    // GET: /Customer/Create
+    [HttpGet]
     public IActionResult Create()
     {
-        var viewModel = new CreateCustomerViewModel();
-        return View(viewModel);
+     return View(new CreateProductViewModel());
     }
 
-    // POST: /Customer/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateCustomerViewModel viewModel)
+    public async Task<IActionResult> Create(CreateProductViewModel model)
     {
         if (!ModelState.IsValid)
-        {
-            return View(viewModel);
-        }
+         return View(model);
 
         try
         {
-            var command = _mapper.Map<CreateCustomerCommand>(viewModel);
-            var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                TempData["SuccessMessage"] = "Customer created successfully!";
-                return RedirectToAction(nameof(Details), new { id = result.Value.Id });
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error);
-            }
+         var product = await _apiService.CreateProductAsync(model);
+            TempData["SuccessMessage"] = "Product created successfully";
+            return RedirectToAction(nameof(Details), new { id = product.Id });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating customer");
-            ModelState.AddModelError(string.Empty, "An error occurred while creating the customer.");
-        }
-
-        return View(viewModel);
+      _logger.LogError(ex, "Error creating product");
+      ModelState.AddModelError("", "Error creating product");
+     return View(model);
+     }
     }
 
-    // GET: /Customer/Edit/5
-    public async Task<IActionResult> Edit(Guid id)
-    {
-        var query = new GetCustomerQuery { CustomerId = id };
-        var customer = await _mediator.Send(query);
-
-        if (customer == null)
-        {
-            return NotFound();
-        }
-
-        var viewModel = _mapper.Map<EditCustomerViewModel>(customer);
-        return View(viewModel);
-    }
-
-    // POST: /Customer/Edit/5
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, EditCustomerViewModel viewModel)
-    {
-        if (id != viewModel.Id)
-        {
-            return BadRequest();
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return View(viewModel);
-        }
-
-        try
-        {
-            var command = _mapper.Map<UpdateCustomerCommand>(viewModel);
-            var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                TempData["SuccessMessage"] = "Customer updated successfully!";
-                return RedirectToAction(nameof(Details), new { id = viewModel.Id });
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating customer {CustomerId}", id);
-            ModelState.AddModelError(string.Empty, "An error occurred while updating the customer.");
-        }
-
-        return View(viewModel);
-    }
-
-    // POST: /Customer/Delete/5
-    [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
         {
-            var command = new DeleteCustomerCommand { CustomerId = id };
-            var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                TempData["SuccessMessage"] = "Customer deleted successfully!";
-            }
+   var success = await _apiService.DeleteProductAsync(id);
+     if (success)
+     {
+         TempData["SuccessMessage"] = "Product deleted successfully";
+      }
             else
             {
-                TempData["ErrorMessage"] = string.Join(", ", result.Errors);
-            }
-        }
-        catch (Exception ex)
+         TempData["ErrorMessage"] = "Unable to delete product";
+          }
+   }
+   catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting customer {CustomerId}", id);
-            TempData["ErrorMessage"] = "An error occurred while deleting the customer.";
+            _logger.LogError(ex, "Error deleting product {ProductId}", id);
+          TempData["ErrorMessage"] = "Error deleting product";
         }
 
         return RedirectToAction(nameof(Index));
@@ -281,344 +413,72 @@ public class CustomerController : Controller
 }
 ```
 
-### ViewModel Classes
+## ViewModels
+
+### **Product ViewModels**
 ```csharp
-public class CustomerListViewModel
-{
-    public List<CustomerViewModel> Customers { get; set; } = new();
-    public CustomerSearchViewModel SearchModel { get; set; } = new();
-    public int TotalCount { get; set; }
-    public int TotalPages { get; set; }
-    public bool HasNextPage { get; set; }
-    public bool HasPreviousPage { get; set; }
-}
-
-public class CustomerViewModel
+public class ProductViewModel
 {
     public Guid Id { get; set; }
     
-    [Display(Name = "Customer Name")]
+    [Display(Name = "Product Name")]
     public string Name { get; set; }
     
-    [Display(Name = "Email Address")]
-    public string Email { get; set; }
+    [Display(Name = "Description")]
+    public string Description { get; set; }
+
+    [Display(Name = "Price")]
+    [DisplayFormat(DataFormatString = "{0:C}")]
+    public decimal Price { get; set; }
     
-    [Display(Name = "Phone Number")]
-    public string Phone { get; set; }
+    [Display(Name = "Category")]
+    public string Category { get; set; }
+ 
+    [Display(Name = "In Stock")]
+    public bool IsAvailable { get; set; }
     
-    [Display(Name = "Registration Date")]
-    [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
+    [Display(Name = "Created Date")]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}")]
     public DateTime CreatedAt { get; set; }
-    
-    [Display(Name = "VIP Status")]
-    public bool IsVip { get; set; }
-    
-    public AddressViewModel Address { get; set; }
 }
 
-public class CreateCustomerViewModel
+public class CreateProductViewModel
 {
-    [Required(ErrorMessage = "Customer name is required")]
+ [Required(ErrorMessage = "Product name is required")]
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
-    [Display(Name = "Customer Name")]
+    [Display(Name = "Product Name")]
     public string Name { get; set; }
 
-    [Required(ErrorMessage = "Email address is required")]
-    [EmailAddress(ErrorMessage = "Invalid email address format")]
-    [Display(Name = "Email Address")]
-    public string Email { get; set; }
+    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+    [Display(Name = "Description")]
+    public string Description { get; set; }
 
-    [Phone(ErrorMessage = "Invalid phone number format")]
-    [Display(Name = "Phone Number")]
-    public string Phone { get; set; }
+    [Required(ErrorMessage = "Price is required")]
+    [Range(0.01, 99999.99, ErrorMessage = "Price must be between $0.01 and $99,999.99")]
+    [Display(Name = "Price")]
+    public decimal Price { get; set; }
 
-    [Display(Name = "VIP Customer")]
-    public bool IsVip { get; set; }
+    [Required(ErrorMessage = "Category is required")]
+    [Display(Name = "Category")]
+    public string Category { get; set; }
 
-    public AddressViewModel Address { get; set; } = new();
+    [Display(Name = "Available for Sale")]
+    public bool IsAvailable { get; set; } = true;
 }
 
-public class EditCustomerViewModel : CreateCustomerViewModel
+public class HomeViewModel
 {
-    public Guid Id { get; set; }
-    
-    [Display(Name = "Registration Date")]
-    [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
-    public DateTime CreatedAt { get; set; }
-}
-
-public class CustomerSearchViewModel
-{
-    [Display(Name = "Search")]
-    public string SearchTerm { get; set; }
-    
-    public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
-    
-    [Display(Name = "Sort By")]
-    public string SortBy { get; set; } = "Name";
-    
-    [Display(Name = "Sort Direction")]
-    public string SortDirection { get; set; } = "asc";
-}
-
-public class AddressViewModel
-{
-    [Display(Name = "Street Address")]
-    [StringLength(200)]
-    public string Street { get; set; }
-
-    [Display(Name = "City")]
-    [StringLength(100)]
-    public string City { get; set; }
-
-    [Display(Name = "State/Province")]
-    [StringLength(50)]
-    public string State { get; set; }
-
-    [Display(Name = "Postal Code")]
-    [StringLength(20)]
-    public string PostalCode { get; set; }
-
-    [Display(Name = "Country")]
-    [StringLength(50)]
-    public string Country { get; set; }
+    public string UserName { get; set; }
+    public List<string> UserRoles { get; set; } = new();
+    public List<ProductViewModel> RecentProducts { get; set; } = new();
+    public string ErrorMessage { get; set; }
+    public bool IsAuthenticated => !string.IsNullOrEmpty(UserName);
 }
 ```
 
-### Razor Views
-```html
-@* Views/Customer/Index.cshtml *@
-@model CustomerListViewModel
+## Razor Views
 
-@{
-    ViewData["Title"] = "Customers";
-}
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>@ViewData["Title"]</h2>
-                <a asp-action="Create" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add New Customer
-                </a>
-            </div>
-
-            @* Search Form *@
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form asp-action="Index" method="get">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label asp-for="SearchModel.SearchTerm"></label>
-                                    <input asp-for="SearchModel.SearchTerm" class="form-control" placeholder="Search customers..." />
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label asp-for="SearchModel.SortBy"></label>
-                                    <select asp-for="SearchModel.SortBy" class="form-control">
-                                        <option value="Name">Name</option>
-                                        <option value="Email">Email</option>
-                                        <option value="CreatedAt">Date Created</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label asp-for="SearchModel.SortDirection"></label>
-                                    <select asp-for="SearchModel.SortDirection" class="form-control">
-                                        <option value="asc">Ascending</option>
-                                        <option value="desc">Descending</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label asp-for="SearchModel.PageSize"></label>
-                                    <select asp-for="SearchModel.PageSize" class="form-control">
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-search"></i> Search
-                                        </button>
-                                        <a asp-action="Index" class="btn btn-secondary">Clear</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            @* Results Table *@
-            <div class="card">
-                <div class="card-body">
-                    @if (Model.Customers.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>@Html.DisplayNameFor(m => m.Customers.First().Name)</th>
-                                        <th>@Html.DisplayNameFor(m => m.Customers.First().Email)</th>
-                                        <th>@Html.DisplayNameFor(m => m.Customers.First().Phone)</th>
-                                        <th>@Html.DisplayNameFor(m => m.Customers.First().CreatedAt)</th>
-                                        <th>@Html.DisplayNameFor(m => m.Customers.First().IsVip)</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var customer in Model.Customers)
-                                    {
-                                        <tr>
-                                            <td>@customer.Name</td>
-                                            <td>@customer.Email</td>
-                                            <td>@customer.Phone</td>
-                                            <td>@Html.DisplayFor(m => customer.CreatedAt)</td>
-                                            <td>
-                                                @if (customer.IsVip)
-                                                {
-                                                    <span class="badge badge-success">VIP</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge badge-secondary">Regular</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a asp-action="Details" asp-route-id="@customer.Id" class="btn btn-sm btn-info">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a asp-action="Edit" asp-route-id="@customer.Id" class="btn btn-sm btn-warning">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-danger" 
-                                                            onclick="confirmDelete('@customer.Id', '@customer.Name')">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        @* Pagination *@
-                        @if (Model.TotalPages > 1)
-                        {
-                            <nav aria-label="Customer pagination">
-                                <ul class="pagination justify-content-center">
-                                    @if (Model.HasPreviousPage)
-                                    {
-                                        <li class="page-item">
-                                            <a class="page-link" asp-action="Index" 
-                                               asp-route-pageNumber="@(Model.SearchModel.PageNumber - 1)"
-                                               asp-route-searchTerm="@Model.SearchModel.SearchTerm"
-                                               asp-route-sortBy="@Model.SearchModel.SortBy"
-                                               asp-route-sortDirection="@Model.SearchModel.SortDirection"
-                                               asp-route-pageSize="@Model.SearchModel.PageSize">
-                                                Previous
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @for (int i = Math.Max(1, Model.SearchModel.PageNumber - 2); 
-                                          i <= Math.Min(Model.TotalPages, Model.SearchModel.PageNumber + 2); i++)
-                                    {
-                                        <li class="page-item @(i == Model.SearchModel.PageNumber ? "active" : "")">
-                                            <a class="page-link" asp-action="Index" 
-                                               asp-route-pageNumber="@i"
-                                               asp-route-searchTerm="@Model.SearchModel.SearchTerm"
-                                               asp-route-sortBy="@Model.SearchModel.SortBy"
-                                               asp-route-sortDirection="@Model.SearchModel.SortDirection"
-                                               asp-route-pageSize="@Model.SearchModel.PageSize">
-                                                @i
-                                            </a>
-                                        </li>
-                                    }
-
-                                    @if (Model.HasNextPage)
-                                    {
-                                        <li class="page-item">
-                                            <a class="page-link" asp-action="Index" 
-                                               asp-route-pageNumber="@(Model.SearchModel.PageNumber + 1)"
-                                               asp-route-searchTerm="@Model.SearchModel.SearchTerm"
-                                               asp-route-sortBy="@Model.SearchModel.SortBy"
-                                               asp-route-sortDirection="@Model.SearchModel.SortDirection"
-                                               asp-route-pageSize="@Model.SearchModel.PageSize">
-                                                Next
-                                            </a>
-                                        </li>
-                                    }
-                                </ul>
-                            </nav>
-                        }
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                            <h4>No Customers Found</h4>
-                            <p class="text-muted">Try adjusting your search criteria or add a new customer.</p>
-                            <a asp-action="Create" class="btn btn-primary">Add First Customer</a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* Delete Confirmation Modal *@
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="customerName"></strong>?</p>
-                <p class="text-muted">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="post" style="display: inline;">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        function confirmDelete(customerId, customerName) {
-            document.getElementById('customerName').textContent = customerName;
-            document.getElementById('deleteForm').action = '@Url.Action("Delete")/' + customerId;
-            $('#deleteModal').modal('show');
-        }
-    </script>
-}
-```
-
-### Layout Page
+### **Layout with Authentication**
 ```html
 @* Views/Shared/_Layout.cshtml *@
 <!DOCTYPE html>
@@ -626,73 +486,69 @@ public class AddressViewModel
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - CleanCut</title>
-    
+    <title>@ViewData["Title"] - CleanCut WebApp</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
+    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-primary border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-cut"></i> CleanCut
-                </a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Customer" asp-action="Index">Customers</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Order" asp-action="Index">Orders</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Product" asp-action="Index">Products</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
-                </div>
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+ CleanCut WebApp
+          </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
+  <span class="navbar-toggler-icon"></span>
+      </button>
+        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+      <ul class="navbar-nav flex-grow-1">
+            <li class="nav-item">
+           <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+    </li>
+ @if (User.Identity.IsAuthenticated)
+        {
+        <li class="nav-item">
+                <a class="nav-link" asp-controller="Products" asp-action="Index">Products</a>
+            </li>
+            <li class="nav-item">
+   <a class="nav-link" asp-controller="Customers" asp-action="Index">Customers</a>
+        </li>
+           }
+      </ul>
+        <partial name="_LoginPartial" />
+              </div>
             </div>
         </nav>
-    </header>
+ </header>
     
     <div class="container">
-        @* Alert Messages *@
-        @if (TempData["SuccessMessage"] != null)
+     @* Alert Messages *@
+     @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
-            </div>
-        }
+ <div class="alert alert-success alert-dismissible fade show" role="alert">
+     @TempData["SuccessMessage"]
+             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+       </div>
+  }
         
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
         
-        <main role="main" class="pb-3">
+  <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
     <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; @DateTime.Now.Year - CleanCut - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+   <div class="container">
+       &copy; @DateTime.Now.Year - CleanCut WebApp - 
+      <a asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
@@ -705,163 +561,139 @@ public class AddressViewModel
 </html>
 ```
 
-## Key Technologies & Packages
-
-### Required NuGet Packages
-```xml
-<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
-<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.0" />
-<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-<PackageReference Include="MediatR" Version="12.2.0" />
-<PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
-<PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-```
-
-### Project References
-- **CleanCut.Application** (for commands, queries, and DTOs)
-- **CleanCut.Infrastructure.Identity** (for authentication)
-- **CleanCut.Infrastructure.Shared** (for shared services)
-
-## Configuration & Startup
-
-### Program.cs
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services
-builder.Services.AddControllersWithViews()
-    .AddRazorRuntimeCompilation(); // For development
-
-// Add Identity
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => 
+### **Login Partial**
+```html
+@* Views/Shared/_LoginPartial.cshtml *@
+<ul class="navbar-nav">
+    @if (User.Identity.IsAuthenticated)
+  {
+   <li class="nav-item dropdown">
+         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+ data-bs-toggle="dropdown" aria-expanded="false">
+ Welcome, @User.Identity.Name!
+            </a>
+            <ul class="dropdown-menu">
+  <li><span class="dropdown-item-text">Roles: @string.Join(", ", User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value))</span></li>
+           <li><hr class="dropdown-divider"></li>
+            <li>
+       <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+              <button type="submit" class="dropdown-item">Logout</button>
+         </form>
+   </li>
+         </ul>
+        </li>
+    }
+    else
     {
-        options.SignIn.RequireConfirmedAccount = false;
-        options.Password.RequireDigit = true;
-        options.Password.RequiredLength = 6;
-    })
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<IdentityDbContext>();
-
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(ViewModelMappingProfile));
-
-// Add MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetCustomerQuery).Assembly));
-
-// Add application services
-builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices(builder.Configuration);
-
-var app = builder.Build();
-
-// Configure pipeline
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Configure routes
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-app.MapRazorPages();
-
-app.Run();
+        <li class="nav-item">
+  <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+        </li>
+    }
+</ul>
 ```
+
+## Development Setup
+
+### **Prerequisites**
+1. **IdentityServer** running on `https://localhost:5001`
+2. **CleanCut.API** running on `https://localhost:7142`
+3. **SQL Server** connection configured
+
+### **Configuration** (`appsettings.json`)
+```json
+{
+  "IdentityServer": {
+"Authority": "https://localhost:5001",
+    "ClientId": "CleanCutWebApp",
+    "ClientSecret": "WebAppSecret2024!"
+  },
+  "ApiSettings": {
+    "BaseUrl": "https://localhost:7142"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.AspNetCore.Authentication": "Information"
+    }
+  }
+}
+```
+
+### **Starting the Application**
+```bash
+# Terminal 1: Start IdentityServer
+dotnet run --project src/Infrastructure/CleanCut.Infrastructure.Identity
+
+# Terminal 2: Start API
+dotnet run --project src/Presentation/CleanCut.API
+
+# Terminal 3: Start MVC WebApp
+dotnet run --project src/Presentation/CleanCut.WebApp
+
+# Access application
+open https://localhost:7144
+```
+
+### **Test Accounts**
+```
+Admin User:
+- Email: admin@cleancut.com
+- Password: TempPassword123!
+- Role: Admin (full access)
+
+Regular User:
+- Email: user@cleancut.com
+- Password: TempPassword123!
+- Role: User (limited access)
+```
+
+## Security Features
+
+### **?? Authentication Security**
+- ? **PKCE Implementation** for Authorization Code flow
+- ? **Secure Cookie Storage** for authentication state
+- ? **HTTPS Enforcement** throughout application
+- ? **Anti-forgery Tokens** on all forms
+- ? **Role-based Authorization** throughout controllers
+
+### **??? Application Security**
+- ? **CSRF Protection** with ValidateAntiForgeryToken
+- ? **XSS Prevention** with HTML encoding
+- ? **SQL Injection Prevention** through parameterized queries
+- ? **Input Validation** with data annotations
+- ? **Secure Headers** implementation
+
+## Production Considerations
+
+### **Authentication Configuration**
+- ?? **Client Secret Management** via secure configuration
+- ?? **Certificate-based Token Validation** 
+- ?? **Secure Cookie Configuration** with proper flags
+- ?? **HTTPS Certificate** configuration
+- ?? **CORS Policy** restriction
+
+### **Performance Optimization**
+- ? **Response Caching** for static content
+- ? **Output Caching** for frequently accessed pages
+- ? **CDN Integration** for static assets
+- ? **Connection Pooling** for API calls
+- ? **Health Checks** for monitoring
 
 ## Testing Strategy
 
-### Unit Tests
-- Test controller actions with mocked dependencies
-- Verify view model mapping
-- Test custom action filters and attributes
+### **Authentication Testing**
+1. **Test authentication flow** end-to-end
+2. **Verify role-based access** throughout application
+3. **Test token refresh** and expiration handling
+4. **Validate CSRF protection** on forms
 
-### Integration Tests
-- Test complete user workflows
-- Verify form submissions and validation
-- Test authentication and authorization
+### **Integration Testing**
+1. **API integration** with authenticated requests
+2. **Error handling** for API failures
+3. **Session management** and timeout scenarios
+4. **Cross-browser compatibility**
 
-### UI Tests
-- Selenium tests for critical user journeys
-- Accessibility testing
-- Cross-browser compatibility testing
+---
 
-## Common Patterns
-
-### Base Controller
-```csharp
-public abstract class BaseController : Controller
-{
-    protected void ShowSuccessMessage(string message)
-    {
-        TempData["SuccessMessage"] = message;
-    }
-
-    protected void ShowErrorMessage(string message)
-    {
-        TempData["ErrorMessage"] = message;
-    }
-
-    protected void AddModelErrors(IEnumerable<string> errors)
-    {
-        foreach (var error in errors)
-        {
-            ModelState.AddModelError(string.Empty, error);
-        }
-    }
-
-    protected string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    }
-}
-```
-
-### Auto Mapper Profile
-```csharp
-public class ViewModelMappingProfile : Profile
-{
-    public ViewModelMappingProfile()
-    {
-        // Customer mappings
-        CreateMap<CustomerInfo, CustomerViewModel>();
-        CreateMap<CustomerInfo, CustomerDetailsViewModel>();
-        CreateMap<CustomerInfo, EditCustomerViewModel>();
-        CreateMap<CreateCustomerViewModel, CreateCustomerCommand>();
-        CreateMap<EditCustomerViewModel, UpdateCustomerCommand>();
-
-        // Address mappings
-        CreateMap<AddressDto, AddressViewModel>();
-        CreateMap<AddressViewModel, AddressDto>();
-    }
-}
-```
-
-## Common Mistakes to Avoid
-
-? **Fat Controllers** - Don't put business logic in controllers
-? **ViewBag/ViewData Overuse** - Use strongly-typed ViewModels instead
-? **Missing Validation** - Always validate user input
-? **Poor UX** - Don't ignore user experience design
-? **Inconsistent UI** - Maintain consistent design patterns
-
-? **Thin Controllers** - Delegate to Application Layer
-? **Strongly-Typed Views** - Use ViewModels for type safety
-? **Responsive Design** - Support multiple screen sizes
-? **Accessibility** - Follow WCAG guidelines
-? **Progressive Enhancement** - Ensure functionality without JavaScript
-
-This layer is your user's primary interaction point - make it intuitive, responsive, and accessible!
+**This MVC WebApp demonstrates traditional web application development with modern OAuth2/OIDC authentication, showcasing secure server-side rendering with comprehensive user authentication and API integration.**

@@ -1,282 +1,501 @@
-# CleanCut WinForms Application
+# CleanCut.WinApp - Desktop Application with OAuth2 Authentication
 
 ## Overview
 
-This is a **Windows Forms desktop application** implementing the **MVP (Model-View-Presenter)** pattern with comprehensive **User and Product Management** features using the same enterprise-grade architecture as the API and Blazor projects.
+The **CleanCut.WinApp** is a **Windows Forms desktop application** that serves as a **public client** in the OAuth2/OpenID Connect ecosystem. It demonstrates secure desktop application development with modern authentication, implementing the **MVP (Model-View-Presenter)** pattern with comprehensive **User and Product Management** features.
 
-## Architecture
+## Role in Authentication Architecture
 
-### MVP Pattern Implementation
-
-```
-???????????????????????????????????????
-?               Views                 ? ? WinForms UI
-?  • UserListForm / UserEditForm     ?
-?  • ProductListForm / ProductEditForm?
-???????????????????????????????????????
-?             Presenters              ? ? Business Logic Coordination
-?  • UserListPresenter               ?
-?  • UserEditPresenter               ?
-?  • ProductListPresenter            ?
-?  • ProductEditPresenter            ?
-???????????????????????????????????????
-?            Application              ? ? CQRS + MediatR + Caching
-?  • User Commands & Queries         ?
-?  • Product Commands & Queries      ?
-?  • Domain Events                   ?
-???????????????????????????????????????
-?             Domain                  ? ? Pure Business Logic
-?  • User & Product Entities         ?
-?  • Domain Events                   ?
-???????????????????????????????????????
-?          Infrastructure             ? ? Data Access + Caching
-?  • Entity Framework Core 9         ?
-?  • Redis Cache + In-Memory Fallback?
-???????????????????????????????????????
+```mermaid
+graph TB
+    USER[Desktop User] -->|Interactions| WINAPP[WinForms App]
+    WINAPP -->|OAuth2/OIDC<br/>Authorization Code + PKCE<br/>Public Client| IDENTITY[IdentityServer]
+    WINAPP -->|Bearer Token<br/>API Calls| API[CleanCut.API]
+    
+    subgraph "Desktop Application"
+        MVP[MVP Pattern]
+    AUTH[OAuth2 Client]
+        BROWSER[System Browser]
+    end
+    
+    WINAPP --> MVP
+    WINAPP --> AUTH
+    AUTH --> BROWSER
 ```
 
-## Features
+## Authentication Flow
 
-### ? **Complete User Management**
-- **User List View**: Display all users with filtering capabilities
-- **Add Users**: Create new users with validation
-- **Edit Users**: Update existing user details
-- **Delete Users**: Remove users with confirmation
-- **Real-time Validation**: Client-side form validation
-- **User Search & Filter**: Find users quickly
+### **OAuth2/OpenID Connect for Desktop Apps**
+1. **User clicks login** in desktop application
+2. **System browser launches** for authentication
+3. **User authenticates** with IdentityServer
+4. **Authorization Code + PKCE** flow completes
+5. **Browser redirects** back to desktop app
+6. **Tokens received** and stored securely
+7. **API calls** include Bearer tokens
 
-### ? **Complete Product Management**
-- **Product List View**: Display products with owner information
-- **Filter by User**: View products for specific users
-- **Add Products**: Create new products with user assignment
-- **Edit Products**: Update product details, price, availability
-- **Delete Products**: Remove products with confirmation
-- **Price Management**: Decimal price input with validation
-- **Availability Toggle**: Mark products as available/unavailable
-
-### ? **Enterprise Patterns**
-- **MVP Pattern**: Clean separation of concerns
-- **Dependency Injection**: Microsoft.Extensions.DependencyInjection
-- **CQRS**: Commands and Queries via MediatR
-- **Domain Events**: Automatic event publishing
-- **Caching**: Redis with automatic fallback to in-memory
-- **Validation**: FluentValidation integration
-- **Logging**: Structured logging with Serilog
-
-## User Interface Features
-
-### ?? **User Management Interface**
-```
-?? User Management ?????????????????????????????????????
-? [Add User] [Edit User] [Delete User]    [Refresh]   ?
-????????????????????????????????????????????????????????
-? First Name ? Last Name ? Email      ? Status ? Created?
-? John       ? Doe       ? john@...   ? Active ? 2024-..?
-? Jane       ? Smith     ? jane@...   ? Active ? 2024-..?
-????????????????????????????????????????????????????????
-```
-
-### ??? **Product Management Interface**
-```
-?? Product Management ??????????????????????????????????
-? Filter by User: [All Users     ?] [Filter]          ?
-? [Add Product] [Edit Product] [Delete Product] [Refresh]?
-????????????????????????????????????????????????????????
-? Name    ? Description ? Price ? Status ? Owner ? Created?
-? Widget  ? A useful... ? $29.99? Avail. ? John  ? 2024-..?
-? Gadget  ? Advanced... ? $49.99? Unavail? Jane  ? 2024-..?
-????????????????????????????????????????????????????????
-```
-
-### ?? **Form Dialogs**
-- **User Edit Dialog**: First Name, Last Name, Email, Active Status
-- **Product Edit Dialog**: Name, Description, Price, User Assignment, Availability
-
-## Technical Implementation
-
-### ??? **MVP Pattern Benefits**
-
-#### **Separation of Concerns**
+### **Client Configuration**
 ```csharp
-// View: Pure UI Logic
-public partial class ProductListForm : BaseForm, IProductListView
-{
-    public event EventHandler? AddProductRequested;
-    public void DisplayProducts(IEnumerable<ProductInfo> products) { ... }
-}
+Client Type: Public Client (No Client Secret)
+Grant Type: Authorization Code + PKCE
+Client ID: CleanCutWinApp
+Client Secret: None (Public Client)
+Scopes: openid, profile, CleanCutAPI
+Redirect URIs: http://localhost:8080/, cleancut://callback
+```
 
-// Presenter: Business Logic Coordination
-public class ProductListPresenter : BasePresenter<IProductListView>
+## Key Features
+
+### **?? OAuth2 Desktop Authentication**
+- ? **Public Client Implementation** following RFC 8252
+- ? **PKCE (Proof Key for Code Exchange)** for enhanced security
+- ? **System Browser Integration** for secure authentication
+- ? **Custom URI Scheme** handling (cleancut://)
+- ? **Secure Token Storage** with Windows Data Protection API
+- ? **Automatic Token Refresh** with refresh tokens
+
+### **??? Enterprise Desktop Architecture**
+- ? **MVP Pattern** with clean separation of concerns
+- ? **Dependency Injection** throughout the application
+- ? **CQRS Implementation** using MediatR
+- ? **Domain Events** for business logic decoupling
+- ? **Caching Strategy** with Redis and in-memory fallback
+- ? **Comprehensive Error Handling** and logging
+
+### **?? Business Functionality**
+- ? **Complete User Management** with CRUD operations
+- ? **Product Management** with user assignment
+- ? **Real-time Validation** and error handling
+- ? **Role-based UI Features** based on user claims
+- ? **Search and Filtering** capabilities
+
+## Authentication Implementation
+
+### **OAuth2 Client Configuration**
+```csharp
+// OAuth2 configuration for desktop app
+public class DesktopAuthenticationService : IAuthenticationService
 {
-    private async void OnAddProductRequested(object? sender, EventArgs e)
+    private readonly OidcClient _oidcClient;
+    
+    public DesktopAuthenticationService()
     {
-        await ExecuteAsync(async () => {
-            // Coordinate with Application layer
-            var users = await _mediator.Send(new GetAllUsersQuery());
-            // Handle business logic
-        });
+        var options = new OidcClientOptions
+   {
+    Authority = "https://localhost:5001",
+     ClientId = "CleanCutWinApp",
+    RedirectUri = "http://localhost:8080/",
+     Scope = "openid profile CleanCutAPI",
+         ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect,
+            Flow = OidcClientOptions.AuthenticationFlow.AuthorizationCode,
+        UsePkce = true // Required for public clients
+        };
+        
+   _oidcClient = new OidcClient(options);
     }
 }
 ```
 
-#### **Testability**
-- Views implement interfaces ? Easy mocking
-- Presenters contain testable business logic
-- No UI dependencies in business logic
-
-### ?? **Async Operations with Error Handling**
+### **System Browser Integration**
 ```csharp
-protected async Task ExecuteAsync(Func<Task> operation)
+public async Task<LoginResult> LoginAsync()
 {
     try
     {
-        View.SetLoading(true);
-        await operation();
+        // Launch system browser for authentication
+    var loginRequest = new LoginRequest();
+        var result = await _oidcClient.LoginAsync(loginRequest);
+     
+        if (result.IsError)
+        {
+            return new LoginResult 
+{ 
+          IsSuccess = false, 
+   Error = result.Error 
+    };
+        }
+
+        // Store tokens securely
+        await _tokenStorage.StoreTokensAsync(result.AccessToken, result.RefreshToken);
+        
+        return new LoginResult 
+        { 
+            IsSuccess = true, 
+  UserClaims = result.User.Claims 
+     };
     }
     catch (Exception ex)
     {
-        HandleError(ex);
-    }
-    finally
-    {
-        View.SetLoading(false);
+      _logger.LogError(ex, "Authentication failed");
+      return new LoginResult { IsSuccess = false, Error = ex.Message };
     }
 }
 ```
 
-### ?? **Data Integration**
-- **Same Commands/Queries** as API project
-- **Consistent DTOs** across all presentation layers
-- **Automatic caching** with cache invalidation
-- **Domain events** for business logic decoupling
-
-### ?? **Validation & Error Handling**
+### **Secure Token Storage**
 ```csharp
-public Dictionary<string, string> ValidateForm()
+public class SecureTokenStorage : ITokenStorage
 {
-    var errors = new Dictionary<string, string>();
-    
-    if (string.IsNullOrWhiteSpace(_nameTextBox.Text))
-        errors.Add("Name", "Product name is required");
-    
-    if (_priceNumericUpDown.Value < 0)
-        errors.Add("Price", "Price cannot be negative");
-    
-    return errors;
+    // Uses Windows Data Protection API for secure storage
+    public async Task StoreTokensAsync(string accessToken, string refreshToken)
+    {
+        var data = JsonSerializer.Serialize(new 
+   { 
+            AccessToken = accessToken, 
+       RefreshToken = refreshToken,
+            Timestamp = DateTime.UtcNow
+        });
+     
+        var protectedData = ProtectedData.Protect(
+  Encoding.UTF8.GetBytes(data), 
+            null, 
+            DataProtectionScope.CurrentUser);
+  
+        await File.WriteAllBytesAsync(TokenFilePath, protectedData);
+    }
 }
 ```
 
-## Running the Application
+## Architecture Implementation
 
-### Prerequisites
-- **.NET 10 SDK** (preview)
-- **SQL Server LocalDB** (for database)
-- **Redis** (optional - will fallback to in-memory cache)
+### **MVP Pattern with Authentication**
 
-### Setup Database
-The application will automatically:
-1. **Create database** if it doesn't exist
-2. **Run migrations** to set up schema
-3. **Seed test data** with sample users and products
-
-### Setup Redis (Optional)
-```bash
-# Using Docker
-docker run -d -p 6379:6379 redis:latest
-
-# Or install Redis locally
-# Windows: Download from https://redis.io/download
-# The app will automatically fallback to in-memory cache if Redis is unavailable
+```
+???????????????????????????????????????????????????????
+?    Views (UI)    ?
+?• LoginForm, MainForm, UserListForm   ?
+?  • ProductListForm, UserEditForm     ?
+???????????????????????????????????????????????????????
+      ?
+???????????????????????????????????????????????????????
+?      Presenters (Logic)  ?
+?  • LoginPresenter, MainPresenter        ?
+?  • UserListPresenter, ProductListPresenter         ?
+???????????????????????????????????????????????????????
+             ?
+???????????????????????????????????????????????????????
+?          Application Layer (CQRS)         ?
+?  • Commands, Queries, Handlers via MediatR         ?
+?  • Authentication Services, API Services    ?
+???????????????????????????????????????????????????????
+               ?
+???????????????????????????????????????????????????????
+?      Domain Layer        ?
+?  • Entities, Value Objects, Business Rules     ?
+???????????????????????????????????????????????????????
+  ?
+???????????????????????????????????????????????????????
+?         Infrastructure Layer           ?
+?  • HTTP Clients, Token Storage, Caching   ?
+???????????????????????????????????????????????????????
 ```
 
-### Run Application
-```bash
-dotnet run --project src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj
+### **Main Application Components**
+
+#### **LoginForm with OAuth2**
+```csharp
+public partial class LoginForm : BaseForm, ILoginView
+{
+    private readonly LoginPresenter _presenter;
+    
+ private async void LoginButton_Click(object sender, EventArgs e)
+    {
+        await _presenter.LoginAsync();
+    }
+    
+    public void ShowLoginSuccess(UserInfo userInfo)
+    {
+      MessageBox.Show($"Welcome, {userInfo.Name}!");
+        this.DialogResult = DialogResult.OK;
+      this.Close();
+    }
+    
+    public void ShowLoginError(string error)
+    {
+   MessageBox.Show($"Login failed: {error}", "Authentication Error", 
+           MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
 ```
+
+#### **Authenticated API Service**
+```csharp
+public class AuthenticatedApiService : IApiService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ITokenStorage _tokenStorage;
+    
+    public AuthenticatedApiService(HttpClient httpClient, ITokenStorage tokenStorage)
+    {
+        _httpClient = httpClient;
+        _tokenStorage = tokenStorage;
+        _httpClient.BaseAddress = new Uri("https://localhost:7142");
+    }
+    
+    private async Task EnsureAuthenticatedAsync()
+    {
+    var accessToken = await _tokenStorage.GetAccessTokenAsync();
+        
+if (string.IsNullOrEmpty(accessToken) || await IsTokenExpiredAsync(accessToken))
+        {
+     accessToken = await RefreshTokenAsync();
+        }
+ 
+        _httpClient.DefaultRequestHeaders.Authorization = 
+          new AuthenticationHeaderValue("Bearer", accessToken);
+    }
+    
+    public async Task<List<ProductInfo>> GetProductsAsync()
+    {
+        await EnsureAuthenticatedAsync();
+        
+  var response = await _httpClient.GetAsync("/api/v1/products");
+      response.EnsureSuccessStatusCode();
+        
+   var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<ProductInfo>>(json, _jsonOptions);
+    }
+}
+```
+
+## User Interface Features
+
+### **?? Authentication UI**
+```
+??? Login Dialog ??????????????????????????????
+?       ?
+?  ?? CleanCut Desktop Authentication        ?
+?       ?
+?  Click "Login" to authenticate with        ?
+?  IdentityServer via your browser        ?
+?          ?
+?  [?? Login with Browser]    [Cancel]       ?
+?                ?
+?  Status: Ready to authenticate...        ?
+??????????????????????????????????????????????
+```
+
+### **?? Main Application with User Info**
+```
+??? CleanCut Desktop Application ??????????????????????????????????
+? File  Edit  View  Help             ?? John Doe (Admin) ?
+???????????????????????????????????????????????????????????????????
+?         ?
+?  ?? Dashboard ?
+?  ???????????????????  ???????????????????  ??????????????????  ?
+?  ? ?? Users: 125   ?  ? ?? Products: 89 ?  ? ?? Last Sync  ?  ?
+?  ? Active: 98      ?  ? Available: 76   ?  ? 2 min ago     ?  ?
+?  ???????????????????  ???????????????????  ??????????????????  ?
+?       ?
+?  [?? Manage Users]  [?? Manage Products]  [?? Settings]        ?
+?           ?
+???????????????????????????????????????????????????????????????????
+```
+
+### **?? User Management Interface**
+```
+??? User Management ???????????????????????????????????????????????
+? [? Add User] [?? Edit] [??? Delete] [?? Refresh] [?? Search...] ?
+???????????????????????????????????????????????????????????????????
+? First Name ? Last Name ? Email  ? Role  ? Status ? Created ?
+???????????????????????????????????????????????????????????????????
+? John       ? Doe       ? john@example.com ? Admin ? Active ? 2024-01 ?
+? Jane       ? Smith     ? jane@example.com ? User  ? Active ? 2024-01 ?
+? Bob        ? Wilson    ? bob@example.com  ? User  ? Inactive? 2024-02 ?
+???????????????????????????????????????????????????????????????????
+```
+
+### **?? Product Management with Authorization**
+```
+??? Product Management ????????????????????????????????????????????
+? Filter by User: [All Users ?] [Apply Filter]         ?
+? [? Add Product] [?? Edit] [??? Delete*] [?? Refresh]            ?
+? (*Admin only)    ?
+???????????????????????????????????????????????????????????????????
+? Name     ? Description ? Price  ? Owner      ? Available ? Created ?
+???????????????????????????????????????????????????????????????????
+? Widget A ? Premium...  ? $29.99 ? John Doe   ? ? Yes    ? 2024-01 ?
+? Gadget B ? Advanced... ? $49.99 ? Jane Smith ? ? No     ? 2024-01 ?
+? Tool C   ? Professional? $79.99 ? Bob Wilson ? ? Yes    ? 2024-02 ?
+???????????????????????????????????????????????????????????????????
+```
+
+## Security Features
+
+### **?? OAuth2 Security Implementation**
+- ? **PKCE (Proof Key for Code Exchange)** mandatory for public clients
+- ? **No Client Secrets** stored in application (public client)
+- ? **System Browser** for secure authentication flow
+- ? **Custom URI Scheme** for secure callback handling
+- ? **Token Encryption** using Windows Data Protection API
+
+### **??? Application Security**
+- ? **Secure Token Storage** with DPAPI encryption
+- ? **Automatic Token Refresh** with refresh token rotation
+- ? **Role-based UI** showing/hiding features based on claims
+- ? **Input Validation** on all forms
+- ? **Error Handling** without sensitive data exposure
+
+### **?? Desktop-Specific Security**
+- ? **Process Isolation** from web browsers
+- ? **Local Token Storage** encrypted per user
+- ? **No Network Token Exposure** in application memory
+- ? **Secure Communication** over HTTPS only
+
+## Development Setup
+
+### **Prerequisites**
+1. **.NET 9 SDK**
+2. **IdentityServer** running on `https://localhost:5001`
+3. **CleanCut.API** running on `https://localhost:7142`
+4. **Windows OS** with Data Protection API support
+
+### **Starting the Application**
+```bash
+# Terminal 1: Start IdentityServer
+dotnet run --project src/Infrastructure/CleanCut.Infrastructure.Identity
+
+# Terminal 2: Start API
+dotnet run --project src/Presentation/CleanCut.API
+
+# Terminal 3: Start Desktop App
+dotnet run --project src/Presentation/CleanCut.WinApp
+
+# The application will prompt for login on first run
+```
+
+### **First Run Setup**
+1. **Application starts** with login prompt
+2. **Click "Login with Browser"** to open system browser
+3. **Authenticate** with test credentials:
+   - **Admin**: admin@cleancut.com / TempPassword123!
+   - **User**: user@cleancut.com / TempPassword123!
+4. **Browser redirects** back to desktop application
+5. **Main application opens** with authenticated session
 
 ## Configuration
 
-### Database Connections
-- **Development**: `CleanCutDb_Dev` (LocalDB) - **Shared with API and other applications**
-- **Production**: `CleanCutDb` (LocalDB) - **Shared with API and other applications**
-
-### Logging Configuration
-- **Console**: Real-time logging during development
-- **File**: Persistent logs in `logs/cleancut-winapp-*.txt`
-- **Structured**: JSON-formatted logs with correlation IDs
-
-## Enterprise Features
-
-### ?? **Domain Events Integration**
-When entities are modified, domain events are automatically published:
-```csharp
-// User entity raises events
-user.UpdateName("New", "Name"); // ? UserUpdatedEvent published
-
-// Product entity raises events  
-product.UpdatePrice(99.99m); // ? ProductUpdatedEvent published
+### **Authentication Settings** (`appsettings.json`)
+```json
+{
+  "Authentication": {
+ "Authority": "https://localhost:5001",
+    "ClientId": "CleanCutWinApp",
+    "RedirectUri": "http://localhost:8080/",
+ "PostLogoutRedirectUri": "cleancut://logged-out",
+    "Scope": "openid profile CleanCutAPI"
+  },
+  "ApiSettings": {
+    "BaseUrl": "https://localhost:7142"
+  }
+}
 ```
 
-### ?? **Caching Integration**
-- **Redis caching** for improved performance
-- **Automatic cache invalidation** when data changes
-- **Fallback to in-memory** caching when Redis unavailable
-- **Cache key management** with consistent naming
-
-### ?? **Performance Optimizations**
-- **Async/await** throughout the application
-- **Loading indicators** for long-running operations
-- **Efficient data binding** with minimal UI updates
-- **Memory management** with proper presenter cleanup
-
-## Extending the Application
-
-### Adding New Entity Management
-1. **Create View Interface** inheriting from `IView`
-2. **Implement Form** inheriting from `BaseForm`
-3. **Create Presenter** inheriting from `BasePresenter<T>`
-4. **Add to ServiceConfiguration** for dependency injection
-5. **Update MainForm** navigation menu
-
-### Example: Adding Category Management
+### **Dependency Injection Setup**
 ```csharp
-// 1. Interface
-public interface ICategoryListView : IView { ... }
-
-// 2. Form
-public class CategoryListForm : BaseForm, ICategoryListView { ... }
-
-// 3. Presenter  
-public class CategoryListPresenter : BasePresenter<ICategoryListView> { ... }
-
-// 4. Register services
-services.AddScoped<ICategoryListView, CategoryListForm>();
-services.AddScoped<CategoryListPresenter>();
-
-// 5. Add menu item
-categoryMenuItem.Click += OnCategoryManagementClicked;
+public static class ServiceConfiguration
+{
+ public static IServiceCollection ConfigureServices(this IServiceCollection services)
+    {
+        // Authentication
+        services.AddSingleton<IAuthenticationService, DesktopAuthenticationService>();
+        services.AddSingleton<ITokenStorage, SecureTokenStorage>();
+   
+        // HTTP Client with authentication
+ services.AddHttpClient<IApiService, AuthenticatedApiService>();
+      
+        // MVP Components
+        services.AddTransient<ILoginView, LoginForm>();
+        services.AddTransient<LoginPresenter>();
+        services.AddTransient<IMainView, MainForm>();
+  services.AddTransient<MainPresenter>();
+      
+      // Application Layer
+ services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetProductsQuery).Assembly));
+        
+  return services;
+    }
+}
 ```
 
-## Architecture Benefits
+## Error Handling and User Experience
 
-### ??? **Maintainability**
-- **Clear separation** between UI and business logic
-- **Consistent patterns** across all features
-- **Easy to extend** with new functionality
+### **Authentication Error Handling**
+```csharp
+public class AuthenticationErrorHandler
+{
+public static void HandleAuthenticationError(Exception ex, Form parentForm)
+    {
+        string message = ex switch
+      {
+            HttpRequestException => "Unable to connect to authentication server. Please check your internet connection.",
+TimeoutException => "Authentication timed out. Please try again.",
+            OperationCanceledException => "Authentication was cancelled.",
+            _ => "An unexpected error occurred during authentication."
+        };
+     
+        MessageBox.Show(parentForm, message, "Authentication Error", 
+     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+}
+```
 
-### ?? **Testability**
-- **Mock views** for presenter unit tests
-- **Test business logic** without UI dependencies
-- **Isolated component testing**
+### **Offline Mode Support**
+```csharp
+public class OfflineService : IOfflineService
+{
+    public async Task<bool> IsOnlineAsync()
+    {
+  try
+    {
+        using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            var response = await client.GetAsync("https://localhost:7142/health");
+      return response.IsSuccessStatusCode;
+        }
+        catch
+   {
+    return false;
+        }
+    }
+    
+    public void ShowOfflineMessage(Form parentForm)
+    {
+  MessageBox.Show(parentForm, 
+            "The application is currently offline. Some features may be limited.", 
+            "Offline Mode", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+}
+```
 
-### ?? **Consistency**
-- **Same business rules** as web API
-- **Consistent data models** across platforms
-- **Unified caching strategy**
+## Testing Strategy
 
-### ?? **Performance**
-- **Efficient async operations**
-- **Smart caching** with automatic invalidation
-- **Minimal UI updates** with proper data binding
+### **Authentication Testing**
+1. **OAuth2 Flow Testing** with mock IdentityServer
+2. **Token Refresh Logic** testing
+3. **Offline/Online Scenarios** testing
+4. **Error Handling** validation
 
-This WinForms application demonstrates how desktop applications can leverage the same enterprise patterns as modern web applications, providing a rich user experience while maintaining clean architecture principles and comprehensive business functionality! ??
+### **Integration Testing**
+1. **API Integration** with authenticated requests
+2. **MVP Pattern** component testing
+3. **UI Automation** testing with White framework
+4. **Cross-platform** compatibility testing
+
+## Production Deployment
+
+### **Security Considerations**
+- ?? **Code Signing Certificate** for application trust
+- ?? **Antivirus Exclusions** for application directory
+- ?? **Network Firewall** configuration for HTTPS endpoints
+- ?? **User Access Control** and permission requirements
+
+### **Distribution Methods**
+- ?? **ClickOnce Deployment** for automatic updates
+- ?? **MSI Installer** for enterprise deployment
+- ?? **Portable Executable** for standalone deployment
+- ?? **Windows Store** packaging for modern deployment
+
+---
+
+**This desktop application demonstrates secure OAuth2 implementation for public clients, showcasing modern authentication patterns while maintaining the benefits of native desktop application development with comprehensive business functionality.**

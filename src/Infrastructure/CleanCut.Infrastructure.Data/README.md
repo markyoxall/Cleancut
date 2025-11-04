@@ -1,401 +1,608 @@
-# CleanCut.Infrastructure.Data - Data Access Layer
+# CleanCut.Infrastructure.Data - Data Access Layer with CQRS
 
-## Purpose in Clean Architecture
+## Overview
 
-The **Infrastructure.Data Layer** is responsible for **data persistence and retrieval**. It implements the repository interfaces defined in the Domain Layer and handles all database-related concerns. This layer translates between your rich domain objects and the database's relational model.
+The **CleanCut.Infrastructure.Data** layer implements the data persistence and retrieval infrastructure for the CleanCut application. It provides concrete implementations of repository interfaces from the Domain layer and integrates seamlessly with the CQRS pattern implemented in the Application layer.
 
-## Key Principles
+## Role in Clean Architecture
 
-### 1. **Implementation of Domain Contracts**
-- Implements repository interfaces from the Domain Layer
-- Provides concrete data access implementations
-- Maintains the **dependency inversion principle**
+```mermaid
+graph TB
+    APP[Application Layer<br/>Commands & Queries] --> IDATA[Repository Interfaces<br/>Domain Layer]
+    IDATA --> DATA[Infrastructure.Data<br/>EF Core Implementation]
+    DATA --> DB[(SQL Server Database)]
+    
+  subgraph "Infrastructure.Data Components"
+        REPOS[Repository Implementations]
+        CTX[DbContext & Configurations]
+    MIGRATIONS[EF Core Migrations]
+        SEEDING[Database Seeding]
+ end
+    
+    DATA --> REPOS
+    DATA --> CTX
+    DATA --> MIGRATIONS
+    DATA --> SEEDING
+```
 
-### 2. **Data Mapping & Translation**
-- Maps between domain entities and database entities
-- Handles the **object-relational impedance mismatch**
-- Preserves domain object integrity during persistence
+## Key Features
 
-### 3. **Database Technology Abstraction**
-- Encapsulates all database-specific logic
-- Allows switching database providers without affecting other layers
-- Centralizes connection management and configuration
+### **??? Clean Architecture Integration**
+- ? **Repository Pattern** implementations from Domain interfaces
+- ? **Unit of Work Pattern** via EF Core DbContext
+- ? **CQRS Support** with optimized read and write operations
+- ? **Domain Events** integration with automatic publishing
+- ? **Value Objects** mapping with EF Core converters
 
-### 4. **Performance & Optimization**
-- Handles query optimization and database performance
-- Manages connections, transactions, and caching
-- Implements efficient data access patterns
+### **?? Data Access Patterns**
+- ? **Entity Framework Core 9** with SQL Server
+- ? **Code-First Development** with fluent API configurations
+- ? **Audit Trail Support** with automatic timestamps
+- ? **Soft Delete** implementation for data integrity
+- ? **Performance Optimization** with query splitting and tracking
 
-## Folder Structure
+### **?? Database Management**
+- ? **Migration-Based Schema** version control
+- ? **Database Seeding** for development and testing
+- ? **Connection Pooling** for performance
+- ? **Transaction Management** via Unit of Work
+- ? **Query Optimization** with compiled queries
+
+## Project Structure
 
 ```
 CleanCut.Infrastructure.Data/
-??? Repositories/         # Repository implementations
-?   ??? CustomerRepository.cs
-?   ??? OrderRepository.cs
-?   ??? ProductRepository.cs
-??? Configurations/       # EF Core entity configurations
-?   ??? CustomerConfiguration.cs
-?   ??? OrderConfiguration.cs
-?   ??? ProductConfiguration.cs
-??? Migrations/          # Database schema migrations
-?   ??? 20241001_InitialCreate.cs
-?   ??? 20241002_AddCustomerIndex.cs
-??? Context/             # DbContext and database context
+??? Context/      # DbContext and configuration
 ?   ??? CleanCutDbContext.cs
 ?   ??? ICleanCutDbContext.cs
-??? Seeds/               # Initial data seeding
-?   ??? CustomerSeed.cs
-?   ??? ProductSeed.cs
-??? Extensions/          # Extension methods for data access
+?
+??? Repositories/         # Repository implementations
+?   ??? BaseRepository.cs
+?   ??? CustomerRepository.cs
+? ??? ProductRepository.cs
+?   ??? CountryRepository.cs
+?
+??? Configurations/       # EF Core entity configurations
+? ??? CustomerConfiguration.cs
+?   ??? ProductConfiguration.cs
+?   ??? CountryConfiguration.cs
+?
+??? Migrations/   # Database schema migrations
+?   ??? 20241029015151_InitialCreate.cs
+?   ??? [Additional migrations...]
+?
+??? Seeding/      # Database seeding logic
+?   ??? DatabaseSeeder.cs
+?   ??? CustomerSeeder.cs
+?   ??? ProductSeeder.cs
+?
+??? Extensions/  # Extension methods and helpers
+    ??? ServiceCollectionExtensions.cs
     ??? QueryExtensions.cs
 ```
 
-## What Goes Here
+## Implementation Examples
 
-### Repository Implementations
-- Concrete implementations of domain repository interfaces
-- Handle CRUD operations and complex queries
-- Translate between domain and data models
-
-### Entity Configurations
-- EF Core fluent API configurations
-- Define database schema, relationships, and constraints
-- Map domain entities to database tables
-
-### DbContext
-- Central hub for EF Core operations
-- Manages entity tracking and change detection
-- Handles database connections and transactions
-
-### Migrations
-- Version control for database schema
-- Handle schema changes over time
-- Enable automated deployments
-
-### Data Seeding
-- Initial data for development and testing
-- Reference data that the application needs
-- Demo data for showcasing features
-
-## Example Patterns
-
-### Repository Implementation
-```csharp
-public class CustomerRepository : ICustomerRepository
-{
-    private readonly CleanCutDbContext _context;
-    
-    public CustomerRepository(CleanCutDbContext context)
-    {
-        _context = context;
-    }
-    
-    public async Task<Customer> GetByIdAsync(CustomerId id)
-    {
-        return await _context.Customers
-            .FirstOrDefaultAsync(c => c.Id == id);
-    }
-    
-    public async Task<IEnumerable<Customer>> GetVipCustomersAsync()
-    {
-        return await _context.Customers
-            .Where(c => c.IsVip)
-            .ToListAsync();
-    }
-    
-    public void Add(Customer customer)
-    {
-        _context.Customers.Add(customer);
-    }
-    
-    public void Update(Customer customer)
-    {
-        _context.Customers.Update(customer);
-    }
-    
-    public void Delete(Customer customer)
-    {
-        _context.Customers.Remove(customer);
-    }
-}
-```
-
-### Entity Configuration
-```csharp
-public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
-{
-    public void Configure(EntityTypeBuilder<Customer> builder)
-    {
-        // Table mapping
-        builder.ToTable("Customers");
-        
-        // Primary key
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id)
-            .HasConversion(id => id.Value, value => new CustomerId(value));
-        
-        // Value object mapping
-        builder.OwnsOne(c => c.Address, address =>
-        {
-            address.Property(a => a.Street).HasMaxLength(200);
-            address.Property(a => a.City).HasMaxLength(100);
-            address.Property(a => a.PostalCode).HasMaxLength(20);
-        });
-        
-        // Properties
-        builder.Property(c => c.Name)
-            .IsRequired()
-            .HasMaxLength(100);
-        
-        builder.Property(c => c.Email)
-            .IsRequired()
-            .HasMaxLength(255)
-            .HasConversion(
-                email => email.Value,
-                value => new Email(value));
-        
-        // Indexes
-        builder.HasIndex(c => c.Email).IsUnique();
-        
-        // Relationships
-        builder.HasMany(c => c.Orders)
-            .WithOne(o => o.Customer)
-            .HasForeignKey(o => o.CustomerId);
-    }
-}
-```
-
-### DbContext
+### **DbContext with Audit Support**
 ```csharp
 public class CleanCutDbContext : DbContext, IUnitOfWork
 {
-    public CleanCutDbContext(DbContextOptions<CleanCutDbContext> options)
-        : base(options)
-    {
-    }
-    
+    public CleanCutDbContext(DbContextOptions<CleanCutDbContext> options) 
+        : base(options) { }
+
     public DbSet<Customer> Customers { get; set; }
-    public DbSet<Order> Orders { get; set; }
-    public DbSet<Product> Products { get; set; }
-    
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+  public DbSet<Product> Products { get; set; }
+    public DbSet<Country> Countries { get; set; }
+
+protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Apply all configurations
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+  // Apply all entity configurations
+   modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         
-        // Global query filters
+        // Global query filters for soft delete
         modelBuilder.Entity<Customer>()
-            .HasQueryFilter(c => !c.IsDeleted);
-        
+            .HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Product>()
+            .HasQueryFilter(e => !e.IsDeleted);
+            
         base.OnModelCreating(modelBuilder);
     }
-    
-    public async Task<int> SaveChangesAsync()
-    {
-        // Handle domain events before saving
-        await DispatchDomainEventsAsync();
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+ {
+        // Handle audit properties before saving
+  HandleAuditProperties();
         
-        // Handle audit fields
-        HandleAuditFields();
-        
-        return await base.SaveChangesAsync();
+        // Dispatch domain events after successful save
+        var domainEvents = GetDomainEvents();
+        var result = await base.SaveChangesAsync(cancellationToken);
+      
+ await DispatchDomainEventsAsync(domainEvents);
+        return result;
     }
-    
-    private void HandleAuditFields()
+
+    private void HandleAuditProperties()
     {
-        var entries = ChangeTracker.Entries()
-            .Where(e => e.Entity is IAuditableEntity && 
-                       (e.State == EntityState.Added || e.State == EntityState.Modified));
-        
+    var entries = ChangeTracker.Entries()
+     .Where(e => e.Entity is IAuditableEntity)
+       .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
         foreach (var entry in entries)
-        {
-            var entity = (IAuditableEntity)entry.Entity;
-            
+      {
+   var entity = (IAuditableEntity)entry.Entity;
+      
             if (entry.State == EntityState.Added)
-            {
-                entity.CreatedAt = DateTime.UtcNow;
+   {
+          entity.CreatedAt = DateTime.UtcNow;
+        entity.CreatedBy = GetCurrentUserId();
             }
-            
-            entity.ModifiedAt = DateTime.UtcNow;
+    
+     entity.ModifiedAt = DateTime.UtcNow;
+   entity.ModifiedBy = GetCurrentUserId();
         }
     }
 }
 ```
 
-## Key Technologies & Packages
-
-### Required NuGet Packages
-```xml
-<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
-```
-
-### Project References
-- **CleanCut.Domain** (implements domain repository interfaces)
-- **CleanCut.Application** (implements application interfaces like IUnitOfWork)
-
-## Database Patterns
-
-### Unit of Work Pattern
+### **Repository Implementation**
 ```csharp
-public interface IUnitOfWork
+public class ProductRepository : BaseRepository<Product>, IProductRepository
 {
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-}
+    public ProductRepository(CleanCutDbContext context) : base(context) { }
 
-// Implemented by DbContext
-public class CleanCutDbContext : DbContext, IUnitOfWork
+  public async Task<IReadOnlyList<Product>> GetProductsByCustomerAsync(Guid customerId)
 {
-    // Implementation
-}
-```
+        return await Context.Products
+        .Where(p => p.CustomerId == customerId)
+            .Include(p => p.Customer)
+  .AsNoTracking()
+.ToListAsync();
+    }
 
-### Specification Pattern with EF Core
-```csharp
-public static class QueryExtensions
-{
-    public static IQueryable<T> Specify<T>(this IQueryable<T> query, ISpecification<T> spec)
-        where T : class
+    public async Task<IReadOnlyList<Product>> GetAvailableProductsAsync()
+  {
+        return await Context.Products
+            .Where(p => p.IsAvailable)
+            .OrderBy(p => p.Name)
+            .AsNoTracking()
+   .ToListAsync();
+    }
+
+    public async Task<Product?> GetProductWithCustomerAsync(Guid productId)
     {
-        query = query.Where(spec.Criteria);
+        return await Context.Products
+            .Include(p => p.Customer)
+.FirstOrDefaultAsync(p => p.Id == productId);
+    }
+
+    public async Task<bool> IsProductNameUniqueAsync(string name, Guid? excludeId = null)
+    {
+ var query = Context.Products.Where(p => p.Name == name);
         
-        query = spec.Includes.Aggregate(query, (current, include) => current.Include(include));
+        if (excludeId.HasValue)
+            query = query.Where(p => p.Id != excludeId.Value);
         
-        if (spec.OrderBy != null)
-            query = query.OrderBy(spec.OrderBy);
-        
-        return query;
+        return !await query.AnyAsync();
     }
 }
 ```
 
-### Value Objects in EF Core
+### **Entity Configuration**
 ```csharp
-// Owned types for value objects
-builder.OwnsOne(c => c.Address);
+public class ProductConfiguration : IEntityTypeConfiguration<Product>
+{
+    public void Configure(EntityTypeBuilder<Product> builder)
+    {
+        // Table configuration
+  builder.ToTable("Products");
+        
+        // Primary key
+        builder.HasKey(p => p.Id);
+    builder.Property(p => p.Id)
+      .ValueGeneratedNever(); // Using Guid.NewGuid() in entity
+        
+  // Properties
+        builder.Property(p => p.Name)
+       .IsRequired()
+      .HasMaxLength(100);
+            
+        builder.Property(p => p.Description)
+     .HasMaxLength(500);
+            
+        builder.Property(p => p.Price)
+   .HasColumnType("decimal(18,2)")
+          .IsRequired();
+            
+        builder.Property(p => p.IsAvailable)
+   .IsRequired();
+            
+        // Audit properties
+builder.Property(p => p.CreatedAt)
+      .IsRequired();
+            
+        builder.Property(p => p.ModifiedAt)
+     .IsRequired();
+            
+builder.Property(p => p.CreatedBy)
+   .HasMaxLength(450); // AspNetUsers.Id length
+            
+     builder.Property(p => p.ModifiedBy)
+.HasMaxLength(450);
+     
+        // Soft delete
+        builder.Property(p => p.IsDeleted)
+       .IsRequired()
+  .HasDefaultValue(false);
+            
+        // Relationships
+    builder.HasOne(p => p.Customer)
+  .WithMany(c => c.Products)
+  .HasForeignKey(p => p.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+   
+     // Indexes
+        builder.HasIndex(p => p.Name);
+   builder.HasIndex(p => p.CustomerId);
+        builder.HasIndex(p => p.IsAvailable);
+        builder.HasIndex(p => p.CreatedAt);
+    }
+}
+```
 
-// Value converters for simple value objects
-builder.Property(c => c.Email)
-    .HasConversion(
-        email => email.Value,
-        value => new Email(value));
+### **Database Seeding**
+```csharp
+public static class DatabaseSeeder
+{
+    public static async Task SeedAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CleanCutDbContext>();
+     var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+
+        try
+        {
+            await context.Database.EnsureCreatedAsync();
+            
+            // Seed reference data first
+       await SeedCountriesAsync(context, logger);
+    
+          // Seed master data
+       await SeedCustomersAsync(context, logger);
+ 
+            // Seed transactional data
+   await SeedProductsAsync(context, logger);
+
+    await context.SaveChangesAsync();
+            logger.LogInformation("Database seeding completed successfully");
+        }
+        catch (Exception ex)
+    {
+            logger.LogError(ex, "An error occurred while seeding the database");
+            throw;
+        }
+    }
+
+    private static async Task SeedCustomersAsync(CleanCutDbContext context, ILogger logger)
+    {
+        if (await context.Customers.AnyAsync())
+{
+      logger.LogInformation("Customers already exist, skipping customer seeding");
+         return;
+}
+
+        var customers = new[]
+        {
+          Customer.Create("John", "Doe", "john.doe@example.com"),
+        Customer.Create("Jane", "Smith", "jane.smith@example.com"),
+            Customer.Create("Bob", "Johnson", "bob.johnson@example.com")
+        };
+
+  await context.Customers.AddRangeAsync(customers);
+    logger.LogInformation("Seeded {Count} customers", customers.Length);
+  }
+
+    private static async Task SeedProductsAsync(CleanCutDbContext context, ILogger logger)
+    {
+     if (await context.Products.AnyAsync())
+ {
+      logger.LogInformation("Products already exist, skipping product seeding");
+       return;
+    }
+
+        var customers = await context.Customers.ToListAsync();
+        var random = new Random();
+        var products = new List<Product>();
+
+        foreach (var customer in customers)
+    {
+            for (int i = 1; i <= 3; i++)
+            {
+      var product = Product.Create(
+      $"Product {i} for {customer.FirstName}",
+           $"Description for product {i}",
+    Math.Round((decimal)(random.NextDouble() * 100 + 10), 2),
+   customer.Id);
+              
+  products.Add(product);
+         }
+   }
+
+ await context.Products.AddRangeAsync(products);
+        logger.LogInformation("Seeded {Count} products", products.Count);
+    }
+}
+```
+
+## Configuration and Setup
+
+### **Service Registration**
+```csharp
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddDataInfrastructure(
+        this IServiceCollection services, 
+        IConfiguration configuration)
+    {
+      // Add DbContext
+        services.AddDbContext<CleanCutDbContext>(options =>
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+ options.UseSqlServer(connectionString, sqlOptions =>
+            {
+      sqlOptions.MigrationsAssembly(typeof(CleanCutDbContext).Assembly.FullName);
+ sqlOptions.EnableRetryOnFailure(
+    maxRetryCount: 3,
+         maxRetryDelay: TimeSpan.FromSeconds(30),
+    errorNumbersToAdd: null);
+            });
+            
+            // Performance configurations
+options.EnableSensitiveDataLogging(false);
+            options.EnableDetailedErrors(false);
+        });
+
+     // Register Unit of Work
+     services.AddScoped<IUnitOfWork>(provider => 
+        provider.GetRequiredService<CleanCutDbContext>());
+
+        // Register repositories
+      services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICountryRepository, CountryRepository>();
+
+        return services;
+    }
+}
+```
+
+### **Connection String Configuration**
+```json
+// appsettings.json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=CleanCut_Data;Trusted_Connection=true;MultipleActiveResultSets=true"
+  },
+  "DatabaseSettings": {
+    "EnableSensitiveDataLogging": false,
+    "EnableDetailedErrors": false,
+    "CommandTimeout": 30,
+    "MaxRetryCount": 3
+  }
+}
+```
+
+## CQRS Integration
+
+### **Command Handler with Repository**
+```csharp
+public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, ProductInfo>
+{
+    private readonly IProductRepository _productRepository;
+    private readonly ICustomerRepository _customerRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+
+    public async Task<ProductInfo> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    {
+        // Validate customer exists
+   var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
+        if (customer == null)
+     throw new NotFoundException($"Customer with ID {request.CustomerId} not found");
+
+        // Create domain entity
+ var product = Product.Create(
+ request.Name,
+      request.Description,
+    request.Price,
+            request.CustomerId);
+
+        // Add to repository
+        await _productRepository.AddAsync(product);
+      
+        // Commit changes
+     await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Return mapped result
+        return _mapper.Map<ProductInfo>(product);
+    }
+}
+```
+
+### **Query Handler with Direct DbContext Access**
+```csharp
+public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, IReadOnlyList<ProductInfo>>
+{
+    private readonly CleanCutDbContext _context;
+    private readonly IMapper _mapper;
+
+    public async Task<IReadOnlyList<ProductInfo>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.Products
+        .Include(p => p.Customer)
+            .AsNoTracking();
+
+  if (!string.IsNullOrEmpty(request.CustomerFilter))
+        {
+       query = query.Where(p => p.Customer.FirstName.Contains(request.CustomerFilter) ||
+     p.Customer.LastName.Contains(request.CustomerFilter));
+        }
+
+ if (request.AvailableOnly)
+        {
+            query = query.Where(p => p.IsAvailable);
+        }
+
+        var products = await query
+         .OrderBy(p => p.Name)
+ .ToListAsync(cancellationToken);
+
+  return _mapper.Map<IReadOnlyList<ProductInfo>>(products);
+    }
+}
+```
+
+## Performance Optimizations
+
+### **Query Optimization**
+```csharp
+// Compiled queries for frequently used operations
+private static readonly Func<CleanCutDbContext, Guid, Task<Product?>> GetProductByIdCompiled =
+    EF.CompileAsyncQuery((CleanCutDbContext context, Guid id) =>
+  context.Products.FirstOrDefault(p => p.Id == id));
+
+// Split queries for includes with collections
+var customersWithProducts = await context.Customers
+    .AsSplitQuery()
+    .Include(c => c.Products)
+    .ToListAsync();
+
+// Use AsNoTracking for read-only operations
+var productList = await context.Products
+    .AsNoTracking()
+    .Select(p => new ProductInfo
+    {
+        Id = p.Id,
+        Name = p.Name,
+      Price = p.Price
+    })
+    .ToListAsync();
+```
+
+### **Connection Management**
+```csharp
+// Configure connection pooling
+services.AddDbContextPool<CleanCutDbContext>(options =>
+{
+    options.UseSqlServer(connectionString);
+}, poolSize: 128);
 ```
 
 ## Migration Management
 
-### Creating Migrations
+### **Development Workflow**
 ```bash
 # Add new migration
-dotnet ef migrations add AddCustomerIndex
+dotnet ef migrations add AddProductIndex --project src/Infrastructure/CleanCut.Infrastructure.Data
 
 # Update database
-dotnet ef database update
+dotnet ef database update --project src/Infrastructure/CleanCut.Infrastructure.Data
 
-# Generate SQL script
-dotnet ef migrations script
+# Generate SQL script for production
+dotnet ef migrations script --project src/Infrastructure/CleanCut.Infrastructure.Data --output migration.sql
 ```
 
-### Seeding Data
+### **Production Deployment**
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Automatic migration in production (use carefully)
+public static async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
 {
-    base.OnModelCreating(modelBuilder);
+    using var scope = serviceProvider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<CleanCutDbContext>();
     
-    modelBuilder.Entity<Product>().HasData(
-        new Product { Id = 1, Name = "Sample Product", Price = 29.99m },
-        new Product { Id = 2, Name = "Another Product", Price = 49.99m }
-    );
+ await context.Database.MigrateAsync();
+ await DatabaseSeeder.SeedAsync(serviceProvider);
 }
 ```
 
-## Performance Considerations
+## Testing Support
 
-### Query Optimization
-- Use `AsNoTracking()` for read-only queries
-- Include related data efficiently with `Include()`
-- Implement pagination for large datasets
-- Use compiled queries for frequently executed queries
-
-### Connection Management
-- Use connection pooling
-- Implement proper disposal patterns
-- Handle connection timeouts and retries
-
-## Testing Strategy
-
-### Unit Tests
-- Test repository implementations with in-memory database
-- Mock DbContext for pure unit tests
-- Test entity configurations separately
-
-### Integration Tests
-- Test against real database (SQL Server, PostgreSQL)
-- Use test containers for isolated testing
-- Verify migrations work correctly
-
-## Common Patterns
-
-### Repository Base Class
+### **In-Memory Database for Tests**
 ```csharp
-public abstract class Repository<T> : IRepository<T> where T : AggregateRoot
+public static CleanCutDbContext CreateInMemoryContext()
 {
-    protected readonly CleanCutDbContext Context;
-    
-    protected Repository(CleanCutDbContext context)
-    {
-        Context = context;
-    }
-    
-    public virtual async Task<T> GetByIdAsync(object id)
-    {
-        return await Context.Set<T>().FindAsync(id);
-    }
-    
-    public virtual void Add(T entity)
-    {
-        Context.Set<T>().Add(entity);
-    }
-    
-    // Common implementations
+    var options = new DbContextOptionsBuilder<CleanCutDbContext>()
+        .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+     .Options;
+
+    var context = new CleanCutDbContext(options);
+ context.Database.EnsureCreated();
+    return context;
 }
 ```
 
-### Query Object Pattern
+### **Repository Testing**
 ```csharp
-public class CustomerQueries : ICustomerQueries
+[Test]
+public async Task GetProductsByCustomerAsync_ReturnsCorrectProducts()
 {
-    private readonly CleanCutDbContext _context;
+    // Arrange
+    using var context = CreateInMemoryContext();
+    var repository = new ProductRepository(context);
+ 
+    var customer = Customer.Create("John", "Doe", "john@example.com");
+  context.Customers.Add(customer);
     
-    public async Task<CustomerInfo> GetCustomerAsync(Guid id)
+    var product = Product.Create("Test Product", "Description", 29.99m, customer.Id);
+    context.Products.Add(product);
+    
+    await context.SaveChangesAsync();
+
+    // Act
+    var result = await repository.GetProductsByCustomerAsync(customer.Id);
+
+    // Assert
+    Assert.That(result.Count, Is.EqualTo(1));
+    Assert.That(result[0].Name, Is.EqualTo("Test Product"));
+}
+```
+
+## Monitoring and Diagnostics
+
+### **EF Core Logging**
+```csharp
+protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+  if (Environment.IsDevelopment())
     {
-        return await _context.Customers
-            .Where(c => c.Id == id)
-            .Select(c => new CustomerInfo
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Email = c.Email.Value
-            })
-            .FirstOrDefaultAsync();
+ optionsBuilder
+    .LogTo(Console.WriteLine, LogLevel.Information)
+         .EnableSensitiveDataLogging()
+       .EnableDetailedErrors();
     }
 }
 ```
 
-## Common Mistakes to Avoid
+### **Query Performance Monitoring**
+```csharp
+public class QueryPerformanceInterceptor : DbCommandInterceptor
+{
+    private readonly ILogger<QueryPerformanceInterceptor> _logger;
 
-? **Domain Logic in Repositories** - Keep repositories focused on data access
-? **Leaking EF Core to Domain** - Don't expose DbContext or IQueryable
-? **N+1 Query Problems** - Use Include() or projection to avoid multiple queries
-? **Missing Indexes** - Add indexes for frequently queried columns
-? **Ignoring Transactions** - Use Unit of Work for consistency
+    public override ValueTask<DbDataReader> ReaderExecutedAsync(
+      DbCommand command, CommandExecutedEventData eventData, 
+        DbDataReader result, CancellationToken cancellationToken = default)
+    {
+        if (eventData.Duration.TotalMilliseconds > 1000)
+     {
+            _logger.LogWarning("Slow query detected: {Duration}ms - {CommandText}", 
+        eventData.Duration.TotalMilliseconds, command.CommandText);
+    }
 
-? **Clean Abstractions** - Hide EF Core details behind repository interfaces
-? **Proper Mapping** - Configure entities properly with Fluent API
-? **Performance Awareness** - Monitor and optimize queries
-? **Database Independence** - Use EF Core features that work across providers
-? **Migration Management** - Keep migrations clean and reviewable
+        return new ValueTask<DbDataReader>(result);
+    }
+}
+```
 
-This layer is your data gateway - keep it efficient, clean, and focused on data access concerns!
+---
+
+**This data access layer provides a robust foundation for the CleanCut application, implementing clean architecture principles while delivering high-performance data operations with comprehensive CQRS support.**

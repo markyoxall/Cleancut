@@ -1,243 +1,625 @@
-# CleanCut.Application - Application Layer
+# CleanCut.Application - CQRS Application Layer
 
-## Purpose in Clean Architecture
+## Overview
 
-The **Application Layer** orchestrates the execution of business use cases. It coordinates between the Domain Layer and the outside world, handling the application's business workflows without containing business logic itself. This layer defines **what** the application does, while the Domain Layer defines **how** the business works.
+The **CleanCut.Application** layer implements the **Command Query Responsibility Segregation (CQRS)** pattern and serves as the orchestration layer for all business use cases. It coordinates between the Domain Layer and external systems, handling application workflows, validation, and cross-cutting concerns while maintaining complete separation from infrastructure details.
 
-## Key Principles
+## Role in Clean Architecture
 
-### 1. **Use Case Driven**
-- Each use case is implemented as a separate handler
-- Follows the **Single Responsibility Principle**
-- Maps directly to user stories and business requirements
+```mermaid
+graph TB
+    subgraph "External Layers"
+        PRES[Presentation Layer<br/>Controllers, Pages, Components]
+        INFRA[Infrastructure Layer<br/>Repositories, Services]
+    end
+    
+    subgraph "Application Layer (CQRS)"
+   COMMANDS[Commands<br/>Write Operations]
+        QUERIES[Queries<br/>Read Operations]
+        HANDLERS[Command/Query Handlers]
+        BEHAVIORS[Pipeline Behaviors]
+        VALIDATORS[Input Validators]
+ DTOS[DTOs & Mappings]
+    end
+    
+    subgraph "Core Domain"
+  DOMAIN[Domain Layer<br/>Entities, Business Logic]
+    end
+    
+    PRES --> COMMANDS
+    PRES --> QUERIES
+    COMMANDS --> HANDLERS
+    QUERIES --> HANDLERS
+    HANDLERS --> DOMAIN
+    HANDLERS --> INFRA
+    BEHAVIORS --> HANDLERS
+    VALIDATORS --> COMMANDS
+```
 
-### 2. **Technology Independent**
-- No knowledge of databases, web frameworks, or UI concerns
-- Only depends on the Domain Layer and defines abstractions for infrastructure
-- Can be unit tested without external dependencies
+## Key Features
 
-### 3. **Coordination, Not Business Logic**
-- Orchestrates calls to domain entities and services
-- Handles cross-cutting concerns like validation, authorization, and transactions
-- Delegates business decisions to the Domain Layer
+### **?? CQRS Implementation**
+- ? **Command Handlers** for write operations (Create, Update, Delete)
+- ? **Query Handlers** for read operations (Get, List, Search)
+- ? **MediatR Integration** for decoupled request/response patterns
+- ? **Separate Models** for commands and queries
+- ? **Optimized Read/Write Patterns** for performance
 
-### 4. **CQRS Pattern**
-- **Commands** for write operations (state changes)
-- **Queries** for read operations (data retrieval)
-- Clear separation of concerns
+### **??? Cross-Cutting Concerns**
+- ? **Validation Pipeline** with FluentValidation
+- ? **Logging Behavior** for all operations
+- ? **Transaction Management** for data consistency
+- ? **Caching Behavior** for query optimization
+- ? **Error Handling** with consistent response patterns
 
-## Folder Structure
+### **?? Application Services**
+- ? **Service Interfaces** for infrastructure abstractions
+- ? **DTO Mapping** with AutoMapper
+- ? **Input Validation** separated from business rules
+- ? **Use Case Orchestration** without business logic
+
+## Project Structure
 
 ```
 CleanCut.Application/
-??? Commands/          # Write operations (Create, Update, Delete)
-?   ??? CreateOrder/
-?   ??? UpdateCustomer/
-?   ??? DeleteProduct/
-??? Queries/           # Read operations (Get, List, Search)
-?   ??? GetCustomer/
-?   ??? ListOrders/
-?   ??? SearchProducts/
-??? Handlers/          # Command and Query handlers (business workflows)
-??? DTOs/              # Data Transfer Objects for external communication
-??? Interfaces/        # Abstractions for infrastructure services
-??? Services/          # Application services (cross-cutting concerns)
-??? Behaviors/         # Cross-cutting behaviors (logging, validation, caching)
-??? Validators/        # Input validation rules
-??? Mappings/          # Object mapping configurations
+??? Commands/  # Write operations
+?   ??? Products/
+?   ?   ??? CreateProduct/
+?   ?   ?   ??? CreateProductCommand.cs
+?   ?   ?   ??? CreateProductCommandHandler.cs
+?   ?   ?   ??? CreateProductCommandValidator.cs
+?   ?   ??? UpdateProduct/
+?   ?   ??? DeleteProduct/
+?   ??? Customers/
+?   ?   ??? CreateCustomer/
+?   ?   ??? UpdateCustomer/
+?   ?   ??? DeleteCustomer/
+?   ??? Countries/
+?
+??? Queries/ # Read operations
+?   ??? Products/
+?   ?   ??? GetAllProducts/
+?   ?   ?   ??? GetAllProductsQuery.cs
+?   ?   ?   ??? GetAllProductsQueryHandler.cs
+?   ? ??? GetProduct/
+?   ?   ??? GetProductsByCustomer/
+?   ??? Customers/
+?   ?   ??? GetAllCustomers/
+?   ?   ??? GetCustomer/
+?   ?   ??? SearchCustomers/
+?   ??? Countries/
+?
+??? DTOs/    # Data Transfer Objects
+?   ??? ProductInfo.cs
+?   ??? CustomerInfo.cs
+?   ??? CountryInfo.cs
+?   ??? Common/
+?       ??? PaginatedResult.cs
+?       ??? AuditInfo.cs
+?
+??? Interfaces/      # Service abstractions
+?   ??? IEmailService.cs
+?   ??? ICurrentUserService.cs
+?   ??? ICacheService.cs
+?
+??? Behaviors/       # MediatR pipeline behaviors
+?   ??? ValidationBehavior.cs
+?   ??? LoggingBehavior.cs
+?   ??? TransactionBehavior.cs
+?   ??? CachingBehavior.cs
+?
+??? Mappings/        # AutoMapper profiles
+?   ??? ProductMappingProfile.cs
+?   ??? CustomerMappingProfile.cs
+?   ??? CountryMappingProfile.cs
+?
+??? Validators/      # FluentValidation validators
+?   ??? Products/
+?   ??? Customers/
+? ??? Countries/
+?
+??? Exceptions/      # Application-specific exceptions
+?   ??? ValidationException.cs
+???? NotFoundException.cs
+?   ??? ApplicationException.cs
+?
+??? Extensions/      # Service registration extensions
+    ??? ServiceCollectionExtensions.cs
 ```
 
-## What Goes Here
+## CQRS Implementation Examples
 
-### Commands & Queries (CQRS)
-- **Commands**: Represent write operations with business intent
-- **Queries**: Represent read operations with specific data needs
-- **Handlers**: Execute the use case logic
+### **Product Commands**
 
-### DTOs (Data Transfer Objects)
-- Objects for transferring data across boundaries
-- No business logic, just data containers
-- Separate from domain entities to avoid coupling
-
-### Application Services
-- Cross-cutting concerns like email, notifications, file handling
-- Interfaces defined here, implementations in Infrastructure
-- Example: `IEmailService`, `IFileStorageService`
-
-### Behaviors
-- Cross-cutting pipeline behaviors using MediatR
-- Logging, validation, caching, transaction management
-- Applied to all commands/queries automatically
-
-### Validators
-- Input validation using FluentValidation
-- Separate from business validation (which lives in Domain)
-- Ensures commands/queries have valid structure
-
-## Example Patterns
-
-### Command Pattern
+#### **Create Product Command**
 ```csharp
-// Command
-public class CreateOrderCommand : IRequest<OrderDto>
+public class CreateProductCommand : IRequest<ProductInfo>
 {
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
     public Guid CustomerId { get; set; }
-    public List<OrderItemDto> Items { get; set; }
+    public bool IsAvailable { get; set; } = true;
 }
 
-// Handler
-public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, OrderDto>
+public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, ProductInfo>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IProductRepository _productRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly ILogger<CreateProductCommandHandler> _logger;
 
-    public async Task<OrderDto> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+    public async Task<ProductInfo> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
-        // 1. Fetch domain entities
+    _logger.LogInformation("Creating product {ProductName} for customer {CustomerId}", 
+      request.Name, request.CustomerId);
+
+        // Validate customer exists
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
-        
-        // 2. Create domain entity (business logic happens here)
-        var order = Order.Create(customer, request.Items.Select(i => /* map to domain */));
-        
-        // 3. Persist changes
-        _orderRepository.Add(order);
-        await _unitOfWork.SaveChangesAsync();
-        
-        // 4. Return DTO
-        return _mapper.Map<OrderDto>(order);
+        if (customer == null)
+            throw new NotFoundException($"Customer with ID {request.CustomerId} not found");
+
+    // Create domain entity (business logic)
+        var product = Product.Create(
+            request.Name,
+     request.Description,
+   request.Price,
+  request.CustomerId);
+
+        if (!request.IsAvailable)
+     product.UpdateAvailability(false);
+
+        // Persist changes
+        await _productRepository.AddAsync(product);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Product {ProductId} created successfully", product.Id);
+
+        // Return mapped DTO
+        return _mapper.Map<ProductInfo>(product);
+    }
+}
+
+public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+{
+    public CreateProductCommandValidator()
+    {
+        RuleFor(x => x.Name)
+         .NotEmpty().WithMessage("Product name is required")
+            .MaximumLength(100).WithMessage("Product name cannot exceed 100 characters");
+
+   RuleFor(x => x.Description)
+            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters");
+
+ RuleFor(x => x.Price)
+    .GreaterThan(0).WithMessage("Price must be greater than zero")
+ .LessThan(100000).WithMessage("Price cannot exceed $100,000");
+
+        RuleFor(x => x.CustomerId)
+      .NotEmpty().WithMessage("Customer ID is required");
     }
 }
 ```
 
-### Query Pattern
+#### **Update Product Command**
 ```csharp
-// Query
-public class GetCustomerQuery : IRequest<CustomerInfo>
+public class UpdateProductCommand : IRequest<ProductInfo>
 {
-    public Guid CustomerId { get; set; }
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public bool IsAvailable { get; set; }
 }
 
-// Handler
-public class GetCustomerHandler : IRequestHandler<GetCustomerQuery, CustomerInfo>
+public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, ProductInfo>
 {
-    private readonly ICustomerRepository _customerRepository;
-    
-    public async Task<CustomerInfo> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
+    private readonly IProductRepository _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+
+    public async Task<ProductInfo> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
-        var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
-        return _mapper.Map<CustomerInfo>(customer);
+ var product = await _productRepository.GetByIdAsync(request.Id);
+        if (product == null)
+            throw new NotFoundException($"Product with ID {request.Id} not found");
+
+        // Update through domain methods (business rules enforced)
+        product.UpdateDetails(request.Name, request.Description);
+        product.UpdatePrice(request.Price);
+        product.UpdateAvailability(request.IsAvailable);
+
+  await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return _mapper.Map<ProductInfo>(product);
     }
 }
 ```
 
-### Cross-Cutting Behavior
+### **Product Queries**
+
+#### **Get All Products Query**
+```csharp
+public class GetAllProductsQuery : IRequest<IReadOnlyList<ProductInfo>>
+{
+    public string? CustomerFilter { get; set; }
+    public bool? AvailableOnly { get; set; }
+    public int? PageNumber { get; set; }
+    public int? PageSize { get; set; }
+}
+
+public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, IReadOnlyList<ProductInfo>>
+{
+    private readonly IProductRepository _productRepository;
+    private readonly IMapper _mapper;
+    private readonly ICacheService _cacheService;
+
+    public async Task<IReadOnlyList<ProductInfo>> Handle(GetAllProductsQuery request, CancellationToken cancellationToken)
+    {
+     // Try cache first for frequently accessed data
+        var cacheKey = $"products_all_{request.CustomerFilter}_{request.AvailableOnly}";
+        var cachedResult = await _cacheService.GetAsync<IReadOnlyList<ProductInfo>>(cacheKey);
+     
+        if (cachedResult != null)
+            return cachedResult;
+
+        // Fetch from repository
+        var products = await _productRepository.GetAllAsync();
+
+   // Apply filters (could be moved to repository for performance)
+  if (!string.IsNullOrEmpty(request.CustomerFilter))
+      {
+         products = products.Where(p => 
+        p.Customer.FirstName.Contains(request.CustomerFilter, StringComparison.OrdinalIgnoreCase) ||
+                p.Customer.LastName.Contains(request.CustomerFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+    }
+
+        if (request.AvailableOnly == true)
+        {
+            products = products.Where(p => p.IsAvailable).ToList();
+        }
+
+        var result = _mapper.Map<IReadOnlyList<ProductInfo>>(products);
+
+        // Cache the result
+        await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(15));
+
+        return result;
+    }
+}
+```
+
+#### **Get Product by ID Query**
+```csharp
+public class GetProductQuery : IRequest<ProductInfo?>
+{
+    public Guid Id { get; set; }
+
+    public GetProductQuery(Guid id)
+    {
+    Id = id;
+    }
+}
+
+public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ProductInfo?>
+{
+    private readonly IProductRepository _productRepository;
+    private readonly IMapper _mapper;
+
+    public async Task<ProductInfo?> Handle(GetProductQuery request, CancellationToken cancellationToken)
+    {
+      var product = await _productRepository.GetByIdAsync(request.Id);
+     return product != null ? _mapper.Map<ProductInfo>(product) : null;
+    }
+}
+```
+
+## Data Transfer Objects (DTOs)
+
+### **Product DTOs**
+```csharp
+public class ProductInfo
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public bool IsAvailable { get; set; }
+    public Guid CustomerId { get; set; }
+    public CustomerInfo? Customer { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ModifiedAt { get; set; }
+}
+
+public class CustomerInfo
+{
+    public Guid Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+ public DateTime? ModifiedAt { get; set; }
+}
+
+public class CountryInfo
+{
+  public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+### **Common DTOs**
+```csharp
+public class PaginatedResult<T>
+{
+    public IReadOnlyList<T> Data { get; set; } = new List<T>();
+    public int TotalCount { get; set; }
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+  public bool HasNextPage => PageNumber < TotalPages;
+    public bool HasPreviousPage => PageNumber > 1;
+}
+```
+
+## Pipeline Behaviors
+
+### **Validation Behavior**
 ```csharp
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+where TRequest : class, IRequest<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
-    
+
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        var failures = _validators
-            .Select(v => v.Validate(request))
-            .SelectMany(result => result.Errors)
-            .Where(f => f != null)
-            .ToList();
-            
-        if (failures.Any())
-            throw new ValidationException(failures);
-            
+        if (_validators.Any())
+        {
+ var context = new ValidationContext<TRequest>(request);
+            var validationResults = await Task.WhenAll(
+        _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+
+            var failures = validationResults
+        .Where(r => r.Errors.Any())
+       .SelectMany(r => r.Errors)
+       .ToList();
+
+            if (failures.Any())
+       throw new ValidationException(failures);
+    }
+
         return await next();
     }
 }
 ```
 
-## Key Dependencies
-
-### Required NuGet Packages
-```xml
-<PackageReference Include="MediatR" Version="12.2.0" />
-<PackageReference Include="FluentValidation" Version="11.8.0" />
-<PackageReference Include="AutoMapper" Version="12.0.1" />
-```
-
-### Project References
-- **CleanCut.Domain** (only dependency - the core business logic)
-
-## Dependency Injection Setup
-
-The Application Layer should register:
-- MediatR handlers
-- Validators
-- Behaviors
-- AutoMapper profiles
-
+### **Logging Behavior**
 ```csharp
-services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-services.AddAutoMapper(Assembly.GetExecutingAssembly());
-```
-
-## Testing Strategy
-
-### Unit Tests
-- Test handlers in isolation using mocked repositories
-- Focus on the coordination logic, not business rules (those are tested in Domain)
-- Verify correct calls to domain entities and infrastructure services
-
-### Integration Tests
-- Test the entire use case flow with real dependencies
-- Verify that commands/queries work end-to-end
-- Use in-memory database for fast execution
-
-## Benefits of This Approach
-
-1. **Clear Use Cases**: Each handler represents a specific business scenario
-2. **Testability**: Easy to unit test without external dependencies
-3. **Flexibility**: Can change infrastructure without affecting use cases
-4. **Performance**: CQRS allows optimization of reads vs writes
-5. **Maintainability**: Changes to one use case don't affect others
-
-## Common Patterns
-
-### Command/Query Separation
-- **Commands**: Return success/failure status, maybe an ID
-- **Queries**: Return DTOs with the exact data needed by the client
-- Never mix read and write operations in the same handler
-
-### Error Handling
-```csharp
-public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Result<OrderDto>>
+public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : class, IRequest<TResponse>
 {
-    public async Task<Result<OrderDto>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        var requestName = typeof(TRequest).Name;
+    
+        _logger.LogInformation("Handling {RequestName}: {@Request}", requestName, request);
+
+  var stopwatch = Stopwatch.StartNew();
+
         try
-        {
-            // Implementation
-            return Result<OrderDto>.Success(orderDto);
+   {
+         var response = await next();
+            stopwatch.Stop();
+
+ _logger.LogInformation("Completed {RequestName} in {ElapsedMilliseconds}ms", 
+requestName, stopwatch.ElapsedMilliseconds);
+
+ return response;
         }
-        catch (DomainException ex)
-        {
-            return Result<OrderDto>.Failure(ex.Message);
-        }
+    catch (Exception ex)
+  {
+          stopwatch.Stop();
+        _logger.LogError(ex, "Error handling {RequestName} after {ElapsedMilliseconds}ms", 
+         requestName, stopwatch.ElapsedMilliseconds);
+throw;
+  }
     }
 }
 ```
 
-## Common Mistakes to Avoid
+### **Transaction Behavior**
+```csharp
+public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : class, IRequest<TResponse>
+{
+  private readonly IUnitOfWork _unitOfWork;
 
-? **Business Logic in Application Layer** - Keep it in Domain
-? **Direct Database Access** - Use repository abstractions
-? **Framework Coupling** - No references to ASP.NET, Entity Framework, etc.
-? **Fat Handlers** - Keep handlers focused on coordination
-? **Mixing Commands and Queries** - Separate read from write operations
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    {
+        // Only apply transactions to commands (write operations)
+  if (!typeof(TRequest).Name.EndsWith("Command"))
+      {
+   return await next();
+        }
 
-? **Pure Coordination** - Orchestrate domain objects and infrastructure services
-? **Interface Abstractions** - Define contracts for infrastructure services
-? **Single Responsibility** - One handler per use case
-? **Clear Intent** - Command/query names express business operations
-? **Cross-Cutting Concerns** - Use behaviors for logging, validation, etc.
+        using var transaction = await _unitOfWork.BeginTransactionAsync();
 
-This layer is your application's control center - keep it focused on orchestrating business workflows!
+        try
+        {
+            var response = await next();
+    await transaction.CommitAsync(cancellationToken);
+return response;
+        }
+      catch
+        {
+   await transaction.RollbackAsync(cancellationToken);
+     throw;
+        }
+  }
+}
+```
+
+## AutoMapper Configuration
+
+### **Product Mapping Profile**
+```csharp
+public class ProductMappingProfile : Profile
+{
+    public ProductMappingProfile()
+    {
+    CreateMap<Product, ProductInfo>()
+       .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price.Amount));
+
+ CreateMap<Customer, CustomerInfo>()
+          .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email.Value));
+
+        CreateMap<CreateProductCommand, Product>()
+    .ConstructUsing(src => Product.Create(src.Name, src.Description, src.Price, src.CustomerId));
+    }
+}
+```
+
+## Service Registration
+
+### **Dependency Injection Setup**
+```csharp
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+{
+        // MediatR registration
+    services.AddMediatR(cfg => {
+     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+        });
+
+        // FluentValidation
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Pipeline behaviors (order matters)
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+  services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+      services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+     // AutoMapper
+        services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
+     return services;
+    }
+}
+```
+
+## Exception Handling
+
+### **Application Exceptions**
+```csharp
+public class ValidationException : ApplicationException
+{
+    public IDictionary<string, string[]> Errors { get; }
+
+    public ValidationException(IEnumerable<ValidationFailure> failures)
+  : base("One or more validation failures have occurred.")
+  {
+    Errors = failures
+        .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
+    .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup.ToArray());
+    }
+}
+
+public class NotFoundException : ApplicationException
+{
+    public NotFoundException(string name, object key)
+        : base($"Entity \"{name}\" ({key}) was not found.")
+    {
+    }
+
+    public NotFoundException(string message)
+        : base(message)
+    {
+    }
+}
+```
+
+## Testing Strategy
+
+### **Command Handler Testing**
+```csharp
+[Test]
+public async Task CreateProductCommandHandler_WithValidCommand_ShouldCreateProduct()
+{
+    // Arrange
+    var mockProductRepo = new Mock<IProductRepository>();
+    var mockCustomerRepo = new Mock<ICustomerRepository>();
+    var mockUnitOfWork = new Mock<IUnitOfWork>();
+    var mockMapper = new Mock<IMapper>();
+
+ var customer = Customer.Create("John", "Doe", "john@example.com");
+    mockCustomerRepo.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+        .ReturnsAsync(customer);
+
+    var handler = new CreateProductCommandHandler(
+        mockProductRepo.Object,
+     mockCustomerRepo.Object,
+mockUnitOfWork.Object,
+        mockMapper.Object,
+        Mock.Of<ILogger<CreateProductCommandHandler>>());
+
+    var command = new CreateProductCommand
+    {
+        Name = "Test Product",
+      Description = "Test Description",
+      Price = 29.99m,
+        CustomerId = customer.Id
+    };
+
+  // Act
+    var result = await handler.Handle(command, CancellationToken.None);
+
+    // Assert
+mockProductRepo.Verify(x => x.AddAsync(It.IsAny<Product>()), Times.Once);
+ mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+}
+```
+
+### **Validation Testing**
+```csharp
+[Test]
+public void CreateProductCommandValidator_WithEmptyName_ShouldHaveValidationError()
+{
+    // Arrange
+    var validator = new CreateProductCommandValidator();
+    var command = new CreateProductCommand { Name = "" };
+
+    // Act
+    var result = validator.Validate(command);
+
+    // Assert
+    Assert.That(result.IsValid, Is.False);
+    Assert.That(result.Errors.Any(x => x.PropertyName == nameof(command.Name)), Is.True);
+}
+```
+
+## Performance Considerations
+
+### **Query Optimization**
+- **Caching**: Frequently accessed queries cached
+- **Projection**: Return only needed data in DTOs
+- **Async Operations**: All database operations async
+- **Repository Patterns**: Optimized queries in repositories
+
+### **Command Optimization**
+- **Transactions**: Automatic transaction management
+- **Domain Events**: Handled after successful persistence
+- **Bulk Operations**: Batch multiple changes when possible
+- **Validation**: Fast-fail with input validation
+
+---
+
+**This Application layer provides a robust CQRS implementation that orchestrates business use cases while maintaining clean separation of concerns, comprehensive validation, and enterprise-grade cross-cutting behaviors.**
