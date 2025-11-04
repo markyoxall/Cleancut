@@ -107,9 +107,38 @@ public static class Config
     AllowOfflineAccess = false,
   RefreshTokenUsage = TokenUsage.OneTimeOnly,
 RefreshTokenExpiration = TokenExpiration.Sliding
-     },
+  },
 
-      // ✅ Blazor Server App - PUBLIC CLIENT for user authentication
+      // ✅ NEW: Background Service - Machine-to-machine client for automated product export
+      new Client
+      {
+  ClientId = "cleancut-background-service",
+      ClientName = "CleanCut Background Service",
+          AllowedGrantTypes = GrantTypes.ClientCredentials,
+          ClientSecrets = { new Secret(GetClientSecret(configuration, "cleancut-background-service").Sha256()) },
+    AllowedScopes = { "CleanCutAPI" },
+
+     // ✅ Background service security settings
+          AccessTokenLifetime = 3600, // 1 hour - sufficient for periodic exports
+          AllowOfflineAccess = false, // No user context needed
+          RefreshTokenUsage = TokenUsage.OneTimeOnly,
+      RefreshTokenExpiration = TokenExpiration.Sliding,
+  
+          // ✅ Background service specific settings
+    AllowAccessTokensViaBrowser = false, // Server-side only
+          UpdateAccessTokenClaimsOnRefresh = false, // No user claims to update
+        AlwaysSendClientClaims = true, // Include client claims in token
+      ClientClaimsPrefix = "client_", // Prefix for client claims
+       
+  // Add custom claims for the background service
+Claims = new List<ClientClaim>
+          {
+       new ClientClaim("service_type", "background_export"),
+  new ClientClaim("service_version", "1.0")
+          }
+      },
+
+   // ✅ Blazor Server App - PUBLIC CLIENT for user authentication
       new Client
   {
      ClientId = "CleanCutBlazorWebApp",
@@ -284,10 +313,11 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
         // ✅ Development-only fallback secrets
         return clientId switch
         {
-            "m2m.client" => "511536EF-F270-4058-80CA-1C89C192F69A",
-            "CleanCutBlazorWebApp" => "BlazorServerSecret2024!",
-            "CleanCutWebApp" => "WebAppSecret2024!",
-            "TempBlazorApp" => "TempSecret2024!",
+       "m2m.client" => "511536EF-F270-4058-80CA-1C89C192F69A",
+     "cleancut-background-service" => "BackgroundServiceSecret2024!",
+"CleanCutBlazorWebApp" => "BlazorServerSecret2024!",
+        "CleanCutWebApp" => "WebAppSecret2024!",
+         "TempBlazorApp" => "TempSecret2024!",
   // Note: CleanCutWinApp is a public client and doesn't need a secret
    _ => throw new InvalidOperationException($"No development secret configured for client {clientId}")
         };
@@ -324,7 +354,7 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
   return clientId switch
           {
  "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signin-oidc", "http://localhost:5091/signin-oidc" },
-      "CleanCutWebApp" => new List<string> { "https://localhost:7144/signin-oidc" },
+      "CleanCutWebApp" => new List<string> { "https://localhost:7286/signin-oidc", "http://localhost:5200/signin-oidc" },
    "TempBlazorApp" => new List<string> { "https://localhost:7068/signin-oidc", "http://localhost:5110/signin-oidc" },
 "CleanCutWinApp" => new List<string> { "http://localhost:8080/", "cleancut://callback" },
           _ => new List<string>()
@@ -332,14 +362,14 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
     }
 
     private static List<string> GetDefaultPostLogoutRedirectUris(string clientId)
-  {
- return clientId switch
-{
-  "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signout-callback-oidc", "http://localhost:5091/signout-callback-oidc" },
-  "CleanCutWebApp" => new List<string> { "https://localhost:7144/signout-callback-oidc" },
-      "TempBlazorApp" => new List<string> { "https://localhost:7068/signout-callback-oidc", "http://localhost:5110/signout-callback-oidc" },
-    "CleanCutWinApp" => new List<string> { "cleancut://logged-out" },
-  _ => new List<string>()
-    };
+    {
+        return clientId switch
+ {
+          "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signout-callback-oidc", "http://localhost:5091/signout-callback-oidc" },
+      "CleanCutWebApp" => new List<string> { "https://localhost:7286/signout-callback-oidc", "http://localhost:5200/signout-callback-oidc" },
+          "TempBlazorApp" => new List<string> { "https://localhost:7068/signout-callback-oidc", "http://localhost:5110/signout-callback-oidc" },
+            "CleanCutWinApp" => new List<string> { "cleancut://logged-out" },
+ _ => new List<string>()
+        };
     }
 }

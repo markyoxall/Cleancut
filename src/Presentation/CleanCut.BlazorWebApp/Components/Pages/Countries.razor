@@ -1,4 +1,5 @@
 ﻿@page "/countries"
+@attribute [Authorize]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using CleanCut.Application.DTOs
 @inject ICountryApiService CountryApi

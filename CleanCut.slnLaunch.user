@@ -1,23 +1,6 @@
 [
   {
-    "Name": "New Profile",
-    "Projects": [
-      {
-        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "src\\Infrastructure\\CleanCut.Infranstructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "TempBlazorApp\\TempBlazorApp.csproj",
-        "Action": "Start"
-      }
-    ]
-  },
-  {
-    "Name": "New Profile",
+    "Name": "BlahBlahBlah",
     "Projects": [
       {
         "Path": "src\\Infrastructure\\CleanCut.Infranstructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
@@ -28,11 +11,7 @@
         "Action": "Start"
       },
       {
-        "Path": "src\\Presentation\\CleanCut.WinApp\\CleanCut.WinApp.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "TempBlazorApp\\TempBlazorApp.csproj",
+        "Path": "src\\Applications\\CleanCut.ProductExportHost\\CleanCut.ProductExportHost.csproj",
         "Action": "Start"
       }
     ]

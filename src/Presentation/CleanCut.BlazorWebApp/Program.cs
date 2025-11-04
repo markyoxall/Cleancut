@@ -92,6 +92,8 @@ using CleanCut.BlazorWebApp.Components;
 using CleanCut.BlazorWebApp.Services;
 using CleanCut.BlazorWebApp.State;
 using CleanCut.BlazorWebApp.Extensions;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 namespace CleanCut.BlazorWebApp;
 
@@ -101,41 +103,49 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-     // ? Add authentication services FIRST
+     // ?? Add authentication services FIRST
         builder.Services.AddAuthentication(options =>
         {
-       options.DefaultScheme = "Cookies";
- options.DefaultChallengeScheme = "oidc";
-     })
-        .AddCookie("Cookies", options =>
-        {
-        options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-            options.LogoutPath = "/Account/Logout";
+          options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+        })
+   .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+  {
+  options.LoginPath = "/Account/Login";
+     options.AccessDeniedPath = "/Account/AccessDenied";
+      options.LogoutPath = "/Account/Logout";
 options.ExpireTimeSpan = TimeSpan.FromHours(8);
             options.SlidingExpiration = true;
+     
+ // Session-only cookies (don't persist when browser closes)
+      options.Cookie.IsEssential = true;
+         options.Cookie.HttpOnly = true;
+       options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+options.Cookie.SameSite = SameSiteMode.Lax;
+   options.Cookie.MaxAge = null;
  })
-    .AddOpenIdConnect("oidc", options =>
+    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
         {
- options.Authority = builder.Configuration["IdentityServer:Authority"];
-            options.ClientId = builder.Configuration["IdentityServer:ClientId"];
-    
-         options.ResponseType = "code";
-          options.UsePkce = true;
-      options.SaveTokens = true; // ? Critical: Store tokens for API access
-   options.GetClaimsFromUserInfoEndpoint = true;
-   
-            options.Scope.Clear();
-   options.Scope.Add("openid");
-     options.Scope.Add("profile");
-    options.Scope.Add("CleanCutAPI"); // ? Required for API access
+ options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
+            options.ClientId = builder.Configuration["IdentityServer:ClientId"] ?? "CleanCutBlazorWebApp";
             
-      options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-        {
-       NameClaimType = "name",
-RoleClaimType = "role"
-    };
-     });
+  // ? OAuth2.1 Authorization Code Flow with PKCE (Public Client)
+            options.ResponseType = "code";
+options.UsePkce = true;
+      options.SaveTokens = true; // ?? Critical: Store tokens for API access
+  options.GetClaimsFromUserInfoEndpoint = true;
+   
+ options.Scope.Clear();
+   options.Scope.Add("openid");
+       options.Scope.Add("profile");
+      options.Scope.Add("CleanCutAPI"); // ?? Required for API access
+       
+  options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+  NameClaimType = "name",
+    RoleClaimType = "role"
+         };
+        });
 
         // ? Add authorization
         builder.Services.AddAuthorization();
@@ -263,17 +273,17 @@ headers.TryAdd("Content-Security-Policy", csp);
      .AddInteractiveServerRenderMode();
 
         // ? Add authentication endpoints (FIXED)
-      app.MapGet("/Account/Login", () => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+      app.MapGet("/Account/Login", (string? returnUrl) => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
         {
-      RedirectUri = "/"
-        }, new[] { "oidc" }));
+      RedirectUri = returnUrl ?? "/"
+   }));
 
         app.MapPost("/Account/Logout", () => Results.SignOut(
-            new Microsoft.AspNetCore.Authentication.AuthenticationProperties
-         {
-        RedirectUri = "/"
-          }, 
-         new[] { "Cookies", "oidc" }));
+          authenticationSchemes: new[] { 
+   CookieAuthenticationDefaults.AuthenticationScheme, 
+   OpenIdConnectDefaults.AuthenticationScheme 
+      }));
 
+        app.Run();
     }
 }
