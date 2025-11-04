@@ -1,0 +1,79 @@
+@page "/Account/LoggedOut"
+@inject ILogger<LoggedOut> Logger
+
+<PageTitle>Successfully Logged Out - TempBlazorApp</PageTitle>
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="text-center">
+   <div class="card shadow-lg" style="max-width: 500px;">
+          <div class="card-header bg-success text-white">
+     <h4 class="mb-0">
+     <i class="fas fa-check-circle me-2"></i>
+     Successfully Logged Out
+       </h4>
+</div>
+<div class="card-body p-4">
+  <div class="mb-4">
+       <i class="fas fa-shield-alt text-success" style="font-size: 3rem;"></i>
+ </div>
+       
+  <h5 class="card-title text-success mb-3">You're All Set!</h5>
+      <p class="card-text mb-4">
+  You have been safely logged out from the CleanCut system.<br>
+       Your session has been cleared and you're no longer authenticated.
+    </p>
+ 
+    <div class="alert alert-info" role="alert">
+    <small>
+      <i class="fas fa-info-circle me-1"></i>
+   <strong>Security Note:</strong> For your security, we recommend closing your browser if you're on a shared computer.
+  </small>
+</div>
+       
+     <div class="d-grid gap-2">
+    <a href="/Account/Login" class="btn btn-primary btn-lg">
+       <i class="fas fa-sign-in-alt me-2"></i>Login Again
+           </a>
+   <a href="/" class="btn btn-outline-secondary">
+     <i class="fas fa-home me-2"></i>Go to Home Page
+ </a>
+  <a href="/products" class="btn btn-outline-info">
+        <i class="fas fa-box me-2"></i>View Products (requires login)
+      </a>
+         </div>
+     </div>
+     
+ <div class="card-footer text-muted">
+     <small>
+         <i class="fas fa-clock me-1"></i>
+    Logged out at @DateTime.Now.ToString("MMM dd, yyyy HH:mm")
+ </small>
+         </div>
+      </div>
+      
+  <!-- Additional info card -->
+    <div class="mt-4">
+  <div class="card border-light">
+              <div class="card-body text-center">
+     <h6 class="card-title">
+         <i class="fas fa-lightbulb text-warning me-2"></i>
+    What's Next?
+ </h6>
+    <p class="card-text small text-muted">
+        ? Your authentication session has been cleared<br>
+   ? You've been logged out from IdentityServer<br>
+            ? Ready for a fresh login experience
+     </p>
+     </div>
+   </div>
+  </div>
+  </div>
+</div>
+
+@code {
+ protected override void OnInitialized()
+    {
+        // Log the successful logout for debugging
+        Logger.LogInformation("User successfully logged out and reached LoggedOut page at {Timestamp}", DateTime.UtcNow);
+    }
+}

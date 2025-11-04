@@ -91,39 +91,41 @@ public static class Config
     {
         var configuration = GetConfiguration();
 
-        return new Client[]
-    {
-            // ✅ Machine-to-machine client
+   return new Client[]
+{
+      // ✅ Machine-to-machine client
       new Client
          {
    ClientId = "m2m.client",
        ClientName = "Client Credentials Client",
    AllowedGrantTypes = GrantTypes.ClientCredentials,
       ClientSecrets = { new Secret(GetClientSecret(configuration, "m2m.client").Sha256()) },
-        AllowedScopes = { "CleanCutAPI" },
+  AllowedScopes = { "CleanCutAPI" },
 
     // ✅ Enterprise security settings
         AccessTokenLifetime = 3600, // 1 hour
-        AllowOfflineAccess = false,
-         RefreshTokenUsage = TokenUsage.OneTimeOnly,
-         RefreshTokenExpiration = TokenExpiration.Sliding
+    AllowOfflineAccess = false,
+  RefreshTokenUsage = TokenUsage.OneTimeOnly,
+RefreshTokenExpiration = TokenExpiration.Sliding
      },
 
-      // ✅ Blazor Server App with user authentication support
+      // ✅ Blazor Server App - PUBLIC CLIENT for user authentication
       new Client
   {
      ClientId = "CleanCutBlazorWebApp",
  ClientName = "CleanCut Blazor Server WebApp",
-     ClientSecrets = { new Secret(GetClientSecret(configuration, "CleanCutBlazorWebApp").Sha256()) },
+   
+   // ✅ NO CLIENT SECRET - Public client for user authentication
+     RequireClientSecret = false,
 
-  // ✅ Use Authorization Code flow for user authentication (like WebApp)
+  // ✅ Use Authorization Code flow for user authentication
   AllowedGrantTypes = GrantTypes.Code,
-         
-         // ✅ PKCE for user authentication flows (following Google's recommendations)
-         RequirePkce = true,
-       
-      // ✅ Redirect configuration for user authentication
-     RedirectUris = GetRedirectUris(configuration, "CleanCutBlazorWebApp"),
+    
+   // ✅ PKCE REQUIRED for public clients (following OAuth 2.1 best practices)
+ RequirePkce = true,
+    
+   // ✅ Redirect configuration for user authentication
+   RedirectUris = GetRedirectUris(configuration, "CleanCutBlazorWebApp"),
       PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "CleanCutBlazorWebApp"),
  
       // ✅ Scopes for user authentication and API access
@@ -131,23 +133,25 @@ public static class Config
  
          // ✅ Security settings for user authentication
     AllowOfflineAccess = true, // For refresh tokens
-   AccessTokenLifetime = 3600, // 1 hour
+ AccessTokenLifetime = 3600, // 1 hour
 RefreshTokenUsage = TokenUsage.OneTimeOnly,
 RefreshTokenExpiration = TokenExpiration.Sliding,
    
    // ✅ Additional security
   RequireConsent = false,
-    AllowPlainTextPkce = false
+    AllowPlainTextPkce = false // Require S256 PKCE method
     },
 
-   // ✅ Web App client for user authentication
+   // ✅ MVC Web App - PUBLIC CLIENT for user authentication
 new Client
       {
     ClientId = "CleanCutWebApp",
  ClientName = "CleanCut MVC WebApp",
-     ClientSecrets = { new Secret(GetClientSecret(configuration, "CleanCutWebApp").Sha256()) },
+   
+     // ✅ NO CLIENT SECRET - Public client for user authentication
+   RequireClientSecret = false,
 
-      // ✅ Use Authorization Code flow for user authentication
+    // ✅ Use Authorization Code flow for user authentication
      AllowedGrantTypes = GrantTypes.Code,
        RequirePkce = true,
 
@@ -161,11 +165,42 @@ PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "CleanCutWebAp
       // ✅ Security settings
    AllowOfflineAccess = true,
      AccessTokenLifetime = 3600,
-       RefreshTokenUsage = TokenUsage.OneTimeOnly,
+RefreshTokenUsage = TokenUsage.OneTimeOnly,
      RefreshTokenExpiration = TokenExpiration.Sliding,
        
-       // ✅ Additional security
+     // ✅ Additional security
        RequireConsent = false,
+    AllowPlainTextPkce = false
+},
+
+// ✅ TempBlazorApp - PUBLIC CLIENT for user authentication
+new Client
+{
+    ClientId = "TempBlazorApp",
+    ClientName = "Temp Blazor App Demo",
+  
+  // ✅ NO CLIENT SECRET - Public client for user authentication
+    RequireClientSecret = false,
+
+    // ✅ Use Authorization Code flow for user authentication
+    AllowedGrantTypes = GrantTypes.Code,
+    RequirePkce = true,
+
+ // ✅ Redirect configuration for TempBlazorApp
+    RedirectUris = GetRedirectUris(configuration, "TempBlazorApp"),
+    PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "TempBlazorApp"),
+    
+  // ✅ Scopes for user authentication and API access
+    AllowedScopes = { "openid", "profile", "CleanCutAPI" },
+
+    // ✅ Security settings
+  AllowOfflineAccess = true,
+    AccessTokenLifetime = 3600,
+    RefreshTokenUsage = TokenUsage.OneTimeOnly,
+    RefreshTokenExpiration = TokenExpiration.Sliding,
+    
+    // ✅ Additional security
+  RequireConsent = false,
     AllowPlainTextPkce = false
 },
 
@@ -181,18 +216,18 @@ new Client
     RequirePkce = true, // ✅ REQUIRED for desktop apps per RFC 8252
     
   // ✅ Desktop app redirect URIs
-    RedirectUris = GetRedirectUris(configuration, "CleanCutWinApp"),
+RedirectUris = GetRedirectUris(configuration, "CleanCutWinApp"),
     PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "CleanCutWinApp"),
 
     // ✅ Scopes for user authentication and API access
     AllowedScopes = { "openid", "profile", "CleanCutAPI" },
     
     // ✅ Security settings for desktop apps
-    AllowOfflineAccess = true, // For refresh tokens
+  AllowOfflineAccess = true, // For refresh tokens
     AccessTokenLifetime = 3600,
     RefreshTokenUsage = TokenUsage.OneTimeOnly,
 RefreshTokenExpiration = TokenExpiration.Sliding,
-    
+  
     // ✅ Desktop-specific security
     RequireConsent = false,
     AllowPlainTextPkce = false // Require S256 code challenge method
@@ -215,7 +250,7 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
  // ✅ CORS for Swagger
   AllowedCorsOrigins = { "https://localhost:7142" }
     }
-            };
+     };
     }
 
     // ✅ Secure configuration loading methods
@@ -252,8 +287,9 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
             "m2m.client" => "511536EF-F270-4058-80CA-1C89C192F69A",
             "CleanCutBlazorWebApp" => "BlazorServerSecret2024!",
             "CleanCutWebApp" => "WebAppSecret2024!",
-            // Note: CleanCutWinApp is a public client and doesn't need a secret
-            _ => throw new InvalidOperationException($"No development secret configured for client {clientId}")
+            "TempBlazorApp" => "TempSecret2024!",
+  // Note: CleanCutWinApp is a public client and doesn't need a secret
+   _ => throw new InvalidOperationException($"No development secret configured for client {clientId}")
         };
     }
 
@@ -285,23 +321,25 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
     // ✅ Default configurations for development
     private static List<string> GetDefaultRedirectUris(string clientId)
     {
-        return clientId switch
-        {
-            "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signin-oidc", "http://localhost:5091/signin-oidc" },
-            "CleanCutWebApp" => new List<string> { "https://localhost:7144/signin-oidc" },
-            "CleanCutWinApp" => new List<string> { "http://localhost:8080/", "cleancut://callback" },
-            _ => new List<string>()
-        };
+  return clientId switch
+          {
+ "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signin-oidc", "http://localhost:5091/signin-oidc" },
+      "CleanCutWebApp" => new List<string> { "https://localhost:7144/signin-oidc" },
+   "TempBlazorApp" => new List<string> { "https://localhost:7068/signin-oidc", "http://localhost:5110/signin-oidc" },
+"CleanCutWinApp" => new List<string> { "http://localhost:8080/", "cleancut://callback" },
+          _ => new List<string>()
+};
     }
 
     private static List<string> GetDefaultPostLogoutRedirectUris(string clientId)
-    {
-        return clientId switch
-        {
-            "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signout-callback-oidc", "http://localhost:5091/signout-callback-oidc" },
-            "CleanCutWebApp" => new List<string> { "https://localhost:7144/signout-callback-oidc" },
-            "CleanCutWinApp" => new List<string> { "cleancut://logged-out" },
-            _ => new List<string>()
-        };
+  {
+ return clientId switch
+{
+  "CleanCutBlazorWebApp" => new List<string> { "https://localhost:7297/signout-callback-oidc", "http://localhost:5091/signout-callback-oidc" },
+  "CleanCutWebApp" => new List<string> { "https://localhost:7144/signout-callback-oidc" },
+      "TempBlazorApp" => new List<string> { "https://localhost:7068/signout-callback-oidc", "http://localhost:5110/signout-callback-oidc" },
+    "CleanCutWinApp" => new List<string> { "cleancut://logged-out" },
+  _ => new List<string>()
+    };
     }
 }

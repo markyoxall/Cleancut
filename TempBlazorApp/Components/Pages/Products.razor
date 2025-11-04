@@ -1,230 +1,145 @@
-@page "/products"
-@using TempBlazorApp.Models
+﻿@page "/products"
+@using CleanCut.Application.DTOs
 @using TempBlazorApp.Services
 @inject IProductService ProductService
-@inject ITokenService TokenService
 @inject ILogger<Products> Logger
-@inject IConfiguration Configuration
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>Products</PageTitle>
+<PageTitle>Products - TempBlazorApp</PageTitle>
 
-<div class="container">
+<div class="container py-4">
     <div class="row">
-        <div class="col-12">
-      <h1><i class="fas fa-box me-2"></i>Products from CleanCut API</h1>
-  <p class="lead">Using dynamic token retrieval from IdentityServer</p>
+  <div class="col-12">
+        <h2><i class="fas fa-box me-2"></i>Products</h2>
+  <p class="text-muted">Data from CleanCut API using OAuth2.1 authentication</p>
 
-         @if (isLoading)
-    {
-     <div class="text-center py-5">
-     <div class="spinner-border text-primary" role="status">
-    <span class="visually-hidden">Loading products...</span>
-   </div>
-       <p class="mt-3">Loading products from API...</p>
-      </div>
-     }
-      else if (products.Any())
-     {
- <div class="alert alert-success">
-       <i class="fas fa-check-circle me-2"></i>
-       Successfully loaded <strong>@products.Count</strong> products from the API!
-      </div>
-
-  <div class="row">
-      @foreach (var product in products)
+ <AuthorizeView>
+     <Authorized>
+       @if (isLoading)
    {
-      <div class="col-md-6 col-lg-4 mb-4">
-       <div class="card h-100">
-       <div class="card-header">
-    <h5 class="card-title mb-0">@product.Name</h5>
-</div>
-        <div class="card-body">
-   <p class="card-text">@product.Description</p>
-    <div class="d-flex justify-content-between align-items-center">
-     <span class="h5 text-success mb-0">${@product.Price:F2}</span>
-      @if (product.IsAvailable)
-     {
-    <span class="badge bg-success">Available</span>
-     }
-     else
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+  <span class="visually-hidden">Loading...</span>
+             </div>
+  <p class="mt-3 text-muted">Loading products...</p>
+  </div>
+  }
+       else if (products.Any())
       {
-      <span class="badge bg-danger">Unavailable</span>
-     }
-    </div>
-   </div>
-       <div class="card-footer text-muted">
-      <small>
-     <i class="fas fa-calendar me-1"></i>
-     Created: @product.CreatedAt.ToString("MMM dd, yyyy")
-    </small>
-    </div>
-    </div>
+         <div class="alert alert-success">
+         <i class="fas fa-check-circle me-2"></i>
+  Successfully loaded <strong>@products.Count</strong> products
   </div>
-     }
-      </div>
-     }
-     else if (hasError)
-     {
-       <div class="alert alert-danger">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-      <strong>Error loading products:</strong> @errorMessage
-  </div>
-     }
-    else
-     {
-   <div class="alert alert-info">
-      <i class="fas fa-info-circle me-2"></i>
-      No products found.
+
+     <div class="row">
+          @foreach (var product in products)
+    {
+     <div class="col-md-6 col-lg-4 mb-3">
+       <div class="card">
+   <div class="card-body">
+    <h6 class="card-title">@product.Name</h6>
+    <p class="card-text small text-muted">@product.Description</p>
+        <div class="d-flex justify-content-between align-items-center">
+           <span class="h6 text-success mb-0">${@product.Price:F2}</span>
+           <span class="badge @(product.IsAvailable ? "bg-success" : "bg-secondary")">
+       @(product.IsAvailable ? "Available" : "Unavailable")
+        </span>
+           </div>
+          </div>
      </div>
+</div>
+          }
+    </div>
+      }
+      else if (hasError)
+     {
+          <div class="alert alert-danger">
+         <i class="fas fa-exclamation-triangle me-2"></i>
+       <strong>Error:</strong> @errorMessage
+         </div>
+   }
+    else
+        {
+    <div class="alert alert-info">
+       <i class="fas fa-info-circle me-2"></i>
+         No products found
+    </div>
       }
 
-      <div class="mt-4">
-      <div class="card">
-     <div class="card-header">
-    <h6 class="mb-0">?? Token & API Information</h6>
-   </div>
-      <div class="card-body">
-     <p><strong>API Base URL:</strong> @Configuration["ApiSettings:BaseUrl"]</p>
-      <p><strong>Full API URL:</strong> @Configuration["ApiSettings:BaseUrl"]/api/v1/products</p>
-     <p><strong>IdentityServer:</strong> @Configuration["IdentityServer:Authority"]</p>
-   <p><strong>Client ID:</strong> @Configuration["IdentityServer:ClientId"]</p>
-    <p><strong>Token Status:</strong> @tokenStatus</p>
-      <p><strong>Error Message:</strong> @(string.IsNullOrEmpty(errorMessage) ? "None" : errorMessage)</p>
-  
-      <div class="mt-3">
-    <button class="btn btn-outline-primary btn-sm me-2" @onclick="RefreshProducts">
-       <i class="fas fa-sync me-1"></i> Test API Call
+         <!-- Actions -->
+  <div class="mt-4 d-flex gap-2">
+           <button class="btn btn-outline-primary" @onclick="RefreshProducts" disabled="@isLoading">
+    <i class="fas fa-sync me-1"></i>Refresh
+         </button>
+         <a href="/" class="btn btn-outline-secondary">
+        <i class="fas fa-home me-1"></i>Home
+        </a>
+<form method="post" action="/Account/Logout" style="display:inline;">
+      <button type="submit" class="btn btn-outline-danger">
+     <i class="fas fa-sign-out-alt me-1"></i>Logout
     </button>
-     <button class="btn btn-outline-success btn-sm me-2" @onclick="TestToken">
-     <i class="fas fa-key me-1"></i> Test Token Service
-     </button>
-      <button class="btn btn-outline-info btn-sm" @onclick="ShowDebugInfo">
-     <i class="fas fa-bug me-1"></i> Debug Token Service
-      </button>
- </div>
- 
-      <div class="mt-3">
-     <small class="text-muted">
-     <strong>How it works:</strong><br>
-      1. TokenService requests token from IdentityServer using client credentials<br>
-      2. Token is cached and reused until it expires<br>
-      3. Fresh token is automatically obtained when needed
-      </small>
-     </div>
+    </form>
       </div>
-  </div>
-  </div>
-
-       @if (!string.IsNullOrEmpty(debugInfo))
-      {
-       <div class="mt-4">
- <div class="card">
-      <div class="card-header bg-warning">
-      <h6 class="mb-0 text-dark">?? Debug Information</h6>
+           </Authorized>
+   
+      <NotAuthorized>
+       <div class="alert alert-warning">
+     <h5 class="alert-heading">
+            <i class="fas fa-lock me-2"></i>Authentication Required
+         </h5>
+         <p>You must be logged in to view products from the API.</p>
+   <div class="mt-3">
+       <a href="/Account/Login" class="btn btn-primary">
+    <i class="fas fa-sign-in-alt me-2"></i>Login
+        </a>
+     <a href="/" class="btn btn-outline-secondary ms-2">
+        <i class="fas fa-home me-2"></i>Home
+         </a>
      </div>
-      <div class="card-body">
-  <pre class="small">@debugInfo</pre>
-     </div>
-     </div>
-     </div>
-       }
+   </div>
+  </NotAuthorized>
+         </AuthorizeView>
        </div>
-    </div>
+ </div>
 </div>
 
 @code {
-    private List<Product> products = new();
- private bool isLoading = true;
+    private List<ProductInfo> products = new();
+  private bool isLoading = false;
     private bool hasError = false;
     private string errorMessage = "";
-    private string tokenStatus = "Not checked";
-    private string debugInfo = "";
 
-  protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-      await LoadProducts();
+     await LoadProducts();
     }
 
-  private async Task LoadProducts()
-   {
-     try
-      {
-      isLoading = true;
-      hasError = false;
-     errorMessage = "";
-     tokenStatus = "Requesting...";
-     StateHasChanged();
+    private async Task LoadProducts()
+    {
+   try
+        {
+   isLoading = true;
+ hasError = false;
+          errorMessage = "";
+          StateHasChanged();
 
-     Logger.LogInformation("Loading products from API using TokenService...");
-     products = await ProductService.GetProductsAsync();
-   
-     if (products.Any())
-      {
-     tokenStatus = $"? Success - Retrieved {products.Count} products";
+      Logger.LogInformation("Loading products from API");
+         products = await ProductService.GetProductsAsync();
       }
-    else
-     {
-tokenStatus = "?? No products returned";
-     }
-     }
- catch (Exception ex)
-     {
-      Logger.LogError(ex, "Error loading products");
-      hasError = true;
+        catch (Exception ex)
+   {
+     Logger.LogError(ex, "Error loading products");
+     hasError = true;
      errorMessage = ex.Message;
-      tokenStatus = "? Failed";
-   }
-     finally
-      {
-isLoading = false;
-     StateHasChanged();
-      }
-    }
-
-    private async Task TestToken()
+        }
+   finally
    {
- try
-      {
-      tokenStatus = "Testing token service...";
-      StateHasChanged();
-
-    var token = await TokenService.GetAccessTokenAsync();
-     
-     if (!string.IsNullOrEmpty(token))
-      {
-      tokenStatus = $"? Token retrieved successfully (length: {token.Length})";
-     }
-     else
-      {
-tokenStatus = "? Token service returned null";
-      }
-      }
-     catch (Exception ex)
-      {
-     tokenStatus = $"? Token test failed: {ex.Message}";
-     }
-  StateHasChanged();
+      isLoading = false;
+    StateHasChanged();
     }
-
-    private async Task ShowDebugInfo()
-   {
-     try
-      {
-     debugInfo = "Loading debug information...";
-      StateHasChanged();
-
-     debugInfo = await TokenService.GetDetailedStatusAsync();
-     }
-      catch (Exception ex)
-     {
-     debugInfo = $"Error getting debug info: {ex.Message}";
-      }
-      StateHasChanged();
     }
 
     private async Task RefreshProducts()
     {
-     await LoadProducts();
+ await LoadProducts();
     }
 }

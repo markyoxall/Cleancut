@@ -4,31 +4,31 @@
  * 
  * This file configures the CleanCut Blazor Server application which serves as a client
  * application in the OAuth2/OpenID Connect authentication architecture. It demonstrates
- * server-side authentication for API access without requiring user interaction.
+ * server-side authentication with user login and API access.
  * 
  * ROLE IN AUTHENTICATION ARCHITECTURE:
  * ------------------------------------
  * This Blazor Server app acts as a CONFIDENTIAL CLIENT that:
  * 
- * 1. OBTAINS API TOKENS - Uses Client Credentials flow to get access tokens
- * 2. SERVER-SIDE API CALLS - Makes authenticated requests to CleanCut.API
- * 3. NO USER AUTHENTICATION - Acts on behalf of the application, not individual users
- * 4. SECURE TOKEN STORAGE - Handles tokens server-side with data protection
+ * 1. USER AUTHENTICATION - Redirects users to IdentityServer for login
+ * 2. RECEIVES TOKENS - Gets both ID tokens (user identity) and access tokens (API access)
+ * 3. API INTEGRATION - Uses access tokens to call CleanCut.API on behalf of users
+ * 4. SESSION MANAGEMENT - Maintains user authentication state across requests
  * 
  * AUTHENTICATION FLOW:
  * -------------------
- * 1. Application startup ? TokenService requests token from IdentityServer
- * 2. IdentityServer validates client credentials (CleanCutBlazorWebApp + secret)
- * 3. IdentityServer issues JWT token with "CleanCutAPI" audience
+ * 1. User visits Blazor app ? Authentication required ? Redirect to IdentityServer
+ * 2. IdentityServer validates user credentials (alice/bob test accounts)
+ * 3. IdentityServer issues JWT token with "CleanCutAPI" audience + ID token
  * 4. AuthenticatedHttpMessageHandler adds Bearer token to all API requests
  * 5. CleanCut.API validates token and processes request
- * 6. Blazor components receive data and render UI
+ * 6. Blazor components receive data and render UI with user context
  * 
  * BLAZOR SERVER SPECIFICS:
  * -----------------------
  * Unlike Blazor WebAssembly, this server-side approach means:
- * • No tokens exposed to browser
- * • All API calls happen server-side
+ * • Tokens stored securely server-side (never exposed to browser)
+ * • All API calls happen server-side with proper user context
  * • SignalR maintains connection between browser and server
  * • More secure for enterprise scenarios
  * • Better for sensitive data handling
@@ -36,58 +36,48 @@
  * KEY AUTHENTICATION COMPONENTS:
  * ------------------------------
  * 
- * • TokenService (Services/Auth/TokenService.cs)
- *   ??? Implements OAuth2 Client Credentials flow
- *   ??? Caches tokens with data protection encryption
- *   ??? Automatically refreshes expired tokens
- *   ??? Handles IdentityServer communication
+ * • OpenID Connect Authentication - For user login/logout
+ * • Cookie Authentication - For maintaining user sessions
+ * • AuthenticatedHttpMessageHandler - Adds user's access token to API calls
+ * • ServiceCollectionExtensions - Configures all HTTP clients with authentication
  * 
- * • AuthenticatedHttpMessageHandler (Services/Auth/AuthenticatedHttpMessageHandler.cs)
- *   ??? HTTP message handler that adds Bearer tokens to requests
- *   ??? Applied to all HttpClient instances for API calls
- *   ??? Transparent authentication for all API services
- * 
- * • ServiceCollectionExtensions (Extensions/ServiceCollectionExtensions.cs)
- *   ??? Registers all HTTP clients with authentication handlers
- *   ??? Configures ProductApiClient, CustomerApiService, CountryApiService
- *   ??? Ensures all API calls are automatically authenticated
- * 
- * CLIENT CREDENTIALS CONFIGURATION:
+ * USER AUTHENTICATION CONFIGURATION:
  * ---------------------------------
  * • Client ID: "CleanCutBlazorWebApp"
  * • Client Secret: Loaded from configuration (Azure Key Vault in production)
- * • Scope: "CleanCutAPI" 
- * • Grant Type: client_credentials (machine-to-machine)
+ * • Scopes: openid, profile, CleanCutAPI
+ * • Grant Type: Authorization Code + PKCE (user authentication)
  * • Token Endpoint: https://localhost:5001/connect/token
+ * • Authority: https://localhost:5001
  * 
  * SECURITY FEATURES:
  * -----------------
- * • Data Protection for token encryption at rest
- * • Security headers (CSP, HSTS, X-Frame-Options)
+ * • PKCE (Proof Key for Code Exchange) for enhanced security
+ * • Secure cookie configuration for user sessions
  * • HTTPS enforcement in production
- * • Secure cookie configuration for SignalR
- * • CORS restrictions to prevent unauthorized access
- * • Rate limiting protection (inherited from API)
- * • Comprehensive security logging without sensitive data
+ * • Content Security Policy headers
+ * • Session timeout and sliding expiration
+ * • Automatic token refresh for API calls
+ * • Anti-forgery tokens for form protection
  * 
  * INTEGRATION WITH OTHER APPS:
  * ----------------------------
  * 
  * • CleanCut.API
- *   ??? Receives authenticated requests from this Blazor app
- *   ??? Validates JWT tokens issued to "CleanCutBlazorWebApp" client
- *   ??? Returns protected data for business logic
+ *   ? Receives authenticated requests from this Blazor app
+ *   ? Validates JWT tokens issued to authenticated users
+ *   ? Returns user-specific data based on token claims
  * 
  * • CleanCut.Infrastructure.Identity
- *   ??? Issues access tokens via Client Credentials flow
- * ??? Validates client secret and returns JWT token
- *   ??? No user authentication required for this flow
+ *   ? Handles user authentication and authorization
+ *   ? Issues access tokens via Authorization Code + PKCE flow
+ *   ? Provides user identity and profile information
  * 
  * DEVELOPMENT VS PRODUCTION:
  * -------------------------
  * • Development: Relaxed CSP for debugging, detailed errors
  * • Production: Strict CSP, HSTS headers, minimal error details
- * • Token storage: In-memory with data protection in both environments
+ * • Token storage: Secure HTTP-only cookies in both environments
  * • Certificate-based signing validation in production
  * 
  * BLAZOR CIRCUIT SECURITY:
@@ -111,6 +101,45 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+     // ? Add authentication services FIRST
+        builder.Services.AddAuthentication(options =>
+        {
+       options.DefaultScheme = "Cookies";
+ options.DefaultChallengeScheme = "oidc";
+     })
+        .AddCookie("Cookies", options =>
+        {
+        options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+            options.LogoutPath = "/Account/Logout";
+options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.SlidingExpiration = true;
+ })
+    .AddOpenIdConnect("oidc", options =>
+        {
+ options.Authority = builder.Configuration["IdentityServer:Authority"];
+            options.ClientId = builder.Configuration["IdentityServer:ClientId"];
+    
+         options.ResponseType = "code";
+          options.UsePkce = true;
+      options.SaveTokens = true; // ? Critical: Store tokens for API access
+   options.GetClaimsFromUserInfoEndpoint = true;
+   
+            options.Scope.Clear();
+   options.Scope.Add("openid");
+     options.Scope.Add("profile");
+    options.Scope.Add("CleanCutAPI"); // ? Required for API access
+            
+      options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+       NameClaimType = "name",
+RoleClaimType = "role"
+    };
+     });
+
+        // ? Add authorization
+        builder.Services.AddAuthorization();
+
         // ? Add data protection for secure token storage
         builder.Services.AddDataProtection(options =>
  {
@@ -119,29 +148,29 @@ public class Program
 
         // Add services to the container.
  builder.Services.AddRazorComponents()
-         .AddInteractiveServerComponents();
+  .AddInteractiveServerComponents();
 
-        // Configure Blazor Server options for better error handling and security
+      // Configure Blazor Server options for better error handling and security
      builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
         {
 if (builder.Environment.IsDevelopment())
-        {
+  {
      options.DetailedErrors = true;
-        }
-         
+}
+       
    // ? Security settings
  options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
-            options.DisconnectedCircuitMaxRetained = 100;
+    options.DisconnectedCircuitMaxRetained = 100;
    options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(1);
         });
 
  builder.Services.AddHttpContextAccessor();
 
-    // ? Register ALL API clients with enhanced security
-        builder.Services.AddProductApiClients(builder.Configuration);
+    // ? Register ALL API clients with enhanced security (now using user tokens)
+      builder.Services.AddProductApiClients(builder.Configuration);
 
-        // Other services
-        builder.Services.AddScoped<IUiStateService, UiStateService>();
+// Other services
+      builder.Services.AddScoped<IUiStateService, UiStateService>();
 
    // Register feature state services
     builder.Services.AddScoped<ICustomersState, CustomeraState>();
@@ -156,17 +185,17 @@ if (builder.Environment.IsDevelopment())
         options.Preload = true;
        options.IncludeSubDomains = true;
       options.MaxAge = TimeSpan.FromDays(365);
-            });
+    });
         }
 
-        // ? Enhanced logging
+     // ? Enhanced logging
         builder.Services.AddLogging(loggingBuilder =>
  {
        loggingBuilder.AddConsole();
-       if (builder.Environment.IsDevelopment())
+  if (builder.Environment.IsDevelopment())
   {
    loggingBuilder.SetMinimumLevel(LogLevel.Debug);
-         }
+      }
             else
   {
  loggingBuilder.SetMinimumLevel(LogLevel.Information);
@@ -177,22 +206,22 @@ if (builder.Environment.IsDevelopment())
 
 // ? Enhanced security middleware pipeline
  if (!app.Environment.IsDevelopment())
-        {
+     {
  app.UseExceptionHandler("/Error");
-       app.UseHsts();
+   app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+      app.UseHttpsRedirection();
 
         // ? Add security headers middleware
         app.Use(async (context, next) =>
         {
     var headers = context.Response.Headers;
   
-            headers.TryAdd("X-Content-Type-Options", "nosniff");
+headers.TryAdd("X-Content-Type-Options", "nosniff");
        headers.TryAdd("X-Frame-Options", "DENY");
     headers.TryAdd("X-XSS-Protection", "1; mode=block");
-         headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
+     headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
 
        if (!app.Environment.IsDevelopment())
             {
@@ -200,22 +229,22 @@ if (builder.Environment.IsDevelopment())
          }
     
   // ? Enhanced CSP for Blazor Server
-            var csp = "default-src 'self'; " +
-   "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + // Blazor Server needs inline scripts
-        "style-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' data: https:; " +
-      "connect-src 'self' wss: https://localhost:5001 https://localhost:7142; " + // WebSocket for SignalR
-    "font-src 'self'; " +
-         "object-src 'none'; " +
-  "base-uri 'self'; " +
-        "form-action 'self'; " +
-  "frame-ancestors 'none'";
-  
-            if (!app.Environment.IsDevelopment())
- {
- csp += "; upgrade-insecure-requests";
-      }
-    
+       var csp = "default-src 'self'; " +
+       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " + // Allow CDN scripts
+     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " + // Allow CDN styles
+    "img-src 'self' data: https:; " +
+   "connect-src 'self' wss: https://localhost:5001 https://localhost:7142; " + // WebSocket for SignalR
+ "font-src 'self' https://cdnjs.cloudflare.com; " + // Allow CDN fonts
+     "object-src 'none'; " +
+    "base-uri 'self'; " +
+       "form-action 'self'; " +
+     "frame-ancestors 'none'";
+ 
+   if (!app.Environment.IsDevelopment())
+        {
+  csp += "; upgrade-insecure-requests";
+        }
+
 headers.TryAdd("Content-Security-Policy", csp);
 
             await next();
@@ -223,11 +252,28 @@ headers.TryAdd("Content-Security-Policy", csp);
 
   app.UseStaticFiles();
  app.UseRouting();
-        app.UseAntiforgery();
 
-        app.MapRazorComponents<App>()
+        // ? CRITICAL: Add authentication and authorization middleware
+    app.UseAuthentication();
+        app.UseAuthorization();
+        
+     app.UseAntiforgery();
+
+ app.MapRazorComponents<App>()
      .AddInteractiveServerRenderMode();
 
-        app.Run();
+        // ? Add authentication endpoints (FIXED)
+      app.MapGet("/Account/Login", () => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        {
+      RedirectUri = "/"
+        }, new[] { "oidc" }));
+
+        app.MapPost("/Account/Logout", () => Results.SignOut(
+            new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+         {
+        RedirectUri = "/"
+          }, 
+         new[] { "Cookies", "oidc" }));
+
     }
 }

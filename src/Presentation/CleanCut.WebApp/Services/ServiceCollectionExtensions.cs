@@ -11,27 +11,23 @@ public static class ServiceCollectionExtensions
         // Read API client configuration
    var apiConfig = configuration.GetSection("ApiClients").Get<ApiClientOptions>() ?? new ApiClientOptions();
         
-     // Register the token service for client credentials authentication
-        services.AddHttpClient<ITokenService, TokenService>();
-        services.AddScoped<ITokenService, TokenService>();
+        // ? UPDATED: Register the authenticated message handler for USER authentication
+        services.AddScoped<AuthenticatedHttpMessageHandler>();
 
-   // Register the authenticated message handler
-     services.AddScoped<AuthenticatedHttpMessageHandler>();
-
-   // ? Configure authenticated HttpClient for Customer API
-        services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
+   // ? Configure authenticated HttpClient for Customer API with USER tokens
+   services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
         {
  client.BaseAddress = new Uri(apiConfig.BaseUrl);
           client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
-        })
+  })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
-    // ? Configure authenticated HttpClient for Product API  
+    // ? Configure authenticated HttpClient for Product API with USER tokens
    services.AddHttpClient<IProductApiService, ProductApiService>(client =>
         {
     client.BaseAddress = new Uri(apiConfig.BaseUrl);
      client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
-        })
+    })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         return services;
@@ -41,5 +37,5 @@ public static class ServiceCollectionExtensions
 public class ApiClientOptions
 {
     public string BaseUrl { get; set; } = "https://localhost:7142";
-    public int TimeoutSeconds { get; set; } = 30;
+  public int TimeoutSeconds { get; set; } = 30;
 }

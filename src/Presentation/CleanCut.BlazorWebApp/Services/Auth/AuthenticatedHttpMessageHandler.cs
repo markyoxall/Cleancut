@@ -1,98 +1,43 @@
 /*
- * Authenticated HTTP Message Handler for Blazor Server
- * ===================================================
+ * Authenticated HTTP Message Handler for Blazor Server User Authentication
+ * =======================================================================
  * 
  * This HTTP message handler automatically injects Bearer authentication tokens
- * into all outgoing HTTP requests to the CleanCut API. It serves as the bridge
- * between the OAuth2 token management and API communication.
+ * from authenticated users into all outgoing HTTP requests to the CleanCut API.
+ * It serves as the bridge between user authentication and API communication.
  * 
  * ROLE IN AUTHENTICATION ARCHITECTURE:
  * ------------------------------------
  * This handler acts as TRANSPARENT AUTHENTICATION middleware that:
  * 
- * 1. TOKEN INJECTION - Automatically adds Authorization header to API requests
+ * 1. USER TOKEN INJECTION - Adds user's access token to API requests
  * 2. SEAMLESS INTEGRATION - API service classes don't need authentication logic
  * 3. CENTRALIZED AUTH - Single point for authentication across all HTTP clients
- * 4. ERROR HANDLING - Graceful handling of token acquisition failures
+ * 4. USER CONTEXT - API calls are made on behalf of the authenticated user
  * 
- * HTTP CLIENT PIPELINE INTEGRATION:
- * ---------------------------------
- * This handler is registered in the HTTP client pipeline for:
+ * USER AUTHENTICATION FLOW:
+ * -------------------------
+ * 1. User authenticates via OpenID Connect (Authorization Code + PKCE)
+ * 2. Access token stored in authentication cookie/session
+ * 3. Blazor component calls API service method
+ * 4. This handler extracts user's access token from HTTP context
+ * 5. Handler adds Authorization: Bearer {user_token} header
+ * 6. API validates user token and returns user-specific data
+ * 7. Response flows back to Blazor component with user context
  * 
- * • ProductApiClient (V1 & V2)
- *   ??? Adds Bearer token to all product-related API calls
- *   ??? GET /api/v1/products, POST /api/v1/products, etc.
- *   ??? Transparent authentication for CRUD operations
- * 
- * • CustomerApiService
- *   ??? Authenticates customer management API requests
- *   ??? Server-side calls to customer endpoints
- *   ??? No authentication logic needed in business components
- * 
- * • CountryApiService
- *   ??? Secures reference data API calls
- *   ??? Background data loading with automatic authentication
- *   ??? Blazor components receive data without auth complexity
- * 
- * AUTHENTICATION FLOW:
- * -------------------
- * 1. Blazor component calls API service method (e.g., GetProductsAsync())
- * 2. API service creates HttpRequestMessage for CleanCut.API
- * 3. This handler intercepts request before sending
- * 4. Handler calls TokenService.GetAccessTokenAsync() for current token
- * 5. Handler adds Authorization: Bearer {token} header to request
- * 6. Request proceeds to CleanCut.API with authentication
- * 7. API validates token and returns protected data
- * 8. Response flows back to Blazor component
- * 
- * TOKEN MANAGEMENT INTEGRATION:
- * ----------------------------
- * • Works with TokenService for automatic token acquisition
- * • Handles token refresh transparently if current token expired
- * • No caching logic - delegates token management to TokenService
- * • Fails gracefully if token cannot be obtained
+ * TOKEN SOURCE:
+ * ------------
+ * • Uses HttpContext.GetTokenAsync("access_token") for user tokens
+ * • Works with OpenID Connect authentication cookies
+ * • No client credentials - all API access is user-based
+ * • Automatic token refresh handled by OIDC middleware
  * 
  * SECURITY CONSIDERATIONS:
  * -----------------------
- * • Tokens never logged or exposed in error messages
- * • Secure token transmission over HTTPS only
- * • Token injection happens server-side (not exposed to browser)
- * • Automatic token refresh prevents expired token usage
- * • Comprehensive error handling without information disclosure
- * 
- * BLAZOR SERVER SPECIFICS:
- * -----------------------
- * • Server-side token handling (more secure than client-side)
- * • No CORS issues since API calls are server-to-server
- * • Shared authentication across all user sessions/circuits
- * • Better performance through server-side token caching
- * • Suitable for enterprise intranet scenarios
- * 
- * ERROR SCENARIOS:
- * ---------------
- * • TokenService unavailable ? Request proceeds without token (API will return 401)
- * • Invalid token format ? Request proceeds without token
- * • Token acquisition timeout ? Logs warning, continues without auth
- * • IdentityServer unavailable ? Graceful degradation, logs error
- * 
- * DEBUGGING:
- * ---------
- * • Logs token acquisition attempts (without sensitive data)
- * • Tracks API request authentication status
- * • Warning logs for authentication failures
- * • Debug logs for successful token injection
- * 
- * USAGE EXAMPLE:
- * -------------
- * This handler is automatically applied to HTTP clients via ServiceCollectionExtensions:
- * 
- * ```csharp
- * services.AddHttpClient<IProductApiService, ProductApiService>()
- *     .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
- * ```
- * 
- * Result: All API calls automatically include Bearer tokens without any changes
- * to business logic or component code.
+ * • User tokens never logged or exposed in error messages
+ * • Server-side token handling (not exposed to browser)
+ * • User-specific API access based on token claims
+ * • Proper user context in all API operations
  */
 
 using Microsoft.AspNetCore.Authentication;
@@ -102,41 +47,50 @@ namespace CleanCut.BlazorWebApp.Services.Auth;
 
 public class AuthenticatedHttpMessageHandler : DelegatingHandler
 {
-    private readonly ITokenService _tokenService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AuthenticatedHttpMessageHandler> _logger;
 
     public AuthenticatedHttpMessageHandler(
-      ITokenService tokenService,
-        ILogger<AuthenticatedHttpMessageHandler> logger)
+    IHttpContextAccessor httpContextAccessor,
+ ILogger<AuthenticatedHttpMessageHandler> logger)
     {
- _tokenService = tokenService;
-     _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request,
-      CancellationToken cancellationToken)
+    HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
-      try
+        try
    {
-      // Get the access token from the token service
-            var accessToken = await _tokenService.GetAccessTokenAsync();
+        var httpContext = _httpContextAccessor.HttpContext;
+    
+            if (httpContext != null && httpContext.User.Identity?.IsAuthenticated == true)
+ {
+            // Get the user's access token from the authentication session
+      var accessToken = await httpContext.GetTokenAsync("access_token");
 
-    if (!string.IsNullOrEmpty(accessToken))
-  {
+                if (!string.IsNullOrEmpty(accessToken))
+                {
            // Add the Bearer token to the request
-   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-    _logger.LogDebug("Added Bearer token to request: {Method} {Uri}", request.Method, request.RequestUri);
+           request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+          _logger.LogDebug("Added user Bearer token to request: {Method} {Uri}", request.Method, request.RequestUri);
       }
- else
-  {
- _logger.LogWarning("No access token available for API request");
-     }
+        else
+                {
+        _logger.LogWarning("User is authenticated but no access token found in session");
  }
- catch (Exception ex)
-    {
-     _logger.LogError(ex, "Error retrieving access token for API request");
   }
+  else
+  {
+            _logger.LogWarning("User not authenticated - API request will be sent without token");
+        }
+        }
+        catch (Exception ex)
+{
+            _logger.LogError(ex, "Error retrieving user access token for API request");
+        }
 
         return await base.SendAsync(request, cancellationToken);
     }

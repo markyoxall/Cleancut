@@ -8,7 +8,7 @@
  * 
  * ROLE IN AUTHENTICATION ARCHITECTURE:
  * ------------------------------------
- * This MVC app acts as a PUBLIC CLIENT that:
+ * This MVC app acts as a CONFIDENTIAL CLIENT that:
  * 
  * 1. USER AUTHENTICATION - Redirects users to IdentityServer for login
  * 2. RECEIVES TOKENS - Gets both ID tokens (user identity) and access tokens (API access)
@@ -19,103 +19,21 @@
  * -------------------------------
  * 
  * • Authorization Code + PKCE Flow (Primary):
- *   ??? User clicks "Login" ? Redirected to IdentityServer
- *   ??? User enters credentials ? IdentityServer validates
- *   ??? IdentityServer redirects back with authorization code
- *   ??? App exchanges code for tokens (ID + Access)
- *   ??? User is logged in with API access capabilities
+ *   ? User clicks "Login" ? Redirected to IdentityServer
+ *   ? User enters credentials ? IdentityServer validates
+ *   ? IdentityServer redirects back with authorization code
+ *   ? App exchanges code for tokens (ID + Access)
+ *   ? User is logged in with API access capabilities
  * 
- * • Client Credentials Flow (API Access):
- *   ??? Background API calls using app-level credentials
- *   ??? Used for system-level operations not tied to specific users
- *   ??? Configured in addition to user authentication
- * 
- * MVC-SPECIFIC AUTHENTICATION FEATURES:
- * ------------------------------------
- * 
- * • Cookie-based Sessions:
- *   ??? User identity stored in encrypted authentication cookies
- *   ??? Automatic session management across page requests
- *   ??? Secure cookie configuration (HttpOnly, Secure, SameSite)
- * 
- * • Controller Authorization:
- *   ??? [Authorize] attributes on controllers and actions
- *   ??? Role-based access control for different user types
- *   ??? Automatic redirects to login page for unauthenticated users
- * 
- * • View Integration:
- *   ??? User claims available in Razor views (@User.Identity.Name)
- *   ??? Conditional content based on user roles and authentication status
- *   ??? Anti-forgery tokens for CSRF protection
- * 
- * INTEGRATION WITH OTHER COMPONENTS:
- * ---------------------------------
- * 
- * • CleanCut.Infrastructure.Identity (IdentityServer):
- *   ??? Handles user authentication and authorization
- *   ??? Issues ID tokens for user identity
- *   ??? Issues access tokens for API access
- *   ??? Manages user sessions and logout
- * 
- * • CleanCut.API:
- *   ??? Receives authenticated API requests from this MVC app
- *   ??? Validates access tokens in Authorization header
- *   ??? Returns user-specific data based on token claims
- *   ??? Enforces role-based access control
- * 
- * • Client Applications Comparison:
- *   ??? CleanCut.BlazorWebApp: Server-side, Client Credentials only
- *   ??? CleanCut.WebApp (This): User authentication + API access
- *   ??? CleanCut.WinApp: Desktop app, similar flow to this MVC app
- * 
- * SECURITY FEATURES:
- * -----------------
- * • PKCE (Proof Key for Code Exchange) for public client security
- * • State parameter validation to prevent CSRF attacks
- * • Secure cookie configuration with proper flags
- * • HTTPS enforcement in production
- * • Anti-forgery token validation for forms
- * • Content Security Policy headers
- * • Session timeout and sliding expiration
- * • Automatic token refresh for API calls
- * 
- * USER AUTHENTICATION FLOW:
- * -------------------------
- * 1. User visits protected page ? Automatic redirect to /Account/Login
- * 2. MVC app redirects to IdentityServer with PKCE challenge
- * 3. IdentityServer shows login form (alice/bob test accounts)
- * 4. User authenticates ? IdentityServer redirects back with auth code
- * 5. MVC app exchanges code for tokens using PKCE verifier
- * 6. User is logged in with authentication cookie set
- * 7. Subsequent API calls use access token automatically
- * 8. User can access protected controllers and views
- * 
- * API ACCESS PATTERNS:
- * -------------------
- * • Server-side API calls from controllers using HttpClient
- * • Client-side JavaScript AJAX calls with anti-forgery tokens
- * • Automatic Bearer token injection via AuthenticatedHttpMessageHandler
- * • Error handling for API authentication failures
- * 
- * CONFIGURATION REQUIREMENTS:
- * ---------------------------
- * • Client ID: "CleanCutWebApp"
- * • Client Secret: Secure secret from configuration/Key Vault
- * • Redirect URIs: /signin-oidc, /signout-callback-oidc
- * • Scopes: openid, profile, CleanCutAPI
- * • Response Types: code (Authorization Code flow)
- * • PKCE: Required for security
- * 
- * DEVELOPMENT VS PRODUCTION:
- * -------------------------
- * • Development: Relaxed CORS, detailed error pages, test accounts
- * • Production: Strict CORS, generic error pages, real user accounts
- * • Both: Secure cookie settings, HTTPS enforcement, CSP headers
+ * This is the CORRECT approach for user-facing applications in 2025!
  */
 
 using CleanCut.WebApp.Mappings;
 using CleanCut.WebApp.Services;
 using Serilog;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,8 +46,69 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// ? CRITICAL: Add authentication services FIRST
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.LogoutPath = "/Account/Logout";
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+  options.SlidingExpiration = true;
+    options.Cookie.Name = "CleanCutWebApp.Auth";
+    options.Cookie.HttpOnly = true;
+ options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+})
+.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
+    options.ClientId = builder.Configuration["IdentityServer:ClientId"] ?? "CleanCutWebApp";
+    // ? NO CLIENT SECRET - Public client with PKCE only
+    
+    options.ResponseType = "code";
+    options.UsePkce = true;
+    options.SaveTokens = true; // ? Critical: Store tokens for API access
+    options.GetClaimsFromUserInfoEndpoint = true;
+ 
+    options.Scope.Clear();
+    options.Scope.Add("openid");
+    options.Scope.Add("profile");
+    options.Scope.Add("CleanCutAPI"); // ? Required for API access
+    
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+   NameClaimType = "name",
+        RoleClaimType = "role"
+    };
+    
+    // Enhanced error handling
+    options.Events = new OpenIdConnectEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+      Log.Error("OpenID Connect authentication failed: {Error}", context.Exception?.Message);
+   return Task.CompletedTask;
+        },
+      OnTokenValidated = context =>
+        {
+            Log.Information("Token validated for user: {User}", context.Principal?.Identity?.Name);
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// ? Add authorization
+builder.Services.AddAuthorization();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// ? CRITICAL: Add IHttpContextAccessor for token services
+builder.Services.AddHttpContextAccessor();
 
 // Configure Problem Details for better error handling
 builder.Services.AddProblemDetails();
@@ -137,7 +116,7 @@ builder.Services.AddProblemDetails();
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(ViewModelMappingProfile));
 
-// ? Configure authenticated API clients (like BlazorWebApp)
+// ? Configure authenticated API clients with user authentication
 builder.Services.AddApiClients(builder.Configuration);
 
 // Add health checks
@@ -161,6 +140,8 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// ? CRITICAL: Add authentication and authorization middleware
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -168,9 +149,22 @@ app.MapStaticAssets();
 // Add health check endpoint
 app.MapHealthChecks("/health");
 
+// ? Add authentication endpoints
+app.MapGet("/Account/Login", () => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+{
+    RedirectUri = "/"
+}, authenticationSchemes: new[] { OpenIdConnectDefaults.AuthenticationScheme }));
+
+app.MapPost("/Account/Logout", () => Results.SignOut(
+    new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+    {
+ RedirectUri = "/"
+}, 
+   authenticationSchemes: new[] { CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme }));
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+  pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.Run();
