@@ -23,6 +23,7 @@ public class CustomerApiService : ICustomerApiService
     public CustomerApiService(HttpClient httpClient, ILogger<CustomerApiService> logger)
     {
       _httpClient = httpClient;
+        // Initialize logger
         _logger = logger;
     }
 
