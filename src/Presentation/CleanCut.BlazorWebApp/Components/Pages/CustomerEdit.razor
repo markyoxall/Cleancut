@@ -281,10 +281,10 @@
         border-radius: 50%;
         background-color: #0d6efd;
         color: white;
-        display: flex;
+    display: flex;
         align-items: center;
-        justify-content: center;
-        font-weight: bold;
+      justify-content: center;
+     font-weight: bold;
         font-size: 2rem;
     }
 
@@ -294,14 +294,14 @@
     }
 
     @@keyframes slideInFromRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
+     from {
+    transform: translateX(100%);
+      opacity: 0;
+    }
         to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+          transform: translateX(0);
+       opacity: 1;
+  }
     }
 </style>
 
@@ -464,13 +464,13 @@
                 CustomerToDelete.FirstName + " " + CustomerToDelete.LastName, CustomerToDelete.Id);
             
             var success = await CustomerApi.DeleteCustomerAsync(CustomerToDelete.Id);
-            
+    
             if (success)
             {
                 Logger.LogInformation("Customer deleted successfully: {CustomerId}", CustomerToDelete.Id);
                 
-                // Navigate back to management page with success message
-                Navigation.NavigateTo($"/users/management?refresh={DateTime.UtcNow.Ticks}");
+                // ? FIXED: Navigate to correct customer management URL
+                Navigation.NavigateTo($"/customers/management?refresh={DateTime.UtcNow.Ticks}");
             }
             else
             {
