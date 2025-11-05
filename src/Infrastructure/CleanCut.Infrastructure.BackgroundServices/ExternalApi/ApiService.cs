@@ -2,7 +2,8 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using CleanCut.Infrastructure.BackgroundServices.Models;
+using CleanCut.Application.DTOs;
+
 
 namespace CleanCut.Infrastructure.BackgroundServices.ExternalApi;
 

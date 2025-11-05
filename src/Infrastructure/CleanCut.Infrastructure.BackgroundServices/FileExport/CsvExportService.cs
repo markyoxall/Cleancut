@@ -3,7 +3,7 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using CleanCut.Infrastructure.BackgroundServices.Models;
+using CleanCut.Application.DTOs;
 
 namespace CleanCut.Infrastructure.BackgroundServices.FileExport;
 
@@ -128,11 +128,7 @@ public sealed class ProductCsvMap : ClassMap<ProductInfo>
         Map(m => m.Id).Name("Product ID");
         Map(m => m.Name).Name("Product Name");
   Map(m => m.Description).Name("Description");
-        Map(m => m.PriceFormatted).Name("Price");
-    Map(m => m.Status).Name("Status");
       Map(m => m.CustomerId).Name("Customer ID");
-        Map(m => m.CreatedDate).Name("Created Date");
-
         // Don't include these raw fields in CSV
     Map(m => m.Price).Ignore();
    Map(m => m.IsAvailable).Ignore();

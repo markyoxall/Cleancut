@@ -46,7 +46,7 @@ public class CustomeraState : ICustomersState
         try
         {
             _logger.LogInformation("CustomersState: loading customers");
-            _users = await _customerApi.GetAllCustomersAsync(CancellationToken.None);
+            _users = await _customerApi.GetAllCustomersAsync(cancellationToken);
             _lastLoaded = DateTime.UtcNow;
 
             var usersCopy = _users.ToList();

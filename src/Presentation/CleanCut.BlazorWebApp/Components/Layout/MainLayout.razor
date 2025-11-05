@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Routing
+@using CleanCut.BlazorWebApp.Components.Account
 @inherits LayoutComponentBase
 
 <!-- Navigation -->
@@ -21,23 +22,31 @@
      </NavLink>
           </li>
         <li class="nav-item">
+       <NavLink class="nav-link" href="/customers/management">
+ <i class="fas fa-users me-1"></i>Customers
+      </NavLink>
+  </li>
+        <li class="nav-item">
         <NavLink class="nav-link" href="/products">
    <i class="fas fa-box me-1"></i>Products
-          </NavLink>
+   </NavLink>
         </li>
  <li class="nav-item">
-            <NavLink class="nav-link" href="/countries">
-         <i class="fas fa-globe me-1"></i>Countries
+   <NavLink class="nav-link" href="/countries">
+   <i class="fas fa-globe me-1"></i>Countries
           </NavLink>
-        </li>
-    <li class="nav-item dropdown">
+    </li>
+ <li class="nav-item dropdown">
        <a class="nav-link dropdown-toggle" href="#" id="developerDropdown" role="button" data-bs-toggle="dropdown">
             <i class="fas fa-tools me-1"></i>Developer
-       </a>
+  </a>
     <ul class="dropdown-menu">
        <li><a class="dropdown-item" href="/auth-test">
          <i class="fas fa-shield-alt me-2"></i>Auth Test
-            </a></li>
+        </a></li>
+<li><a class="dropdown-item" href="/test-page">
+   <i class="fas fa-vial me-2"></i>Test Page
+     </a></li>
      <li><hr class="dropdown-divider"></li>
      <li><a class="dropdown-item" href="https://localhost:7142/swagger" target="_blank">
        <i class="fas fa-book me-2"></i>API Documentation
