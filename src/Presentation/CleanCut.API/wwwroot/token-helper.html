@@ -147,9 +147,9 @@ color: #856404;
          <select id="clientId" onchange="updateClientSecret()">
   <option value="m2m.client">m2m.client (Machine-to-Machine)</option>
     <option value="api-testing">api-testing (Resource Owner)</option>
-                <option value="CleanCutBlazorWebApp">CleanCutBlazorWebApp</option>
-     <option value="TempBlazorApp">TempBlazorApp</option>
- <option value="CleanCutWebApp">CleanCutWebApp</option>
+                <option value="CleanCutBlazorWebApp">CleanCutBlazorWebApp (Public Client)</option>
+     <option value="TempBlazorApp">TempBlazorApp (Public Client)</option>
+ <option value="CleanCutWebApp">CleanCutWebApp (Public Client)</option>
   </select>
         </div>
       <div class="form-group">
@@ -237,16 +237,26 @@ curl -X POST "https://localhost:5001/connect/token" \
 
  const clientSecrets = {
    'm2m.client': '511536EF-F270-4058-80CA-1C89C192F69A',
-        'api-testing': 'testing-secret-123',
-       'CleanCutBlazorWebApp': 'BlazorServerSecret2024!',
-       'TempBlazorApp': 'TempSecret2024!',
-     'CleanCutWebApp': 'WebAppSecret2024!'
+ 'api-testing': 'testing-secret-123',
+       'CleanCutBlazorWebApp': '', // ✅ Public client - no secret
+       'TempBlazorApp': '',        // ✅ Public client - no secret  
+     'CleanCutWebApp': ''         // ✅ Public client - no secret
       };
 
       function updateClientSecret() {
         const clientId = document.getElementById('clientId').value;
 const clientSecret = clientSecrets[clientId] || '';
     document.getElementById('clientSecret').value = clientSecret;
+        
+        // ✅ Show warning for public clients
+        const isPublicClient = ['CleanCutBlazorWebApp', 'TempBlazorApp', 'CleanCutWebApp'].includes(clientId);
+        if (isPublicClient) {
+            document.getElementById('clientSecret').placeholder = 'Public client - no secret required';
+            document.getElementById('clientSecret').disabled = true;
+        } else {
+            document.getElementById('clientSecret').placeholder = '';
+        document.getElementById('clientSecret').disabled = false;
+      }
   }
 
    async function getToken() {

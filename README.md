@@ -250,15 +250,17 @@ dotnet test tests/ArchitectureTests/
 ### **Supported OAuth2 Flows**
 | Client Type | Grant Type | PKCE | Client Secret | Use Case |
 |-------------|------------|------|---------------|----------|
-| **Blazor Server** | Authorization Code | ✅ Yes | ✅ Yes | User authentication in server app |
-| **MVC WebApp** | Authorization Code | ✅ Yes | ✅ Yes | Traditional web application |
-| **WinApp** | Authorization Code | ✅ Yes | ❌ No | Desktop application (Public Client) |
+| **CleanCut.BlazorWebApp** | Authorization Code | ✅ Yes | ❌ No | Server-side Blazor (Public Client) |
+| **CleanCut.WebApp (MVC)** | Authorization Code | ✅ Yes | ❌ No | Traditional web app (Public Client) |
+| **TempBlazorApp** | Authorization Code | ✅ Yes | ❌ No | Demo Blazor app (Public Client) |
+| **CleanCut.WinApp** | Authorization Code | ✅ Yes | ❌ No | Desktop application (Public Client) |
 | **m2m.client** | Client Credentials | ❌ No | ✅ Yes | Service-to-service communication |
 
 ### **Security Features**
 - **JWT Bearer Tokens** with proper audience validation
 - **Role-based Authorization** (Admin, User roles)
 - **PKCE (Proof Key for Code Exchange)** for all Authorization Code flows
+- **OAuth 2.1 compliance** with public clients (no client secrets needed)
 - **CORS** properly configured for cross-origin requests
 - **HTTPS enforcement** in production
 - **Token expiration and refresh** handling
@@ -285,11 +287,12 @@ dotnet test tests/ArchitectureTests/
 ## 🔐 Security Best Practices Implemented
 
 ### **OAuth2/OIDC Security**
-- ✅ **PKCE for all Authorization Code flows** (including confidential clients)
+- ✅ **PKCE for all Authorization Code flows** (OAuth 2.1 requirement)
+- ✅ **Public clients without client secrets** (enhanced security model)
 - ✅ **Proper audience validation** in JWT tokens
 - ✅ **Short-lived access tokens** with refresh token rotation
 - ✅ **Secure redirect URI validation**
-- ✅ **Public clients without client secrets** (WinApp)
+- ✅ **OAuth 2.1 compliance** throughout the ecosystem
 
 ### **API Security**
 - ✅ **Global authentication requirement** with fallback policy

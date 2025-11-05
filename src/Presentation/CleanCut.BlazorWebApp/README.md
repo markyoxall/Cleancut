@@ -32,10 +32,10 @@ graph TB
 
 ### **Client Configuration**
 ```csharp
-Client Type: Confidential Client
+Client Type: PUBLIC CLIENT (OAuth 2.1 compliant)
 Grant Type: Authorization Code + PKCE
 Client ID: CleanCutBlazorWebApp
-Client Secret: BlazorServerSecret2024! (development)
+Client Secret: None (PKCE provides security)
 Scopes: openid, profile, CleanCutAPI
 Redirect URIs: https://localhost:7297/signin-oidc
 ```
@@ -145,25 +145,35 @@ CleanCut.BlazorWebApp/
 
 ### **Program.cs Configuration**
 ```csharp
-// Authentication setup
+// ? OAuth 2.1 PUBLIC CLIENT Authentication setup
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = "Cookies";
-    options.DefaultChallengeScheme = "oidc";
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+  options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
 })
-.AddCookie("Cookies", options =>
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    // ? Enterprise security configuration
+  options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 })
-.AddOpenIdConnect("oidc", options =>
+.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
     options.Authority = "https://localhost:5001";
     options.ClientId = "CleanCutBlazorWebApp";
-    options.ClientSecret = "BlazorServerSecret2024!";
-    options.UsePkce = true;
-    options.SaveTokens = true;
+    // ? NO CLIENT SECRET - OAuth 2.1 Public Client
+    options.ResponseType = "code";        // Authorization Code flow
+    options.UsePkce = true;   // ? PKCE required for OAuth 2.1
+    options.SaveTokens = true;  // Store tokens for API calls
     options.GetClaimsFromUserInfoEndpoint = true;
+  
+    options.Scope.Clear();
+    options.Scope.Add("openid");
+    options.Scope.Add("profile");
+    options.Scope.Add("CleanCutAPI");
 });
 ```
 
@@ -254,13 +264,13 @@ Task DeleteProductAsync(Guid id);
 ### **Starting the Application**
 ```bash
 # Terminal 1: Start IdentityServer
-dotnet run --project src/Infrastructure/CleanCut.Infrastructure.Identity
+dotenv run --project src/Infrastructure/CleanCut.Infrastructure.Identity
 
 # Terminal 2: Start API
-dotnet run --project src/Presentation/CleanCut.API
+dotenv run --project src/Presentation/CleanCut.API
 
 # Terminal 3: Start Blazor App
-dotnet run --project src/Presentation/CleanCut.BlazorWebApp
+dotenv run --project src/Presentation/CleanCut.BlazorWebApp
 
 # Access application
 open https://localhost:7297
@@ -286,10 +296,10 @@ Regular User:
 {
   "IdentityServer": {
     "Authority": "https://localhost:5001",
-    "ClientId": "CleanCutBlazorWebApp",
-    "ClientSecret": "BlazorServerSecret2024!"
+    "ClientId": "CleanCutBlazorWebApp"
+    // ? NO ClientSecret - OAuth 2.1 Public Client
   },
-  "ApiSettings": {
+  "ApiClients": {
     "BaseUrl": "https://localhost:7142"
   }
 }
@@ -302,8 +312,9 @@ Regular User:
 
 ## Security Features
 
-### **?? Authentication Security**
-- ? **PKCE Implementation** for Authorization Code flow
+### **?? OAuth 2.1 Authentication Security**
+- ? **PKCE Implementation** for Authorization Code flow (OAuth 2.1 requirement)
+- ? **Public Client Security** - No client secrets to manage
 - ? **Secure Token Storage** in server-side authentication context  
 - ? **Automatic Token Refresh** with sliding expiration
 - ? **HTTPS Enforcement** for all communications
@@ -354,20 +365,21 @@ Regular User:
 
 ## Production Deployment
 
-### **Security Hardening**
-- ?? **Client Secret Management** via Azure Key Vault
+### **OAuth 2.1 Security Hardening**
+- ?? **No Client Secrets to Manage** (public client advantage)
+- ?? **PKCE Provides Security** without secret management complexity
 - ?? **HTTPS Certificate** configuration
 - ?? **Security Headers** implementation
 - ?? **Rate Limiting** for API calls
 - ?? **Monitoring & Logging** for security events
 
 ### **Performance Optimization**
-- ? **SignalR Scaling** with Redis backplane
-- ? **Output Caching** for static content
-- ? **Component Prerendering** for faster loads
-- ? **CDN Integration** for static assets
-- ? **Health Checks** for monitoring
+- ?? **SignalR Scaling** with Redis backplane
+- ?? **Output Caching** for static content
+- ?? **Component Prerendering** for faster loads
+- ?? **CDN Integration** for static assets
+- ?? **Health Checks** for monitoring
 
 ---
 
-**This Blazor Server application demonstrates modern web development with secure authentication, showcasing the benefits of server-side rendering combined with OAuth2/OIDC security best practices.**
+**This Blazor Server application demonstrates modern web development with secure OAuth 2.1 authentication, showcasing the benefits of server-side rendering combined with public client security patterns.**

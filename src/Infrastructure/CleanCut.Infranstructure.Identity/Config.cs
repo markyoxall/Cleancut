@@ -310,7 +310,7 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
 
     private static string GetDevelopmentClientSecret(string clientId)
     {
-        // ✅ Development-only fallback secrets for CONFIDENTIAL clients only
+     // ✅ Development-only fallback secrets for CONFIDENTIAL clients only
         return clientId switch
     {
   "m2m.client" => "511536EF-F270-4058-80CA-1C89C192F69A",
@@ -318,10 +318,10 @@ RefreshTokenExpiration = TokenExpiration.Sliding,
    // ✅ OAuth 2.1 Public Clients - No secrets configured (use PKCE only)
    // CleanCutBlazorWebApp => Public Client (Authorization Code + PKCE)
    // CleanCutWebApp => Public Client (Authorization Code + PKCE)
-         "TempBlazorApp" => "TempSecret2024!", // Still has secret for demo purposes
+   // TempBlazorApp => Public Client (Authorization Code + PKCE)
   // Note: CleanCutWinApp is a public client and doesn't need a secret
    _ => throw new InvalidOperationException($"No development secret configured for client {clientId}")
-        };
+    };
     }
 
     private static List<string> GetRedirectUris(IConfiguration configuration, string clientId)
