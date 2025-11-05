@@ -19,7 +19,7 @@ public class Product : BaseEntity
     // Private constructor for EF Core
     private Product() { }
 
-    public Product(string name, string description, decimal price, Guid userId)
+    public Product(string name, string description, decimal price, Guid customerId)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Product name cannot be empty", nameof(name));
@@ -30,13 +30,13 @@ public class Product : BaseEntity
         if (price < 0)
             throw new ArgumentException("Price cannot be negative", nameof(price));
         
-        if (userId == Guid.Empty)
-            throw new ArgumentException("User ID cannot be empty", nameof(userId));
+        if (customerId == Guid.Empty)
+            throw new ArgumentException("Customer ID cannot be empty", nameof(customerId));
 
         Name = name.Trim();
         Description = description.Trim();
         Price = price;
-        CustomerId = userId;
+        CustomerId = customerId;
     }
 
     public void UpdateDetails(string name, string description)
@@ -73,8 +73,8 @@ public class Product : BaseEntity
         SetUpdatedAt();
     }
 
-    public bool BelongsToCustomer(Guid userId)
+    public bool BelongsToCustomer(Guid customerId)
     {
-        return CustomerId == userId;
+        return CustomerId == customerId;
     }
 }

@@ -98,15 +98,32 @@ UserOrAdmin: RequireRole("User", "Admin")  // Regular operations
 ### **Test Accounts** (Seeded in Development)
 ```
 Admin Account:
+- Username: alice
 - Email: admin@cleancut.com
-- Password: TempPassword123!
+- Password: Dynamically generated (check IdentityServer logs on startup)
 - Role: Admin (can access all endpoints)
+- Claims: Full name, department (IT), employee_id (EMP001)
 
 User Account:  
+- Username: bob
 - Email: user@cleancut.com
-- Password: TempPassword123!
+- Password: Dynamically generated (check IdentityServer logs on startup)
 - Role: User (cannot delete products)
+- Claims: Full name, department (Sales), employee_id (EMP002), location (New York)
 ```
+
+**Note**: Passwords are automatically generated for security. To get the actual passwords:
+1. Start the IdentityServer project
+2. Check the console output or logs for generated passwords
+3. Or configure custom passwords in `appsettings.json`:
+   ```json
+{
+     "SeedData": {
+       "AdminPassword": "YourCustomPassword123!",
+       "UserPassword": "YourCustomPassword123!"
+     }
+   }
+   ```
 
 ### **Manual Testing with cURL**
 ```bash

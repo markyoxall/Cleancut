@@ -18,23 +18,28 @@
  * ------------------------------------
  * 
  * • CleanCut.API (Web API)
- *   ??? Validates tokens issued by this IdentityServer
- *   ??? Accepts tokens with audience claim "CleanCutAPI"
- *   ??? Uses JWT Bearer authentication middleware
+ *   ? Validates tokens issued by this IdentityServer
+ *   ? Accepts tokens with audience claim "CleanCutAPI"
+ *   ? Uses JWT Bearer authentication middleware
  * 
  * • CleanCut.BlazorWebApp (Blazor Server)
- *   ??? Requests tokens using Client Credentials flow
- *   ??? Uses TokenService to get access tokens for API calls
- *   ??? Server-side authentication, no user interaction needed
+ *   ? Uses Authorization Code + PKCE flow for user authentication
+ *   ? Requires client secret for confidential client authentication
+ *   ? Server-side authentication, maintains user session state
  * 
  * • CleanCut.WebApp (MVC/Razor Pages)
- *   ??? Uses Authorization Code + PKCE flow for user authentication
- *   ??? Redirects users to this IdentityServer for login
- *   ??? Receives ID tokens for user identity and access tokens for API calls
+ *   ? Uses Authorization Code + PKCE flow for user authentication
+ *   ? Redirects users to this IdentityServer for login
+ *   ? Receives ID tokens for user identity and access tokens for API calls
  * 
  * • CleanCut.WinApp (WinForms - Future)
- *   ??? Would use Authorization Code + PKCE flow
- *   ??? Would launch system browser for authentication
+ *   ? Uses Authorization Code + PKCE flow as public client
+ *   ? Would launch system browser for authentication
+ *   ? No client secret (public client)
+ * 
+ * • Background Services
+ *   ? Use Client Credentials flow for machine-to-machine authentication
+ *   ? No user interaction needed for automated API access
  * 
  * SECURITY FEATURES IMPLEMENTED:
  * ------------------------------

@@ -638,15 +638,30 @@ open https://localhost:7144
 ### **Test Accounts**
 ```
 Admin User:
+- Username: alice
 - Email: admin@cleancut.com
-- Password: TempPassword123!
+- Password: Dynamically generated (check IdentityServer logs on startup)
 - Role: Admin (full access)
 
 Regular User:
+- Username: bob
 - Email: user@cleancut.com
-- Password: TempPassword123!
+- Password: Dynamically generated (check IdentityServer logs on startup)
 - Role: User (limited access)
 ```
+
+**Note**: Passwords are automatically generated for security. To get the actual passwords:
+1. Start the IdentityServer project
+2. Check the console output or logs for generated passwords
+3. Or configure custom passwords in `appsettings.json`:
+ ```json
+   {
+     "SeedData": {
+       "AdminPassword": "YourCustomPassword123!",
+"UserPassword": "YourCustomPassword123!"
+     }
+   }
+   ```
 
 ## Security Features
 

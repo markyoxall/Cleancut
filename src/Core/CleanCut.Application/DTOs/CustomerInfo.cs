@@ -1,7 +1,7 @@
 namespace CleanCut.Application.DTOs;
 
 /// <summary>
-/// Data Transfer Object for User
+/// Data Transfer Object for Customer
 /// </summary>
 public class CustomerInfo
 {
