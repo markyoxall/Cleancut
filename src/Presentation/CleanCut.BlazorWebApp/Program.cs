@@ -120,11 +120,11 @@ public class Program
       options.ExpireTimeSpan = TimeSpan.FromHours(8);
           options.SlidingExpiration = true;
             
-    // Session-only cookies (don't persist when browser closes)
-       options.Cookie.IsEssential = true;
+    // ? Secure cookie configuration for OAuth 2.1 
+    options.Cookie.IsEssential = true;
     options.Cookie.HttpOnly = true;
- options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-          options.Cookie.SameSite = SameSiteMode.Lax;
+ options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // ? Always require HTTPS
+        options.Cookie.SameSite = SameSiteMode.Lax;
             options.Cookie.MaxAge = null;
         })
         .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
@@ -132,22 +132,22 @@ public class Program
 options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
       options.ClientId = builder.Configuration["IdentityServer:ClientId"] ?? "CleanCutBlazorWebApp";
             
-      // ? OAuth2.1 Authorization Code Flow with PKCE (Public Client)
+      // ? OAuth 2.1 Authorization Code Flow with PKCE (Public Client - NO SECRET)
     options.ResponseType = "code";
-            options.UsePkce = true;
-            options.SaveTokens = true; // ?? Critical: Store tokens for API access
+ options.UsePkce = true;
+            options.SaveTokens = true; // ? Critical: Store tokens for API access
             options.GetClaimsFromUserInfoEndpoint = true;
-   
+ 
 options.Scope.Clear();
      options.Scope.Add("openid");
     options.Scope.Add("profile");
-        options.Scope.Add("CleanCutAPI"); // ?? Required for API access
-            
+        options.Scope.Add("CleanCutAPI"); // ? Required for API access
+   
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-            {
-      NameClaimType = "name",
+       {
+  NameClaimType = "name",
         RoleClaimType = "role"
-         };
+    };
       });
 
 // ? Add authorization

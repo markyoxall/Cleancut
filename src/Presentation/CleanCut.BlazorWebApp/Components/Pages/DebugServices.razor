@@ -1,7 +1,6 @@
 @page "/debug-services"
 @using CleanCut.BlazorWebApp.Services.Auth
 @inject ITokenService TokenService
-@inject IApiCallLogService CallLogService
 @inject ILogger<DebugServices> Logger
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -14,7 +13,7 @@
      <h1 class="display-6 fw-bold text-primary">
         <i class="fas fa-bug me-2"></i>Debug Services
        </h1>
-       <p class="text-muted">Test service injection and basic functionality</p>
+       <p class="text-muted">Test OAuth 2.1 authentication service</p>
      </div>
     </div>
 
@@ -23,19 +22,13 @@
             <div class="card">
   <div class="card-header">
      <h5 class="card-title mb-0">
-             <i class="fas fa-cogs me-2"></i>Service Tests
+             <i class="fas fa-cogs me-2"></i>OAuth 2.1 Authentication Tests
      </h5>
          </div>
          <div class="card-body">
   <button class="btn btn-primary me-2" @onclick="TestTokenService">
-     <i class="fas fa-key me-2"></i>Test Token Service
+     <i class="fas fa-key me-2"></i>Test User Token
    </button>
-     <button class="btn btn-secondary me-2" @onclick="TestLogService">
-   <i class="fas fa-list me-2"></i>Test Log Service
-   </button>
-       <button class="btn btn-info me-2" @onclick="AddTestLog">
-    <i class="fas fa-plus me-2"></i>Add Test Log
-      </button>
         </div>
      </div>
    </div>
@@ -46,7 +39,7 @@
       <div class="card">
     <div class="card-header">
      <h5 class="card-title mb-0">
-       <i class="fas fa-info-circle me-2"></i>Test Results
+       <i class="fas fa-info-circle me-2"></i>Authentication Test Results
         </h5>
     </div>
        <div class="card-body">
@@ -58,99 +51,39 @@
 </div>
 
 @code {
-    private string testResults = "Click buttons above to test services...";
+    private string testResults = "Click 'Test User Token' to verify OAuth 2.1 authentication...";
 
     private async Task TestTokenService()
  {
-     testResults = "Testing Token Service...\n";
+     testResults = "Testing OAuth 2.1 User Authentication...\n";
      StateHasChanged();
 
-        try
-        {
+   try
+ {
      var token = await TokenService.GetAccessTokenAsync();
       if (!string.IsNullOrEmpty(token))
    {
-         testResults += $"? Token Service: SUCCESS\n";
+  testResults += $"? OAuth 2.1 Authentication: SUCCESS\n";
    testResults += $"   Token Length: {token.Length} characters\n";
-          testResults += $"   Token Preview: {token[..Math.Min(50, token.Length)]}...\n";
+          testResults += $"   Token Type: Bearer\n";
+     testResults += $"   Token Preview: {token[..Math.Min(50, token.Length)]}...\n";
+testResults += $"   Flow Type: Authorization Code + PKCE (OAuth 2.1)\n";
+     testResults += $"   Client Type: Public Client (No Secret)\n";
         }
    else
-            {
-         testResults += "? Token Service: FAILED - No token returned\n";
+  {
+         testResults += "? OAuth 2.1 Authentication: FAILED - No token returned\n";
+   testResults += "   Possible causes:\n";
+  testResults += "   - User not authenticated\n";
+        testResults += "   - IdentityServer not running\n";
+        testResults += "   - Token expired\n";
          }
       }
-        catch (Exception ex)
+catch (Exception ex)
  {
-         testResults += $"? Token Service: ERROR - {ex.Message}\n";
+   testResults += $"? OAuth 2.1 Authentication: ERROR - {ex.Message}\n";
       }
     
-     StateHasChanged();
-   }
-
-    private async Task TestLogService()
-   {
-  testResults = "Testing API Call Log Service...\n";
-     StateHasChanged();
-
-   try
-   {
-        var logs = await CallLogService.GetRecentCallsAsync(10);
-         testResults += $"? Log Service: SUCCESS\n";
-      testResults += $"Current log count: {logs.Count}\n";
-        
-      if (logs.Any())
-          {
-            testResults += "   Recent logs:\n";
-         foreach (var log in logs.Take(3))
- {
-   testResults += $"     - {log.Method} {log.Url} -> {log.StatusCode}\n";
-          }
-}
-       else
-      {
-           testResults += "   No logs found (make some API calls first)\n";
-         }
-      }
-        catch (Exception ex)
-  {
-         testResults += $"? Log Service: ERROR - {ex.Message}\n";
-      }
-
-    StateHasChanged();
-    }
-
-    private async Task AddTestLog()
-    {
-       testResults = "Adding test log entry...\n";
-   StateHasChanged();
-
-   try
-      {
-        var testLog = new ApiCallLog
-        {
-      Timestamp = DateTime.UtcNow,
-            RequestId = Guid.NewGuid().ToString("N")[..8],
-   Method = "GET",
-     Url = "/api/test/debug",
-  HasToken = true,
-      TokenType = "Bearer",
-          TokenPreview = "eyJ0eXAiOiJ...test...token",
- TokenLength = 500,
-   StatusCode = 200,
-           IsSuccess = true,
-            Duration = TimeSpan.FromMilliseconds(150)
-     };
-
-     await CallLogService.LogApiCallAsync(testLog);
-   testResults += "? Test log added successfully\n";
-      testResults += $" Log ID: {testLog.RequestId}\n";
-      testResults += $"   Timestamp: {testLog.Timestamp:yyyy-MM-dd HH:mm:ss}\n";
-        }
-       catch (Exception ex)
-  {
-   testResults += $"? Add Test Log: ERROR - {ex.Message}\n";
-        }
-
      StateHasChanged();
    }
 }

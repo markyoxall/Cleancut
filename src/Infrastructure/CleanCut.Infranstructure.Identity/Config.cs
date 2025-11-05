@@ -144,15 +144,15 @@ Claims = new List<ClientClaim>
      ClientId = "CleanCutBlazorWebApp",
  ClientName = "CleanCut Blazor Server WebApp",
    
-   // ✅ NO CLIENT SECRET - Public client for user authentication
+   // ✅ PUBLIC CLIENT - No client secret needed for OAuth 2.1 with PKCE
      RequireClientSecret = false,
 
   // ✅ Use Authorization Code flow for user authentication
   AllowedGrantTypes = GrantTypes.Code,
     
-   // ✅ PKCE REQUIRED for public clients (following OAuth 2.1 best practices)
+   // ✅ PKCE REQUIRED for OAuth 2.1 public clients (RFC 7636)
  RequirePkce = true,
-    
+ 
    // ✅ Redirect configuration for user authentication
    RedirectUris = GetRedirectUris(configuration, "CleanCutBlazorWebApp"),
       PostLogoutRedirectUris = GetPostLogoutRedirectUris(configuration, "CleanCutBlazorWebApp"),
@@ -166,9 +166,9 @@ Claims = new List<ClientClaim>
 RefreshTokenUsage = TokenUsage.OneTimeOnly,
 RefreshTokenExpiration = TokenExpiration.Sliding,
    
-   // ✅ Additional security
+   // ✅ Additional security for OAuth 2.1
   RequireConsent = false,
-    AllowPlainTextPkce = false // Require S256 PKCE method
+    AllowPlainTextPkce = false // Require S256 PKCE method (OAuth 2.1 requirement)
     },
 
    // ✅ MVC Web App - PUBLIC CLIENT for user authentication
