@@ -1,4 +1,5 @@
-﻿@{
+﻿@using CleanCut.WebApp.Models
+@{
     ViewData["Title"] = "Home Page";
 }
 
@@ -7,6 +8,45 @@
         <i class="fas fa-cut text-primary"></i> Welcome to CleanCut
     </h1>
     <p class="lead">Enterprise-grade application with Clean Architecture</p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        @if (User.Identity?.IsAuthenticated == true)
+    {
+            <div class="alert alert-success" role="alert">
+     <h6 class="alert-heading">
+         <i class="fas fa-check-circle me-2"></i>
+    Welcome back, @(User.Identity.Name ?? "User")!
+    </h6>
+      <p class="mb-1">
+      You are successfully logged in and can access all features.
+        </p>
+        <hr>
+      <p class="mb-0">
+       <a href="@Url.Action("Profile", "Account")" class="alert-link">View your profile</a> 
+             to see authentication details and token information.
+        </p>
+        </div>
+     }
+ else
+        {
+ <div class="alert alert-primary" role="alert">
+      <h6 class="alert-heading">
+           <i class="fas fa-info-circle me-2"></i>
+        Welcome to CleanCut
+       </h6>
+       <p class="mb-1">
+   This application uses OAuth 2.1 with PKCE for secure authentication.
+                </p>
+        <hr>
+     <p class="mb-0">
+<a href="@Url.Action("Login", "Account")" class="alert-link">Login</a> 
+   to access customer and product management features.
+           </p>
+            </div>
+        }
+    </div>
 </div>
 
 <div class="row mt-5">
@@ -27,9 +67,18 @@
                 </ul>
             </div>
             <div class="card-footer">
-                <a asp-controller="Customers" asp-action="Index" class="btn btn-primary">
-                    <i class="fas fa-arrow-right"></i> Manage Customers
-                </a>
+       @if (User.Identity?.IsAuthenticated == true)
+                {
+ <a asp-controller="Customers" asp-action="Index" class="btn btn-primary">
+  <i class="fas fa-arrow-right"></i> Manage Customers
+         </a>
+                }
+      else
+                {
+ <a href="@Url.Action("Login", "Account")" class="btn btn-outline-primary">
+          <i class="fas fa-sign-in-alt"></i> Login to Access
+     </a>
+         }
             </div>
         </div>
     </div>
@@ -51,9 +100,18 @@
                 </ul>
             </div>
             <div class="card-footer">
-                <a asp-controller="Products" asp-action="Index" class="btn btn-success">
-                    <i class="fas fa-arrow-right"></i> Manage Products
-                </a>
+    @if (User.Identity?.IsAuthenticated == true)
+        {
+     <a asp-controller="Products" asp-action="Index" class="btn btn-success">
+        <i class="fas fa-arrow-right"></i> Manage Products
+           </a>
+        }
+                else
+       {
+          <a href="@Url.Action("Login", "Account")" class="btn btn-outline-success">
+    <i class="fas fa-sign-in-alt"></i> Login to Access
+    </a>
+    }
             </div>
         </div>
     </div>
@@ -82,9 +140,9 @@
                         <p class="small">High-performance caching with automatic fallback</p>
                     </div>
                     <div class="col-md-3">
-                        <h6><i class="fas fa-shield-alt text-danger"></i> Error Handling</h6>
-                        <p class="small">Comprehensive error handling and logging</p>
-                    </div>
+                        <h6><i class="fas fa-shield-alt text-danger"></i> OAuth 2.1 Security</h6>
+    <p class="small">Enterprise authentication with PKCE security</p>
+           </div>
                 </div>
             </div>
         </div>

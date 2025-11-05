@@ -2,12 +2,14 @@ using AutoMapper;
 using CleanCut.WebApp.Models.Customers;
 using CleanCut.WebApp.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CleanCut.WebApp.Controllers;
 
 /// <summary>
 /// MVC Controller for Customer management via API calls (renamed from CustomersController)
 /// </summary>
+[Authorize] // ? Require authentication for all actions
 public class CustomersController : Controller
 {
     private readonly ICustomerApiService _customerApiService;

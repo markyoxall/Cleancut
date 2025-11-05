@@ -4,28 +4,28 @@
  * 
  * This file configures the CleanCut MVC web application which serves as a user-facing
  * client application in the OAuth2/OpenID Connect authentication architecture. It 
- * demonstrates traditional web app authentication with user login and API access.
+ * demonstrates modern web app authentication with user login and API access.
  * 
  * ROLE IN AUTHENTICATION ARCHITECTURE:
  * ------------------------------------
- * This MVC app acts as a CONFIDENTIAL CLIENT that:
+ * This MVC app acts as a PUBLIC CLIENT that:
  * 
  * 1. USER AUTHENTICATION - Redirects users to IdentityServer for login
  * 2. RECEIVES TOKENS - Gets both ID tokens (user identity) and access tokens (API access)
  * 3. API INTEGRATION - Uses access tokens to call CleanCut.API on behalf of users
  * 4. SESSION MANAGEMENT - Maintains user authentication state across requests
  * 
- * AUTHENTICATION FLOWS SUPPORTED:
+ * OAUTH 2.1 AUTHENTICATION FLOWS:
  * -------------------------------
  * 
- * • Authorization Code + PKCE Flow (Primary):
- *   ? User clicks "Login" ? Redirected to IdentityServer
- *   ? User enters credentials ? IdentityServer validates
- *   ? IdentityServer redirects back with authorization code
- *   ? App exchanges code for tokens (ID + Access)
- *   ? User is logged in with API access capabilities
+ * ? Authorization Code + PKCE Flow (OAuth 2.1 Compliant):
+ * • User clicks "Login" ? Redirected to IdentityServer
+ *   • User enters credentials ? IdentityServer validates
+ *• IdentityServer redirects back with authorization code
+ *   • App exchanges code + PKCE verifier for tokens (ID + Access)
+ *   • User is logged in with API access capabilities
  * 
- * This is the CORRECT approach for user-facing applications in 2025!
+ * This follows OAuth 2.1 security best practices with PKCE for enhanced security!
  */
 
 using CleanCut.WebApp.Mappings;
@@ -59,9 +59,27 @@ builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Account/Logout";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
   options.SlidingExpiration = true;
-    options.Cookie.Name = "CleanCutWebApp.Auth";
+ options.Cookie.Name = "CleanCutWebApp.Auth";
+    
+    // ? Enterprise security configuration
     options.Cookie.HttpOnly = true;
- options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+ options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.SameAsRequest 
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+ options.Cookie.IsEssential = true;
+    options.Cookie.MaxAge = null;
+    
+    // ? Enterprise logout handling
+    options.Events = new CookieAuthenticationEvents
+    {
+        OnSigningOut = context =>
+      {
+            Log.Information("Cookie authentication signing out for user: {User}", 
+   context.HttpContext.User.Identity?.Name ?? "Unknown");
+            return Task.CompletedTask;
+        }
+    };
 })
 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
@@ -85,19 +103,34 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "role"
     };
     
-    // Enhanced error handling
+    // ? Enterprise-grade event handling
     options.Events = new OpenIdConnectEvents
-    {
+{
         OnAuthenticationFailed = context =>
-        {
-      Log.Error("OpenID Connect authentication failed: {Error}", context.Exception?.Message);
+{
+ Log.Error("OpenID Connect authentication failed: {Error}", context.Exception?.Message);
    return Task.CompletedTask;
-        },
+    },
       OnTokenValidated = context =>
-        {
-            Log.Information("Token validated for user: {User}", context.Principal?.Identity?.Name);
-            return Task.CompletedTask;
-        }
+    {
+     Log.Information("Token validated for user: {User}", context.Principal?.Identity?.Name);
+       return Task.CompletedTask;
+ },
+ OnRedirectToIdentityProviderForSignOut = context =>
+ {
+   Log.Information("Redirecting to IdentityServer for logout");
+ return Task.CompletedTask;
+},
+ OnSignedOutCallbackRedirect = context =>
+ {
+     Log.Information("Signed out callback redirect");
+      return Task.CompletedTask;
+   },
+      OnRemoteSignOut = context =>
+     {
+ Log.Information("Remote sign out initiated");
+  return Task.CompletedTask;
+     }
     };
 });
 
@@ -149,18 +182,8 @@ app.MapStaticAssets();
 // Add health check endpoint
 app.MapHealthChecks("/health");
 
-// ? Add authentication endpoints
-app.MapGet("/Account/Login", () => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
-{
-    RedirectUri = "/"
-}, authenticationSchemes: new[] { OpenIdConnectDefaults.AuthenticationScheme }));
-
-app.MapPost("/Account/Logout", () => Results.SignOut(
-    new Microsoft.AspNetCore.Authentication.AuthenticationProperties
-    {
- RedirectUri = "/"
-}, 
-   authenticationSchemes: new[] { CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme }));
+// ? Remove conflicting authentication endpoints - let AccountController handle them
+// The AccountController.Login and AccountController.Logout methods will handle these routes
 
 app.MapControllerRoute(
     name: "default",

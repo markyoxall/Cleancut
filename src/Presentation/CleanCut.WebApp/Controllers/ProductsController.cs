@@ -2,12 +2,14 @@ using AutoMapper;
 using CleanCut.WebApp.Models.Products;
 using CleanCut.WebApp.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CleanCut.WebApp.Controllers;
 
 /// <summary>
 /// MVC Controller for Product management via API calls
 /// </summary>
+[Authorize] // ? Require authentication for all actions
 public class ProductsController : Controller
 {
     private readonly IProductApiService _productApiService;
