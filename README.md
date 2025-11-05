@@ -1,4 +1,5 @@
 # CleanCut - Enterprise Clean Architecture Solution with OAuth2/OIDC Authentication
+# PLEASE NOT THIS IS A WORK IN PROGRESS AND MAY CONTAIN INCOMPLETE FEATURES OR BUGS.
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Clean-green.svg)](https://github.com/markyoxall/Cleancut)
