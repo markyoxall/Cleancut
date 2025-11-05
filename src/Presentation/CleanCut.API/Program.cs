@@ -158,21 +158,25 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
-// ? Secure CORS configuration
+// ? Secure CORS configuration for all OAuth 2.1 clients
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowBlazorApp", policy =>
+    options.AddPolicy("AllowCleanCutClients", policy =>
   {
  var allowedOrigins = builder.Environment.IsDevelopment()
    ? new[] {
-     "https://localhost:7297", // Blazor HTTPS
-       "http://localhost:5091"   // Blazor HTTP (dev only)
+     "https://localhost:7297", // CleanCut.BlazorWebApp HTTPS
+       "http://localhost:5091",   // CleanCut.BlazorWebApp HTTP (dev only)
+       "https://localhost:7286", // CleanCut.WebApp (MVC) HTTPS  
+   "http://localhost:5200",   // CleanCut.WebApp (MVC) HTTP (dev only)
+  "https://localhost:7068", // TempBlazorApp HTTPS
+       "http://localhost:5110"    // TempBlazorApp HTTP (dev only)
    }
             : builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
  policy.WithOrigins(allowedOrigins)
    .AllowAnyMethod()
-      .AllowAnyHeader()
+    .AllowAnyHeader()
      .AllowCredentials()
     .SetPreflightMaxAge(TimeSpan.FromMinutes(5));
     });
@@ -394,18 +398,18 @@ if (app.Environment.IsDevelopment())
  var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
     logger.LogInformation("Incoming request: {Method} {Path} from {Origin}",
        context.Request.Method,
-    context.Request.Path,
-            context.Request.Headers.Origin.FirstOrDefault() ?? "No Origin");
+ context.Request.Path,
+ context.Request.Headers.Origin.FirstOrDefault() ?? "No Origin");
 
 await next();
 
-        logger.LogInformation("Response: {StatusCode} for {Method} {Path}",
-            context.Response.StatusCode,
+      logger.LogInformation("Response: {StatusCode} for {Method} {Path}",
+ context.Response.StatusCode,
 context.Request.Method,
      context.Request.Path);
     });
 
-    app.UseCors("AllowBlazorApp");
+    app.UseCors("AllowCleanCutClients");
     app.UseStaticFiles();
 
     // ? Anonymous routes for development only
@@ -442,7 +446,7 @@ else
 {
     // ? Production security middleware
     app.UseHsts();
-    app.UseCors("AllowBlazorApp");
+    app.UseCors("AllowCleanCutClients");
 }
 
 // ? Security middleware pipeline order

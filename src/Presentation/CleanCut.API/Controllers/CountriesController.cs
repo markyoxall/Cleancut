@@ -74,15 +74,15 @@ public class CountriesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Delete a country - Requires authentication (consider admin-only policy)
+    /// Delete a country - Requires Admin role for destructive operations
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AdminOnly")] // ✅ Enterprise security: Admin-only for destructive operations
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    // Consider adding: [Authorize(Policy = "AdminOnly")] for destructive operations
     public async Task<ActionResult<bool>> Delete(Guid id)
         => await  Send(new DeleteCountryCommand(id));
 }

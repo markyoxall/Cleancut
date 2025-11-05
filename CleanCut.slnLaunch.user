@@ -1,5 +1,9 @@
 [
   {
+    "Name": "New Profile",
+    "Projects": []
+  },
+  {
     "Name": "BlahBlahBlah",
     "Projects": [
       {
@@ -11,7 +15,7 @@
         "Action": "Start"
       },
       {
-        "Path": "src\\Presentation\\CleanCut.WebApp\\CleanCut.WebApp.csproj",
+        "Path": "src\\Presentation\\CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
         "Action": "Start"
       }
     ]

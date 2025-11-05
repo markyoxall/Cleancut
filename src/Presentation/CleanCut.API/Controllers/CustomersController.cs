@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using CleanCut.Application.Commands.Customers.CreateCustomer;
 using CleanCut.Application.Commands.Customers.UpdateCustomer;
+using CleanCut.Application.Commands.Customers.DeleteCustomer;
 using CleanCut.Application.Queries.Customers.GetCustomer;
 using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Application.DTOs;
@@ -100,6 +101,37 @@ public class CustomersController : ApiControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Delete a customer - Requires Admin role
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "AdminOnly")] // ? Enterprise security: Admin-only for destructive operations
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCustomer(Guid id, CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty)
+          return BadRequest("Invalid customer ID");
+
+ try
+  {
+        var command = new DeleteCustomerCommand(id);
+          var success = await Send(command, cancellationToken);
+            
+    if (!success)
+ return NotFound($"Customer with ID {id} not found");
+
+            return NoContent();
+     }
+        catch (InvalidOperationException ex)
+        {
+         return BadRequest(ex.Message);
         }
     }
 }
