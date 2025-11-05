@@ -92,7 +92,6 @@ using CleanCut.BlazorWebApp.Components;
 using CleanCut.BlazorWebApp.Services;
 using CleanCut.BlazorWebApp.State;
 using CleanCut.BlazorWebApp.Extensions;
-using CleanCut.Infrastructure.Caching;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -104,19 +103,19 @@ namespace CleanCut.BlazorWebApp;
 public class Program
 {
     public static void Main(string[] args)
- {
-  var builder = WebApplication.CreateBuilder(args);
+    {
+        var builder = WebApplication.CreateBuilder(args);
 
         // ?? Add authentication services FIRST
-   builder.Services.AddAuthentication(options =>
+        builder.Services.AddAuthentication(options =>
         {
      options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
           options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
  })
         .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
         {
-options.LoginPath = "/Account/Login";
-          options.AccessDeniedPath = "/Account/AccessDenied";
+         options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
      options.LogoutPath = "/Account/Logout";
       options.ExpireTimeSpan = TimeSpan.FromHours(8);
           options.SlidingExpiration = true;
@@ -126,21 +125,21 @@ options.LoginPath = "/Account/Login";
     options.Cookie.HttpOnly = true;
  options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // ? Always require HTTPS
         options.Cookie.SameSite = SameSiteMode.Lax;
-         options.Cookie.MaxAge = null;
+            options.Cookie.MaxAge = null;
         })
         .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
         {
 options.Authority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
       options.ClientId = builder.Configuration["IdentityServer:ClientId"] ?? "CleanCutBlazorWebApp";
-     
+            
       // ? OAuth 2.1 Authorization Code Flow with PKCE (Public Client - NO SECRET)
     options.ResponseType = "code";
  options.UsePkce = true;
             options.SaveTokens = true; // ? Critical: Store tokens for API access
-         options.GetClaimsFromUserInfoEndpoint = true;
+            options.GetClaimsFromUserInfoEndpoint = true;
  
 options.Scope.Clear();
- options.Scope.Add("openid");
+     options.Scope.Add("openid");
     options.Scope.Add("profile");
         options.Scope.Add("CleanCutAPI"); // ? Required for API access
    
@@ -168,24 +167,24 @@ options.Scope.Clear();
 
         // Add services to the container.
   builder.Services.AddRazorComponents()
-     .AddInteractiveServerComponents();
+       .AddInteractiveServerComponents();
 
    // ?? Add circuit error handler for better error management
         builder.Services.AddScoped<CircuitHandler, CleanCut.BlazorWebApp.Middleware.CircuitErrorHandler>();
 
    // Configure Blazor Server options for better error handling and security
         builder.Services.Configure<CircuitOptions>(options =>
-   {
+        {
   if (builder.Environment.IsDevelopment())
-         {
+            {
   options.DetailedErrors = true;
     }
-  
+            
   // ? Enhanced security and stability settings
         options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
-   options.DisconnectedCircuitMaxRetained = 100;
+            options.DisconnectedCircuitMaxRetained = 100;
 options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(1);
-     
+          
   // ?? Critical: Handle circuit disposal gracefully
         options.RootComponents.MaxJSRootComponents = 1000;
         });
@@ -195,88 +194,85 @@ options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(1);
         // ? Register ALL API clients with enhanced security (now using user tokens)
       builder.Services.AddProductApiClients(builder.Configuration);
 
-     // Other services
+        // Other services
         builder.Services.AddScoped<IUiStateService, UiStateService>();
 
         // Register feature state services
-     builder.Services.AddScoped<ICustomersState, CustomeraState>();
+        builder.Services.AddScoped<ICustomersState, CustomeraState>();
         builder.Services.AddScoped<IProductsState, ProductsState>();
     builder.Services.AddScoped<ICountriesState, CountriesState>();
 
-        // *** REDIS CACHING: Add Redis caching infrastructure ***
-        builder.Services.AddCachingInfrastructure(builder.Configuration);
-
         // ? Add HSTS for production
       if (!builder.Environment.IsDevelopment())
-      {
-   builder.Services.AddHsts(options =>
+        {
+            builder.Services.AddHsts(options =>
        {
   options.Preload = true;
     options.IncludeSubDomains = true;
      options.MaxAge = TimeSpan.FromDays(365);
-      });
+            });
         }
 
       // ? Enhanced logging
         builder.Services.AddLogging(loggingBuilder =>
         {
   loggingBuilder.AddConsole();
-        if (builder.Environment.IsDevelopment())
+            if (builder.Environment.IsDevelopment())
       {
       loggingBuilder.SetMinimumLevel(LogLevel.Debug);
             }
     else
-   {
+            {
      loggingBuilder.SetMinimumLevel(LogLevel.Information);
-  }
-  });
+      }
+        });
 
         var app = builder.Build();
 
         // ? Enhanced security middleware pipeline
         if (!app.Environment.IsDevelopment())
-   {
+     {
    app.UseExceptionHandler("/Error");
      app.UseHsts();
         }
 
-    app.UseHttpsRedirection();
+        app.UseHttpsRedirection();
 
-      app.UseStaticFiles();
+        app.UseStaticFiles();
      app.UseRouting();
 
- // ? CRITICAL: Add authentication and authorization middleware
+        // ? CRITICAL: Add authentication and authorization middleware
         app.UseAuthentication();
-     app.UseAuthorization();
+        app.UseAuthorization();
         
         app.UseAntiforgery();
 
-    // ? Add authentication endpoints BEFORE the Blazor components
+        // ? Add authentication endpoints BEFORE the Blazor components
         app.MapGet("/Account/Login", (string? returnUrl) => Results.Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
         {
-         RedirectUri = returnUrl ?? "/"
+            RedirectUri = returnUrl ?? "/"
         })).AllowAnonymous(); // Allow anonymous access to login
 
    app.MapPost("/Account/Logout", async (HttpContext context) =>
-  {
+        {
  // Clear any existing response headers that might interfere
-context.Response.Headers.Clear();
-     
+    context.Response.Headers.Clear();
+            
         return Results.SignOut(
-          authenticationSchemes: new[] { 
+                authenticationSchemes: new[] { 
    CookieAuthenticationDefaults.AuthenticationScheme, 
-          OpenIdConnectDefaults.AuthenticationScheme 
-    },
-  properties: new Microsoft.AspNetCore.Authentication.AuthenticationProperties
-   {
+            OpenIdConnectDefaults.AuthenticationScheme 
+                },
+        properties: new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+            {
        RedirectUri = "/"
  });
-  }).AllowAnonymous(); // Allow anonymous access to logout
+        }).AllowAnonymous(); // Allow anonymous access to logout
 
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode()
           .RequireAuthorization(); // ?? Require authentication for all Blazor components
 
-    app.Run();
+        app.Run();
     }
 }
