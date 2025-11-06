@@ -34,7 +34,7 @@ public class UpdateOrderCommandHandler : IRequestHandler<UpdateOrderCommand, Ord
         var order = await _orderRepository.GetByIdAsync(request.Id, cancellationToken);
         if (order == null)
         {
-            throw new EntityNotFoundException($"Order with ID {request.Id} not found");
+            throw new EntityNotFoundException("Order", request.Id);
         }
 
         // Update order properties

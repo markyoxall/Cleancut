@@ -2,6 +2,7 @@ using CleanCut.Infrastructure.Caching.Abstractions;
 using CleanCut.Infrastructure.Caching.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace CleanCut.Infrastructure.Caching;
@@ -15,58 +16,61 @@ public static class DependencyInjection
     {
         // Get Redis connection string
         var redisConnectionString = configuration.GetConnectionString("Redis");
+        var useRedis = !string.IsNullOrEmpty(redisConnectionString);
         
-        if (!string.IsNullOrEmpty(redisConnectionString))
+        if (useRedis)
         {
             try
             {
-                // Add Redis connection with timeout configuration
+                // Test Redis connection before configuring
+                var testOptions = ConfigurationOptions.Parse(redisConnectionString);
+                testOptions.ConnectTimeout = 1000; // 1 second test timeout
+                testOptions.SyncTimeout = 1000;
+                testOptions.AbortOnConnectFail = true; // Fail fast for testing
+                
+                using var testConnection = ConnectionMultiplexer.Connect(testOptions);
+                var testDatabase = testConnection.GetDatabase();
+                testDatabase.Ping(); // Test connection
+                
+                // If we get here, Redis is available
                 services.AddSingleton<IConnectionMultiplexer>(provider =>
                 {
                     var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
-                    configurationOptions.ConnectTimeout = 2000; // 2 seconds instead of 5
-                    configurationOptions.SyncTimeout = 2000;    // 2 seconds instead of 5
-                    configurationOptions.AbortOnConnectFail = false; // Don't abort if Redis is down
+                    configurationOptions.ConnectTimeout = 5000;
+                    configurationOptions.SyncTimeout = 5000;
+                    configurationOptions.AbortOnConnectFail = false;
                     return ConnectionMultiplexer.Connect(configurationOptions);
                 });
 
-                // Add Redis distributed cache with shorter timeouts
                 services.AddStackExchangeRedisCache(options =>
                 {
                     options.Configuration = redisConnectionString;
                     options.InstanceName = "CleanCut";
-                    // Configure connection options
-                    options.ConfigurationOptions = ConfigurationOptions.Parse(redisConnectionString);
-                    options.ConfigurationOptions.ConnectTimeout = 2000; // 2 seconds
-                    options.ConfigurationOptions.SyncTimeout = 2000;    // 2 seconds  
-                    options.ConfigurationOptions.AbortOnConnectFail = false;
                 });
 
-                // Register cache service
                 services.AddScoped<ICacheService, RedisCacheService>();
                 
                 Console.WriteLine("? Redis caching configured successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"?? Redis configuration failed, falling back to in-memory: {ex.Message}");
-                
-                // Fall back to in-memory cache if Redis configuration fails
-                services.AddMemoryCache();
-                services.AddDistributedMemoryCache(); // This is the correct way to add IDistributedCache
-                services.AddScoped<ICacheService, MemoryCacheService>();
+                Console.WriteLine($"?? Redis connection failed, falling back to in-memory cache: {ex.Message}");
+                ConfigureInMemoryCache(services);
             }
         }
         else
         {
             Console.WriteLine("?? No Redis connection string found, using in-memory cache");
-            
-            // Fall back to in-memory cache if Redis is not configured
-            services.AddMemoryCache();
-            services.AddDistributedMemoryCache(); // This is the correct way to add IDistributedCache
-            services.AddScoped<ICacheService, MemoryCacheService>();
+            ConfigureInMemoryCache(services);
         }
 
         return services;
+    }
+    
+    private static void ConfigureInMemoryCache(IServiceCollection services)
+    {
+        services.AddMemoryCache();
+        services.AddDistributedMemoryCache();
+        services.AddScoped<ICacheService, MemoryCacheService>();
     }
 }

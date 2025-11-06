@@ -10,5 +10,5 @@ namespace CleanCut.Application.Queries.Orders.GetOrder;
 public record GetOrderQuery(Guid Id) : IRequest<OrderInfo?>, ICacheableQuery
 {
     public string CacheKey => $"order:{Id}";
-    public TimeSpan CacheDuration => TimeSpan.FromMinutes(5);
+    public TimeSpan? Expiration => TimeSpan.FromMinutes(5);
 }

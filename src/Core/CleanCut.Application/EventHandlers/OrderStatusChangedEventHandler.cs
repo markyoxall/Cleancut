@@ -1,13 +1,13 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using CleanCut.Domain.Events;
+using CleanCut.Application.Events;
 
 namespace CleanCut.Application.EventHandlers;
 
 /// <summary>
-/// Event handler for OrderStatusChangedEvent
+/// Event handler for OrderStatusChangedNotification
 /// </summary>
-public class OrderStatusChangedEventHandler : INotificationHandler<OrderStatusChangedEvent>
+public class OrderStatusChangedEventHandler : INotificationHandler<OrderStatusChangedNotification>
 {
     private readonly ILogger<OrderStatusChangedEventHandler> _logger;
 
@@ -16,13 +16,15 @@ public class OrderStatusChangedEventHandler : INotificationHandler<OrderStatusCh
         _logger = logger;
     }
 
-    public Task Handle(OrderStatusChangedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(OrderStatusChangedNotification notification, CancellationToken cancellationToken)
     {
+        var order = notification.DomainEvent.Order;
+        
         _logger.LogInformation("Order status changed: {OrderId} - {OrderNumber} from {PreviousStatus} to {NewStatus}",
-            notification.Order.Id,
-            notification.Order.OrderNumber,
-            notification.PreviousStatus,
-            notification.NewStatus);
+            order.Id,
+            order.OrderNumber,
+            notification.DomainEvent.PreviousStatus,
+            notification.DomainEvent.NewStatus);
 
         // Here you could add additional logic based on status change:
         // - Pending -> Confirmed: Process payment, reserve inventory

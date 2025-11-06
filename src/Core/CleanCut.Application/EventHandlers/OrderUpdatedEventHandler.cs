@@ -1,13 +1,13 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using CleanCut.Domain.Events;
+using CleanCut.Application.Events;
 
 namespace CleanCut.Application.EventHandlers;
 
 /// <summary>
-/// Event handler for OrderUpdatedEvent
+/// Event handler for OrderUpdatedNotification
 /// </summary>
-public class OrderUpdatedEventHandler : INotificationHandler<OrderUpdatedEvent>
+public class OrderUpdatedEventHandler : INotificationHandler<OrderUpdatedNotification>
 {
     private readonly ILogger<OrderUpdatedEventHandler> _logger;
 
@@ -16,12 +16,14 @@ public class OrderUpdatedEventHandler : INotificationHandler<OrderUpdatedEvent>
         _logger = logger;
     }
 
-    public Task Handle(OrderUpdatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(OrderUpdatedNotification notification, CancellationToken cancellationToken)
     {
+        var order = notification.DomainEvent.Order;
+        
         _logger.LogInformation("Order updated: {OrderId} - {OrderNumber} - Update Type: {UpdateType}",
-            notification.Order.Id,
-            notification.Order.OrderNumber,
-            notification.UpdateType);
+            order.Id,
+            order.OrderNumber,
+            notification.DomainEvent.UpdateType);
 
         // Here you could add additional logic based on update type:
         // - LineItems: Recalculate pricing, update inventory

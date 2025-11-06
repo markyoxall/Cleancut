@@ -37,14 +37,14 @@ public class AddOrderLineItemCommandHandler : IRequestHandler<AddOrderLineItemCo
         var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
         if (order == null)
         {
-            throw new EntityNotFoundException($"Order with ID {request.OrderId} not found");
+            throw new EntityNotFoundException("Order", request.OrderId);
         }
 
         // Get product
         var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken);
         if (product == null)
         {
-            throw new EntityNotFoundException($"Product with ID {request.ProductId} not found");
+            throw new EntityNotFoundException("Product", request.ProductId);
         }
 
         // Verify product is available

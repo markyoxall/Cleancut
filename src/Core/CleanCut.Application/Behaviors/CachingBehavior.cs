@@ -41,7 +41,7 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
             // Execute the handler
             var response = await next();
             
-            // Cache the response
+            // Cache the response (with error handling)
             await SetCacheAsync(cacheKey, response, cacheableQuery.Expiration, cancellationToken);
             
             return response;
@@ -54,8 +54,7 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         {
             foreach (var cacheKey in cacheInvalidator.CacheKeysToInvalidate)
             {
-                await _cache.RemoveAsync(cacheKey, cancellationToken);
-                _logger.LogInformation("Cache invalidated for key: {CacheKey}", cacheKey);
+                await RemoveFromCacheAsync(cacheKey, cancellationToken);
             }
         }
 
@@ -75,7 +74,7 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting value from cache for key: {Key}", key);
+            _logger.LogWarning(ex, "Error getting value from cache for key: {Key}. Continuing without cache.", key);
             return default;
         }
     }
@@ -97,10 +96,24 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
             }
 
             await _cache.SetStringAsync(key, serializedValue, options, cancellationToken);
+            _logger.LogDebug("Successfully cached value for key: {Key}", key);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting cache for key: {Key}", key);
+            _logger.LogWarning(ex, "Error setting cache for key: {Key}. Continuing without caching.", key);
+        }
+    }
+
+    private async Task RemoveFromCacheAsync(string cacheKey, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _cache.RemoveAsync(cacheKey, cancellationToken);
+            _logger.LogInformation("Cache invalidated for key: {CacheKey}", cacheKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error removing cache for key: {CacheKey}. Continuing without cache invalidation.", cacheKey);
         }
     }
 }

@@ -35,7 +35,7 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer == null)
         {
-            throw new EntityNotFoundException($"Customer with ID {request.CustomerId} not found");
+            throw new EntityNotFoundException("Customer", request.CustomerId);
         }
 
         // Verify customer is active
