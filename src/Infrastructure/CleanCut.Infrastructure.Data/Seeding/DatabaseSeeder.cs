@@ -60,8 +60,14 @@ public static class DatabaseSeeder
             await context.SaveChangesAsync();
             logger.LogInformation("Seeded {Count} products", products.Count);
 
-            logger.LogInformation("Database seeded successfully with {UserCount} users and {ProductCount} products", 
-                users.Count, products.Count);
+            // Seed Orders (sample orders for testing)
+            var orders = GenerateOrders(users, products);
+            await context.Orders.AddRangeAsync(orders);
+            await context.SaveChangesAsync();
+            logger.LogInformation("Seeded {Count} orders", orders.Count);
+
+            logger.LogInformation("Database seeded successfully with {UserCount} users, {ProductCount} products, and {OrderCount} orders", 
+                users.Count, products.Count, orders.Count);
         }
         catch (Exception ex)
         {
@@ -317,6 +323,105 @@ public static class DatabaseSeeder
         }
 
         return products;
+    }
+
+    private static List<Order> GenerateOrders(List<Customer> customers, List<Product> products)
+    {
+        var orders = new List<Order>();
+        var random = new Random(42); // Fixed seed for consistent test data
+
+        // Create sample orders for testing
+        var orderCount = Math.Min(customers.Count, 20); // Create up to 20 sample orders
+
+        for (int i = 0; i < orderCount; i++)
+        {
+            var customer = customers[i];
+            var shippingAddress = GenerateAddress(random);
+            var billingAddress = random.NextDouble() > 0.3 ? shippingAddress : GenerateAddress(random); // 70% same address
+
+            var notes = random.NextDouble() > 0.6 ? GenerateOrderNotes(random) : null; // 40% have notes
+
+            try
+            {
+                var order = new Order(customer.Id, shippingAddress, billingAddress, notes);
+
+                // Add random products to the order (1-5 items)
+                var itemCount = random.Next(1, 6);
+                var availableProducts = products.Where(p => p.IsAvailable).ToList();
+
+                for (int j = 0; j < itemCount && availableProducts.Count > 0; j++)
+                {
+                    var productIndex = random.Next(availableProducts.Count);
+                    var product = availableProducts[productIndex];
+                    var quantity = random.Next(1, 4); // 1-3 quantity
+
+                    order.AddLineItem(product.Id, product.Name, product.Price, quantity);
+                    
+                    // Remove product from available list to avoid duplicates in same order
+                    availableProducts.RemoveAt(productIndex);
+                }
+
+                // Randomly set order status
+                var statusRoll = random.NextDouble();
+                if (statusRoll > 0.8) // 20% confirmed
+                {
+                    order.ConfirmOrder();
+                    if (statusRoll > 0.9) // 10% shipped
+                    {
+                        order.ShipOrder();
+                        if (statusRoll > 0.95) // 5% delivered
+                        {
+                            order.DeliverOrder();
+                        }
+                    }
+                }
+                else if (statusRoll < 0.05) // 5% cancelled
+                {
+                    order.CancelOrder();
+                }
+
+                orders.Add(order);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Skipping order for customer {customer.GetFullName()}: {ex.Message}");
+            }
+        }
+
+        return orders;
+    }
+
+    private static string GenerateAddress(Random random)
+    {
+        var streetNumbers = new[] { "123", "456", "789", "321", "654", "987", "147", "258", "369" };
+        var streetNames = new[] { "Main St", "Oak Ave", "Pine Rd", "Elm St", "Cedar Ln", "Maple Dr", "First Ave", "Second St", "Park Blvd" };
+        var cities = new[] { "Springfield", "Riverside", "Franklin", "Georgetown", "Madison", "Salem", "Bristol", "Clinton", "Fairview" };
+        var states = new[] { "CA", "NY", "TX", "FL", "IL", "PA", "OH", "GA", "NC", "MI" };
+
+        var streetNumber = streetNumbers[random.Next(streetNumbers.Length)];
+        var streetName = streetNames[random.Next(streetNames.Length)];
+        var city = cities[random.Next(cities.Length)];
+        var state = states[random.Next(states.Length)];
+        var zipCode = random.Next(10000, 99999).ToString();
+
+        return $"{streetNumber} {streetName}, {city}, {state} {zipCode}";
+    }
+
+    private static string GenerateOrderNotes(Random random)
+    {
+        var notes = new[]
+        {
+            "Please deliver to the back door",
+            "Leave package with neighbor if not home",
+            "Fragile items - handle with care",
+            "Gift wrapping requested",
+            "Rush delivery needed",
+            "Customer requested expedited shipping",
+            "Special handling instructions attached",
+            "Delivery during business hours only"
+        };
+
+        return notes[random.Next(notes.Length)];
     }
 
     private static string GetProductVariant(int index)

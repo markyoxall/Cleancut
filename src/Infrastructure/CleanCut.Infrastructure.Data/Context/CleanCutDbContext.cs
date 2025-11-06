@@ -17,6 +17,8 @@ public class CleanCutDbContext : DbContext
     public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<Country> Countries { get; set; } = null!;
+    public DbSet<Order> Orders { get; set; } = null!;
+    public DbSet<OrderLineItem> OrderLineItems { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +28,9 @@ public class CleanCutDbContext : DbContext
         modelBuilder.Ignore<DomainEvent>();
         modelBuilder.Ignore<CustomerCreatedEvent>();
         modelBuilder.Ignore<CustomerUpdatedEvent>();
+        modelBuilder.Ignore<OrderCreatedEvent>();
+        modelBuilder.Ignore<OrderUpdatedEvent>();
+        modelBuilder.Ignore<OrderStatusChangedEvent>();
         
         // Configure BaseEntity to ignore domain events collection for all entities
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
