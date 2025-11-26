@@ -3,6 +3,7 @@ using CleanCut.WebApp.Models.Products;
 using CleanCut.WebApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using CleanCut.Application.DTOs;
 
 namespace CleanCut.WebApp.Controllers;
 
@@ -44,7 +45,7 @@ public class ProductsController : Controller
             var customers = await _customerApiService.GetAllCustomersAsync();
             
             // Load products
-            List<Application.DTOs.ProductInfo> products;
+            List<ProductInfo> products;
             if (customerId.HasValue)
             {
                 products = (await _productApiService.GetProductsByCustomerAsync(customerId.Value)).ToList();

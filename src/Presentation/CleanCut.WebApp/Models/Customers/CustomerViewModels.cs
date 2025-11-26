@@ -23,7 +23,7 @@ public class CustomerEditViewModel
 {
     public Guid? Id { get; set; }
     
-    [Required(ErrorMessage = "First name is required")]
+    [Required(ErrorMessage = "First name is required!")]
     [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
     [Display(Name = "First Name")]
     public string FirstName { get; set; } = string.Empty;

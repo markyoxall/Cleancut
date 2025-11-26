@@ -86,8 +86,6 @@ using CleanCut.API.Middleware;
 using CleanCut.API.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -204,71 +202,9 @@ builder.Services.AddLogging(loggingBuilder =>
 var apiTitle = builder.Configuration["ApiSettings:Title"] ?? "CleanCut API";
 var apiDescription = builder.Configuration["ApiSettings:Description"] ?? "CleanCut API";
 
-// ? OpenAPI with enhanced security documentation
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
- document.Info = new OpenApiInfo
-   {
-  Title = apiTitle,
-        Description = apiDescription,
-       Version = "v1",
-      Contact = new OpenApiContact
-{
-   Name = "CleanCut API Support",
-    Email = "support@cleancut.com"
-   },
- // ? Add security information
-            License = new OpenApiLicense
-            {
- Name = "Proprietary",
-      Url = new Uri("https://cleancut.com/license")
-     }
-        };
-
-   // ? Enhanced JWT Bearer security scheme
-        document.Components ??= new OpenApiComponents();
-  document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
-        {
-      ["Bearer"] = new OpenApiSecurityScheme
-     {
-   Type = SecuritySchemeType.Http,
-    Scheme = "bearer",
-   BearerFormat = "JWT",
-       Description = "Enter your JWT token in the format: Bearer {your token}",
-    Name = "Authorization",
-     In = ParameterLocation.Header
-         }
-        };
-
-      var securityRequirement = new OpenApiSecurityRequirement
-        {
-            {
-    new OpenApiSecurityScheme
-  {
-    Reference = new OpenApiReference
-{
-     Type = ReferenceType.SecurityScheme,
-          Id = "Bearer"
-     }
-    },
-    Array.Empty<string>()
-          }
-        };
-
-        foreach (var pathItem in document.Paths.Values)
-  {
-            foreach (var operation in pathItem.Operations.Values)
-   {
-      operation.Security ??= new List<OpenApiSecurityRequirement>();
-     operation.Security.Add(securityRequirement);
-    }
-   }
-
-        return Task.CompletedTask;
-    });
-});
+// ? OpenAPI / Swagger configuration (simple, compatible with .NET 10)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Add Application layer
 builder.Services.AddApplication();
@@ -418,8 +354,7 @@ app.MapGet("/index.html", () => Results.Redirect("/versions.html")).AllowAnonymo
     app.MapGet("/versions", () => Results.Redirect("/versions.html")).AllowAnonymous();
     app.MapGet("/token-helper", () => Results.Redirect("/token-helper.html")).AllowAnonymous();
 
-app.MapOpenApi().AllowAnonymous();
-
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
  {
    options.SwaggerEndpoint(ApiConstants.OpenApiJson, ApiConstants.SwaggerUiTitle);

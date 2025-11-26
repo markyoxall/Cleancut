@@ -9,25 +9,35 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApiClients(this IServiceCollection services, IConfiguration configuration)
     {
         // Read API client configuration
-   var apiConfig = configuration.GetSection("ApiClients").Get<ApiClientOptions>() ?? new ApiClientOptions();
-        
-        // ? UPDATED: Register the authenticated message handler for USER authentication
-        services.AddScoped<AuthenticatedHttpMessageHandler>();
+        var apiConfig = configuration.GetSection("ApiClients").Get<ApiClientOptions>() ?? new ApiClientOptions();
 
-   // ? Configure authenticated HttpClient for Customer API with USER tokens
-   services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
-        {
- client.BaseAddress = new Uri(apiConfig.BaseUrl);
-          client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
-  })
-        .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+        //
+      
+        services.AddTransient<AuthenticatedHttpMessageHandler>();
 
-    // ? Configure authenticated HttpClient for Product API with USER tokens
-   services.AddHttpClient<IProductApiService, ProductApiService>(client =>
+
+        // ? Configure authenticated HttpClient for Customer API with USER tokens
+        services.AddHttpClient<ICustomerApiService, CustomerApiService>(client =>
+             {
+                 client.BaseAddress = new Uri(apiConfig.BaseUrl);
+                 client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
+             })
+             .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+        // ? Configure authenticated HttpClient for Product API with USER tokens
+        services.AddHttpClient<IProductApiService, ProductApiService>(client =>
+             {
+                 client.BaseAddress = new Uri(apiConfig.BaseUrl);
+                 client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
+             })
+             .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+        // ? Configure authenticated HttpClient for Country API with USER tokens
+        services.AddHttpClient<ICountryApiService, CountryApiService>(client =>
         {
-    client.BaseAddress = new Uri(apiConfig.BaseUrl);
-     client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
-    })
+            client.BaseAddress = new Uri(apiConfig.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(apiConfig.TimeoutSeconds);
+        })
         .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
 
         return services;
@@ -37,5 +47,5 @@ public static class ServiceCollectionExtensions
 public class ApiClientOptions
 {
     public string BaseUrl { get; set; } = "https://localhost:7142";
-  public int TimeoutSeconds { get; set; } = 30;
+    public int TimeoutSeconds { get; set; } = 30;
 }

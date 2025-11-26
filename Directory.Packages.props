@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- Pin AutoMapper to compatible 12.x to enable manual DI registration without the deprecated extensions package -->
+    <PackageVersion Include="AutoMapper" Version="12.0.1" />
+  </ItemGroup>
+</Project>

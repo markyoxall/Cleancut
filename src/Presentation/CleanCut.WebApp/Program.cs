@@ -34,6 +34,7 @@ using Serilog;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using CleanCut.Application; // Register application services (including AutoMapper)
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -139,6 +140,8 @@ builder.Services.AddAuthorization();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+// Enable Razor Pages so pages under /Pages are routable (asp-page links)
+builder.Services.AddRazorPages();
 
 // ? CRITICAL: Add IHttpContextAccessor for token services
 builder.Services.AddHttpContextAccessor();
@@ -146,8 +149,8 @@ builder.Services.AddHttpContextAccessor();
 // Configure Problem Details for better error handling
 builder.Services.AddProblemDetails();
 
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(ViewModelMappingProfile));
+// Register Application layer services (includes AutoMapper)
+builder.Services.AddApplication();
 
 // ? Configure authenticated API clients with user authentication
 builder.Services.AddApiClients(builder.Configuration);
@@ -177,7 +180,11 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
 app.MapStaticAssets();
+
+// Make Razor Pages available at their routes (e.g. /Contact, /FAQ)
+app.MapRazorPages();
 
 // Add health check endpoint
 app.MapHealthChecks("/health");

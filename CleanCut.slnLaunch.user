@@ -1,7 +1,20 @@
 [
   {
     "Name": "New Profile",
-    "Projects": []
+    "Projects": [
+      {
+        "Path": "src\\Infrastructure\\CleanCut.Infranstructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation\\CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
+        "Action": "Start"
+      }
+    ]
   },
   {
     "Name": "BlahBlahBlah",

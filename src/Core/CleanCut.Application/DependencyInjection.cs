@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using CleanCut.Application.Behaviors;
+using AutoMapper;
 
 namespace CleanCut.Application;
 
@@ -23,8 +24,13 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(DomainEventDispatcherBehavior<,>));
         });
 
-        // Add AutoMapper
-        services.AddAutoMapper(Assembly.GetExecutingAssembly());
+        // Configure AutoMapper manually without relying on the deprecated extensions
+        var assemblies = new[] { Assembly.GetExecutingAssembly() };
+        var mapperConfig = new MapperConfiguration(cfg => cfg.AddMaps(assemblies));
+        var mapper = mapperConfig.CreateMapper();
+
+        services.AddSingleton<IMapper>(mapper);
+        services.AddSingleton(mapperConfig);
 
         // Add FluentValidation
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

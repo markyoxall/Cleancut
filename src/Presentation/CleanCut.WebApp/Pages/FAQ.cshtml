@@ -1,0 +1,23 @@
+﻿@page
+@model CleanCut.WebApp.Pages.FAQModel
+@{
+
+	List<string> strings = new List<string>
+	{
+		"What is CleanCut?",
+		"How do I create an account?",
+		"What services does CleanCut offer?",
+		"How can I contact customer support?",
+		"Where can I find the privacy policy?"
+	};
+	ViewData["Title"] = "FAQ";
+
+}
+
+<h2>Frequently Asked Questions</h2>
+<select>
+	@foreach (var question in strings)
+	{
+		<option>@question</option>
+	}	
+</select>
