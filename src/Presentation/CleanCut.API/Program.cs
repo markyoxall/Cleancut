@@ -86,6 +86,7 @@ using CleanCut.API.Middleware;
 using CleanCut.API.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -215,6 +216,51 @@ builder.Services.AddApplication();
 // Register HttpContextAccessor and a distributed cache provider for the API host
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
+
+// Provide a delegate for idempotency behavior to read the Idempotency-Key header from the current HttpContext
+builder.Services.AddScoped<Func<object?>>(sp =>
+{
+    return () =>
+    {
+        var accessor = sp.GetService<IHttpContextAccessor>();
+        var ctx = accessor?.HttpContext;
+        if (ctx == null) return null;
+        if (!ctx.Request.Headers.TryGetValue("Idempotency-Key", out var values)) return null;
+        var key = values.FirstOrDefault();
+        return string.IsNullOrWhiteSpace(key) ? null : (object?)key;
+    };
+});
+
+// Add authentication and authorization to ensure a default scheme is configured
+var identityAuthority = builder.Configuration["Identity:Authority"] ?? builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
+var apiAudience = builder.Configuration["ApiSettings:Audience"] ?? "CleanCutAPI";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = identityAuthority;
+        options.Audience = apiAudience;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = identityAuthority,
+            ValidateAudience = true,
+            ValidAudience = apiAudience,
+            ValidateLifetime = true
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    // All endpoints require authentication by default
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
+});
 
 var app = builder.Build();
 

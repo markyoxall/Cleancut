@@ -11,7 +11,7 @@
         "Action": "Start"
       },
       {
-        "Path": "CleanCut.BlazorTen\\CleanCut.BlazorTen\\CleanCut.BlazorTen.csproj",
+        "Path": "src\\Presentation\\CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
         "Action": "Start"
       }
     ]
