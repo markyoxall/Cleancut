@@ -49,6 +49,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\ISSUE_TEMPLATE\config.yml = .github\ISSUE_TEMPLATE\config.yml
 		.github\ISSUE_TEMPLATE\hydration-login-scaffold.md = .github\ISSUE_TEMPLATE\hydration-login-scaffold.md
 		README.md = README.md
+		Solution Items\UpdateDatabase_Dev.ps1 = Solution Items\UpdateDatabase_Dev.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanCut.Infrastructure.Caching", "src\Infrastructure\CleanCut.Infrastructure.Caching\CleanCut.Infrastructure.Caching.csproj", "{ADD7DB6F-FFAA-4EC1-B264-2ADFD40CF5D3}"

@@ -206,231 +206,85 @@ var apiDescription = builder.Configuration["ApiSettings:Description"] ?? "CleanC
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add Application layer
-builder.Services.AddApplication();
-
-// Add Data Infrastructure layer
+// Register Data infrastructure first so IUnitOfWork and repositories are available
 builder.Services.AddDataInfrastructure(builder.Configuration);
 
-// Add Caching Infrastructure layer
-builder.Services.AddCachingInfrastructure(builder.Configuration);
+// Add Application layer (MediatR handlers depend on IUnitOfWork and repositories)
+builder.Services.AddApplication();
 
-// ? Enhanced JWT authentication configuration
-var identityServerAuthority = builder.Configuration["IdentityServer:Authority"] ?? "https://localhost:5001";
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-  options.Authority = identityServerAuthority;
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment(); // ? Require HTTPS in production
-    options.SaveToken = false; // ? Don't save tokens for security
-
-    // ? Enhanced security events with debugging
-  options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-   var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-   logger.LogWarning("JWT Authentication failed: {Message} for IP: {IpAddress}. Token: {Token}", 
-      context.Exception.Message, 
-  context.HttpContext.Connection.RemoteIpAddress,
-           context.Request.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "")?.Substring(0, Math.Min(50, context.Request.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "")?.Length ?? 0)) + "...");
-return Task.CompletedTask;
-  },
-      OnTokenValidated = context =>
- {
-          var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("JWT Token validated successfully for user: {User} from IP: {IpAddress}",
-   context.Principal?.Identity?.Name ?? "Unknown",
-context.HttpContext.Connection.RemoteIpAddress);
-     
-    // ? Log audience claim for debugging
-     var audienceClaim = context.Principal?.FindFirst("aud")?.Value;
- logger.LogDebug("Token audience claim: {Audience}", audienceClaim);
- 
-          return Task.CompletedTask;
-        },
-  OnChallenge = context =>
-     {
-     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("JWT Challenge triggered. Error: {Error}, Description: {Description} for IP: {IpAddress}",
-context.Error, context.ErrorDescription, context.HttpContext.Connection.RemoteIpAddress);
-            return Task.CompletedTask;
-        }
-    };
-
-    // ? Enhanced token validation parameters with better audience handling
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-  ValidateAudience = true,
-   ValidateLifetime = true,
-    ValidateIssuerSigningKey = true,
-   ValidIssuer = identityServerAuthority,
-  // ? Accept multiple possible audience formats
- ValidAudiences = new[] { 
-  "CleanCutAPI",            // API Resource name
-       identityServerAuthority + "/resources",          // IdentityServer resources endpoint
-      identityServerAuthority     // IdentityServer authority
-  },
- ClockSkew = TimeSpan.FromMinutes(1), // ? Reduce clock skew tolerance
-        RequireExpirationTime = true,
-        RequireSignedTokens = true,
-        // ? Custom audience validation for better debugging
- AudienceValidator = (audiences, token, validationParameters) =>
- {
-          var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-     logger.LogDebug("Token audiences: {Audiences}", string.Join(", ", audiences));
-          logger.LogDebug("Valid audiences: {ValidAudiences}", string.Join(", ", validationParameters.ValidAudiences));
-   
-            // Check if any of the token audiences match our valid audiences
-    var isValid = audiences.Any(aud => validationParameters.ValidAudiences.Contains(aud));
-     if (!isValid)
-          {
-    logger.LogWarning("Audience validation failed. Token audiences: {TokenAudiences}, Expected: {ExpectedAudiences}", 
-    string.Join(", ", audiences), 
-string.Join(", ", validationParameters.ValidAudiences));
-     }
-   return isValid;
-        }
-    };
-});
-
-// ? Enhanced authorization with role-based access
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-      .RequireAuthenticatedUser()
-        .Build();
-
-    // ? Add role-based policies
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
-});
-
-// ? Add HSTS in production
-if (!builder.Environment.IsDevelopment())
-{
-    builder.Services.AddHsts(options =>
-    {
-        options.Preload = true;
-        options.IncludeSubDomains = true;
-  options.MaxAge = TimeSpan.FromDays(365);
-    });
-}
+// Register HttpContextAccessor and a distributed cache provider for the API host
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
 
-// ? Enhanced security middleware pipeline
-if (app.Environment.IsDevelopment())
-{
-    // ? Add request logging middleware first (dev only)
-    app.Use(async (context, next) =>
-    {
- var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Incoming request: {Method} {Path} from {Origin}",
-       context.Request.Method,
- context.Request.Path,
- context.Request.Headers.Origin.FirstOrDefault() ?? "No Origin");
-
-await next();
-
-      logger.LogInformation("Response: {StatusCode} for {Method} {Path}",
- context.Response.StatusCode,
-context.Request.Method,
-     context.Request.Path);
-    });
-
-    app.UseCors("AllowCleanCutClients");
-    app.UseStaticFiles();
-
-    // ? Anonymous routes for development only
-    app.MapGet("/", () => Results.Redirect("/token-helper.html")).AllowAnonymous();
-app.MapGet("/index.html", () => Results.Redirect("/versions.html")).AllowAnonymous();
-    app.MapGet("/versions", () => Results.Redirect("/versions.html")).AllowAnonymous();
-    app.MapGet("/token-helper", () => Results.Redirect("/token-helper.html")).AllowAnonymous();
-
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
- {
-   options.SwaggerEndpoint(ApiConstants.OpenApiJson, ApiConstants.SwaggerUiTitle);
-        options.RoutePrefix = ApiConstants.SwaggerUiRoutePrefix;
-        options.DocumentTitle = ApiConstants.SwaggerUiTitle;
-        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
-      options.DisplayRequestDuration();
-        options.EnableDeepLinking();
- options.ShowExtensions();
- options.InjectStylesheet("/custom-swagger.css");
-        options.EnablePersistAuthorization();
-        options.OAuthClientId("swagger-ui");
-        options.OAuthAppName("CleanCut API - Swagger UI");
-        options.OAuthUsePkce();
-    });
-
-    // ? Seed database only in development
-    using (var scope = app.Services.CreateScope())
-    {
-        await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
- }
-}
-else
-{
-    // ? Production security middleware
-    app.UseHsts();
-    app.UseCors("AllowCleanCutClients");
-}
-
-// ? Security middleware pipeline order
-app.UseExceptionHandler();
-app.UseHttpsRedirection();
-
-// ? Add rate limiting
-app.UseRateLimiter();
-
-// ? Add security headers middleware
+// ? HTTP request logging middleware
 app.Use(async (context, next) =>
 {
-    var headers = context.Response.Headers;
-    
-    headers.TryAdd("X-Content-Type-Options", "nosniff");
-  headers.TryAdd("X-Frame-Options", "DENY");
- headers.TryAdd("X-XSS-Protection", "1; mode=block");
-  headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
-    headers.TryAdd("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-  
-    if (!app.Environment.IsDevelopment())
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    await next.Invoke();
+    sw.Stop();
+
+    // Log only requests handled by the API (excluding static files, etc.)
+    if (context.Request.Path.StartsWithSegments("/api"))
     {
-        headers.TryAdd("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+        var log = $"{context.Response.StatusCode} {context.Request.Method} {context.Request.Path} ({sw.ElapsedMilliseconds} ms)";
+        context.Items["RequestLog"] = log;
+        var logger = context.RequestServices.GetService<Microsoft.Extensions.Logging.ILoggerFactory>()?.CreateLogger("RequestLogging");
+        logger?.LogInformation(log);
     }
-    
-    var csp = "default-src 'self'; " +
-        "script-src 'self'; " +
-      "style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data: https:; " +
-      "connect-src 'self'; " +
-  "font-src 'self'; " +
-        "object-src 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self'; " +
-      "frame-ancestors 'none'";
-          
-    if (!app.Environment.IsDevelopment())
-    {
-        csp += "; upgrade-insecure-requests";
-    }
-    
-  headers.TryAdd("Content-Security-Policy", csp);
-    
-    await next();
 });
 
+// ? Security headers middleware
+//app.Use(async (context, next) =>
+  //{
+    // Add security headers to response
+  //  context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+  //  context.Response.Headers.Add("X-Frame-Options", "DENY");
+  //  context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+ //   context.Response.Headers.Add("Access-Control-Expose-Headers", "Content-Disposition");
+
+//    await next();
+//  });
+
+app.UseRouting();
+
+// ? Enable authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ? Swagger/OpenAPI documentation (dev only)
+if (builder.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{apiTitle} v1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at the app's root
+    });
+}
+
+// Seed the database with initial data
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var seederType = Type.GetType("CleanCut.Infrastructure.Data.Seeding.DatabaseSeeder, CleanCut.Infrastructure.Data");
+        if (seederType != null)
+        {
+            var seederMethod = seederType.GetMethod("SeedAsync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (seederMethod != null)
+            {
+                await (Task)seederMethod.Invoke(null, new object[] { scope.ServiceProvider })!;
+            }
+        }
+    }
+    catch
+    {
+        // Ignore seeding failures
+    }
+}
 
 app.Run();

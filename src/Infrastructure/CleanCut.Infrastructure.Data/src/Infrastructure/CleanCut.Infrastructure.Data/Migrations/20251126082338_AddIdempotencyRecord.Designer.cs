@@ -4,16 +4,19 @@ using CleanCut.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CleanCut.Infrastructure.Data.Migrations
+namespace CleanCut.Infrastructure.Data.src.Infrastructure.CleanCut.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(CleanCutDbContext))]
-    partial class CleanCutDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251126082338_AddIdempotencyRecord")]
+    partial class AddIdempotencyRecord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -22,6 +22,7 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(CachingBehavior<,>));
             cfg.AddOpenBehavior(typeof(DomainEventDispatcherBehavior<,>));
+            cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
         });
 
         // Configure AutoMapper manually without relying on the deprecated extensions

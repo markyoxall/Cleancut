@@ -7,11 +7,11 @@
         "Action": "Start"
       },
       {
-        "Path": "src\\Presentation\\CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
+        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
         "Action": "Start"
       },
       {
-        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
+        "Path": "CleanCut.BlazorTen\\CleanCut.BlazorTen\\CleanCut.BlazorTen.csproj",
         "Action": "Start"
       }
     ]

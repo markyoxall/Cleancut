@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using CleanCut.Domain.Entities;
 using CleanCut.Domain.Common;
 using CleanCut.Domain.Events;
+using CleanCut.Infrastructure.Data.Entities;
 
 namespace CleanCut.Infrastructure.Data.Context;
 
@@ -44,6 +45,18 @@ public class CleanCutDbContext : DbContext
 
         // Apply all configurations from the current assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CleanCutDbContext).Assembly);
+        
+        // Configure idempotency record
+        modelBuilder.Entity<IdempotencyRecord>(b =>
+        {
+            b.HasKey(e => e.Key);
+            b.Property(e => e.Key).HasMaxLength(200).IsRequired();
+            b.Property(e => e.RequestHash).HasMaxLength(1000);
+            b.Property(e => e.ResponseStatus);
+            b.Property(e => e.ResponsePayload);
+            b.Property(e => e.ResponseHeaders);
+            b.HasIndex(e => e.CreatedAt);
+        });
 
         // Additional global configurations can be added here
         ConfigureGlobalSettings(modelBuilder);
