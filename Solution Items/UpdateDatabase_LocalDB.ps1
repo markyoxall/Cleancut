@@ -5,24 +5,35 @@ Usage:
 This sets the CLEANCUT_CONNECTION env var for the current process and runs dotnet ef database update.
 #>
 
-# Connection used by the design-time factory when no env var is set
-$connection = 'Server=(localdb)\\MSSQLLocalDB;Database=CleanCut;Trusted_Connection=True;MultipleActiveResultSets=true'
+# Ensure we run dotnet ef from the repository root so relative project paths resolve correctly.
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Resolve-Path (Join-Path $scriptDir '..')
+Write-Host "Changing working directory to repo root: $repoRoot"
+Push-Location $repoRoot
 
-Write-Host "Using LocalDB connection:`n$connection"
+try {
+    # Connection used by the design-time factory when no env var is set
+    $connection = 'Server=(localdb)\\MSSQLLocalDB;Database=CleanCut;Trusted_Connection=True;MultipleActiveResultSets=true'
 
-# Export env var for this process
-$env:CLEANCUT_CONNECTION = $connection
+    Write-Host "Using LocalDB connection:`n$connection"
 
-# Run EF Core database update
-dotnet ef database update `
-  --project src\Infrastructure\CleanCut.Infrastructure.Data\CleanCut.Infrastructure.Data.csproj `
-  --startup-project src\Presentation\CleanCut.API\CleanCut.API.csproj `
-  --context CleanCutDbContext
+    # Export env var for this process
+    $env:CLEANCUT_CONNECTION = $connection
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "EF database update completed successfully against LocalDB."
-} else {
-    Write-Error "EF database update failed with exit code $LASTEXITCODE"
+    # Run EF Core database update
+    dotnet ef database update `
+      --project src\Infrastructure\CleanCut.Infrastructure.Data\CleanCut.Infrastructure.Data.csproj `
+      --startup-project src\Presentation\CleanCut.API\CleanCut.API.csproj `
+      --context CleanCutDbContext
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "EF database update completed successfully against LocalDB."
+    } else {
+        Write-Error "EF database update failed with exit code $LASTEXITCODE"
+    }
+}
+finally {
+    Pop-Location
 }
 
 # Optional: unset env var in this session
