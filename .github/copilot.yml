@@ -1,0 +1,21 @@
+# GitHub Copilot repository-level instructions
+# These guidelines provide high-level suggestions to Copilot for this repo.
+
+# Project-level preferences
+preferences:
+  - always-use-controllers: true # prefer controllers over minimal APIs for endpoints
+  - use-repository-pattern: true  # prefer repository pattern for data access
+  - xml-doc-comments: required    # include XML summary comments for public types
+  - use-dtos-and-viewmodels: true # use DTOs/ViewModels where appropriate
+  - avoid-hacks: true             # do not introduce hacks or temporary workarounds
+  - tests-updated: true           # ensure tests are updated for behavior changes
+
+# Short guidance for generated code
+suggestions:
+  - "Prefer clear, SOLID, testable implementations."
+  - "Do not return EF entities directly from controllers; use DTOs and mapping." 
+  - "For background work, implement BackgroundService when appropriate." 
+  - "Add XML summary comments to public classes, interfaces, and DTOs." 
+  - "Create or update unit tests for business logic and repository implementations."
+
+# Note: Copilot may not fully follow these rules. Treat this as guidance for suggestions only.

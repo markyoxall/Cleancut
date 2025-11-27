@@ -1,6 +1,6 @@
 [
   {
-    "Name": "New Profile",
+    "Name": "Blazor Web App",
     "Projects": [
       {
         "Path": "src\\Infrastructure\\CleanCut.Infranstructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
@@ -17,7 +17,7 @@
     ]
   },
   {
-    "Name": "BlahBlahBlah",
+    "Name": "Identity plus API only",
     "Projects": [
       {
         "Path": "src\\Infrastructure\\CleanCut.Infranstructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
