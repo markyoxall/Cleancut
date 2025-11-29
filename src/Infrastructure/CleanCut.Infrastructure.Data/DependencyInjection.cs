@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ICountryRepository, CountryRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IOrderLineItemRepository, OrderLineItemRepository>();
+        services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<CleanCut.Application.Common.Interfaces.IIdempotencyRepository, IdempotencyRepository>();
 
         // Register Unit of Work

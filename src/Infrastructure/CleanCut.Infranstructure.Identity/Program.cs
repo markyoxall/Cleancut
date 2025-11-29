@@ -1,4 +1,4 @@
-﻿using CleanCut.Infranstructure.Identity;
+using CleanCut.Infranstructure.Identity;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()

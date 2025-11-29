@@ -18,21 +18,21 @@
  * CLIENT APPLICATION INTEGRATION:
  * ------------------------------
  * 
- * • CleanCut.BlazorWebApp
+ * â€¢ CleanCut.BlazorWebApp
  *   ??? Makes HTTP requests with Bearer tokens from TokenService
  *   ??? Server-side app uses Client Credentials tokens
  *   ??? Calls API endpoints on behalf of the application
  * 
- * • CleanCut.WebApp (MVC)
+ * â€¢ CleanCut.WebApp (MVC)
  *   ??? Uses access tokens obtained after user authentication
  *   ??? Makes API calls from server-side controllers and client-side JavaScript
  *   ??? User identity flows through from ID token to API calls
  * 
- * • CleanCut.WinApp (Future)
+ * â€¢ CleanCut.WinApp (Future)
  *   ??? Would use HttpClient with Bearer token authentication
  *   ??? Desktop app making direct API calls with user tokens
  * 
- * • Swagger UI
+ * â€¢ Swagger UI
  *   ??? Interactive API testing with OAuth2 authentication
  *   ??? Developers can test endpoints with real authentication
  * 
@@ -47,35 +47,35 @@
  * 
  * AUTHORIZATION POLICIES IMPLEMENTED:
  * ----------------------------------
- * • FallbackPolicy - All endpoints require authentication by default
- * • AdminOnly - Restricts certain operations to Admin role users only
- * • UserOrAdmin - Allows access to User or Admin role users
+ * â€¢ FallbackPolicy - All endpoints require authentication by default
+ * â€¢ AdminOnly - Restricts certain operations to Admin role users only
+ * â€¢ UserOrAdmin - Allows access to User or Admin role users
  * 
  * SECURITY FEATURES:
  * -----------------
- * • JWT Bearer token validation with IdentityServer authority
- * • Audience validation (accepts "CleanCutAPI" tokens only)
- * • Role-based authorization policies
- * • Rate limiting (100 req/min production, 1000 dev)
- * • CORS restrictions to known client origins
- * • Security headers (CSP, HSTS, XSS Protection, etc.)
- * • Input validation on all endpoints
- * • Comprehensive security logging without sensitive data exposure
- * • Exception handling that doesn't leak internal information
+ * â€¢ JWT Bearer token validation with IdentityServer authority
+ * â€¢ Audience validation (accepts "CleanCutAPI" tokens only)
+ * â€¢ Role-based authorization policies
+ * â€¢ Rate limiting (100 req/min production, 1000 dev)
+ * â€¢ CORS restrictions to known client origins
+ * â€¢ Security headers (CSP, HSTS, XSS Protection, etc.)
+ * â€¢ Input validation on all endpoints
+ * â€¢ Comprehensive security logging without sensitive data exposure
+ * â€¢ Exception handling that doesn't leak internal information
  * 
  * ENDPOINTS PROTECTED:
  * -------------------
- * • GET /api/v1/products - Requires UserOrAdmin role
- * • GET /api/v1/products/{id} - Requires UserOrAdmin role  
- * • POST /api/v1/products - Requires UserOrAdmin role
- * • PUT /api/v1/products/{id} - Requires UserOrAdmin role
- * • DELETE /api/v1/products/{id} - Requires AdminOnly role
- * • All customer and country endpoints - Role-based access
+ * â€¢ GET /api/v1/products - Requires UserOrAdmin role
+ * â€¢ GET /api/v1/products/{id} - Requires UserOrAdmin role  
+ * â€¢ POST /api/v1/products - Requires UserOrAdmin role
+ * â€¢ PUT /api/v1/products/{id} - Requires UserOrAdmin role
+ * â€¢ DELETE /api/v1/products/{id} - Requires AdminOnly role
+ * â€¢ All customer and country endpoints - Role-based access
  * 
  * DEVELOPMENT VS PRODUCTION:
  * -------------------------
- * • Development: Relaxed CORS, detailed error info, request logging
- * • Production: Strict CORS, minimal error details, HSTS headers
+ * â€¢ Development: Relaxed CORS, detailed error info, request logging
+ * â€¢ Production: Strict CORS, minimal error details, HSTS headers
  */
 
 using CleanCut.Application;
@@ -88,6 +88,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading.RateLimiting;
+using CleanCut.Infrastructure.Shared;
+using CleanCut.Infrastructure.BackgroundServices.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -122,7 +124,7 @@ builder.Services.AddProblemDetails(options =>
       context.ProblemDetails.Instance ??= context.HttpContext.Request.Path;
 
       if (context.ProblemDetails.Type == null)
-{
+      {
        context.ProblemDetails.Type = context.ProblemDetails.Status switch
         {
 400 => "https://tools.ietf.org/html/rfc7231#section-6.5.1",
@@ -216,6 +218,11 @@ builder.Services.AddApplication();
 // Register HttpContextAccessor and a distributed cache provider for the API host
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
+
+// Register shared infrastructure and hosted background workers (email + rabbitmq retry)
+builder.Services.AddSharedInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<EmailAndRabbitWorker>();
+builder.Services.AddHostedService<RabbitMqRetryWorker>();
 
 // Provide a delegate for idempotency behavior to read the Idempotency-Key header from the current HttpContext
 builder.Services.AddScoped<Func<object?>>(sp =>

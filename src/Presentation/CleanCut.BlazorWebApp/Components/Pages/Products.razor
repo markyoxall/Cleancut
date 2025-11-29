@@ -1,6 +1,5 @@
 @page "/products"
 @page "/products/search"
-@inject IJSRuntime JSRuntime
 @inject ILogger<Products> Logger
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject IProductApiService ProductApi
@@ -207,4 +206,4 @@ StateHasChanged();
      await SearchProduct();
         }
     }
-}
+}}

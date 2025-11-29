@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using CleanCut.Application.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Authorization
@@ -55,47 +55,50 @@
             <p class="mb-0">Please log in to view your dashboard data and access all features.</p>
     </div>
           <div class="col-md-4 text-md-end">
-     <a href="/Account/Login" class="btn btn-primary">
-     <i class="fas fa-sign-in-alt me-2"></i>Log In
-         </a>
+     <a class="btn btn-primary" href="/Account/Login">
+        <i class="fas fa-sign-in-alt me-2"></i>Log In
+     </a>
 </div>
            </div>
          </div>
             </NotAuthorized>
   <Authorized>
-      <!-- Quick Actions -->
-          <div class="quick-action-card mb-4">
+      <!-- Quick Actions (use shared component to avoid duplication) -->
+      <QuickActions />
+
+      <!-- Legacy duplicate quick-actions (kept for compatibility) -->
+      <div class="quick-action-card mb-4">
          <h5 class="card-title mb-3">
-        <i class="fas fa-rocket me-2"></i>Quick Actions
+        <i class="fas fa-rocket me-2"></i>Quick Actions (Legacy)
    </h5>
            <div class="row g-3">
       <div class="col-md-6 col-lg-3">
-       <button type="button" class="btn quick-action-btn w-100" @onclick="NavigateToCustomers">
+       <a class="btn quick-action-btn w-100" href="/customers/management-enhanced">
    <i class="fas fa-users quick-action-icon"></i>
-  <div class="quick-action-title">Customer Management</div>
-    <div class="quick-action-subtitle">Manage Customers</div>
-     </button>
+  <div class="quick-action-title">Customer Portal</div>
+    <div class="quick-action-subtitle">Enhanced Management</div>
+     </a>
    </div>
   <div class="col-md-6 col-lg-3">
-      <button type="button" class="btn quick-action-btn w-100" @onclick="NavigateToProducts">
+      <a class="btn quick-action-btn w-100" href="/store">
    <i class="fas fa-search quick-action-icon"></i>
   <div class="quick-action-title">Product Search</div>
  <div class="quick-action-subtitle">Browse & Filter</div>
-     </button>
-  </div>
+     </a>
+   </div>
    <div class="col-md-6 col-lg-3">
-  <button type="button" class="btn quick-action-btn success w-100" @onclick="OpenSwagger">
+  <a class="btn quick-action-btn success w-100" href="https://localhost:7142/swagger" target="_blank">
   <i class="fas fa-code quick-action-icon"></i>
  <div class="quick-action-title">API Docs</div>
   <div class="quick-action-subtitle">Swagger UI</div>
-   </button>
+   </a>
        </div>
   <div class="col-md-6 col-lg-3">
-  <button type="button" class="btn quick-action-btn warning w-100" @onclick="LoadDashboardDataAsync">
+  <a class="btn quick-action-btn warning w-100" href="javascript:location.reload()">
   <i class="fas fa-sync quick-action-icon"></i>
    <div class="quick-action-title">Refresh Data</div>
      <div class="quick-action-subtitle">Reload Dashboard</div>
-      </button>
+      </a>
     </div>
         </div>
       </div>
@@ -231,8 +234,8 @@
     private async Task LoadDataIfAuthenticated()
     {
         try
-        {
-     if (AuthenticationStateTask != null)
+      {
+         if (AuthenticationStateTask != null)
       {
    var authState = await AuthenticationStateTask;
        if (authState.User.Identity?.IsAuthenticated == true)
@@ -270,8 +273,10 @@
 
     // Navigation methods
     private void NavigateToCustomers() => Navigation.NavigateTo("/customers/management");
-    private void NavigateToProducts() => Navigation.NavigateTo("/products");
+    // Products listing lives at /store; navigate there so users can add items to cart
+    private void NavigateToProducts() => Navigation.NavigateTo("/store");
     private void OpenSwagger() => Navigation.NavigateTo("https://localhost:7142/swagger", true);
+    // StartLogin removed in favor of centralized LoginDisplay and /login page
 
     private async Task LoadDashboardDataAsync()
     {
@@ -297,8 +302,8 @@
       {
         await CustomersState.LoadAsync(cancellationToken: cts.Token);
      }
-     catch (Exception ex)
-     {
+    catch (Exception ex)
+    {
 Logger.LogWarning(ex, "Failed to load customers");
     UiState?.SetMessage("Could not load customers - API may be unavailable", false);
        }

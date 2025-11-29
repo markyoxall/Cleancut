@@ -1,0 +1,92 @@
+@page "/checkout"
+@inject IShoppingCartService CartService
+@inject IOrdersApiService OrdersApi
+@inject NavigationManager Navigation
+@inject ILogger<Checkout> Logger
+
+<PageTitle>Checkout - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-credit-card me-2"></i>Checkout</h2>
+        <button class="btn btn-outline-secondary" @onclick="BackToBasket">Back to Basket</button>
+    </div>
+
+    @if (!Items.Any())
+    {
+        <div class="text-center py-5 text-muted">Your basket is empty.</div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <h5>Order Summary</h5>
+                <ul class="list-group mb-3">
+                    @foreach (var item in Items)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">@item.Name</div>
+                                <div class="text-muted small">@item.Quantity x @item.UnitPrice.ToString("C")</div>
+                            </div>
+                            <div>@(item.UnitPrice * item.Quantity).ToString("C")</div>
+                        </li>
+                    }
+                </ul>
+
+                <div class="d-flex justify-content-end mb-3">
+                    <h5>Total: <strong class="ms-2">@Total.ToString("C")</strong></h5>
+                </div>
+
+                <EditForm Model="Model" OnValidSubmit="PlaceOrder">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label">Shipping Address</label>
+                        <InputTextArea class="form-control" @bind-Value="Model.ShippingAddress" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Billing Address</label>
+                        <InputTextArea class="form-control" @bind-Value="Model.BillingAddress" />
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                        <button class="btn btn-success" type="submit">Place Order</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code{
+    private IReadOnlyList<CartItemDto> Items = Array.Empty<CartItemDto>();
+    private decimal Total = 0;
+
+    private CheckoutModel Model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Items = await CartService.GetItemsAsync();
+        Total = await CartService.GetTotalAsync();
+    }
+
+    private async Task PlaceOrder()
+    {
+        // For demo, assume first customer ID is used
+        var request = new CreateOrderRequest(Guid.Parse("11111111-1111-1111-1111-111111111111"), Model.ShippingAddress, Model.BillingAddress, null);
+        var order = await OrdersApi.CreateOrderAsync(request);
+        // TODO: send messages to RabbitMQ and email via background services (infrastructure)
+        await CartService.ClearAsync();
+        Navigation.NavigateTo($"/orders/details/{order.Id}");
+    }
+
+    private void BackToBasket() => Navigation.NavigateTo("/cart");
+    private void Cancel() => Navigation.NavigateTo("/cart");
+
+    public class CheckoutModel
+    {
+        public string ShippingAddress { get; set; } = string.Empty;
+        public string BillingAddress { get; set; } = string.Empty;
+    }
+}

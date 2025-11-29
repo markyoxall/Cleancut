@@ -1,4 +1,4 @@
-﻿@page "/products/management"
+@page "/products/management"
 @using CleanCut.Application.DTOs
 @inject ILogger<ProductManagement> Logger
 @inject CleanCut.BlazorWebApp.Services.IProductApiService ProductApi
@@ -14,9 +14,9 @@
         <h2>
             <i class="fas fa-box text-success"></i> Product Management
         </h2>
-        <button type="button" class="btn btn-success" @onclick="CreateProduct">
+        <a class="btn btn-success" href="/products/create">
             <i class="fas fa-plus"></i> Add New Product
-        </button>
+        </a>
     </div>
 
     @if (!string.IsNullOrEmpty(Message))
@@ -113,16 +113,13 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group" aria-label="Product actions">
-                                            <button type="button" class="btn btn-outline-info" title="View Details" 
-                                                    @onclick="() => ViewProduct(product.Id)">
+                                            <a class="btn btn-outline-info" title="View Details" href="/products/details/@product.Id">
                                                 <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary" title="Edit" 
-                                                    @onclick="() => EditProduct(product.Id)">
+                                            </a>
+                                            <a class="btn btn-outline-primary" title="Edit" href="/products/edit/@product.Id">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger" title="Delete" 
-                                                    @onclick="() => ShowDeleteModal(product.Id, product.Name)">
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Delete" @onclick="() => ShowDeleteModal(product.Id, product.Name)">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -149,9 +146,9 @@
                             <text>Get started by creating your first product</text>
                         }
                     </p>
-                    <button type="button" class="btn btn-success" @onclick="CreateProduct">
+                    <a class="btn btn-success" href="/products/create">
                         <i class="fas fa-plus"></i> Add First Product
-                    </button>
+                    </a>
                 </div>
             }
         </div>

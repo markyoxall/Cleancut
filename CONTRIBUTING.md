@@ -2,6 +2,10 @@
 
 These guidelines are mandatory for all code changes, PRs, and new projects in this repository. Follow them exactly unless an explicit exception is documented in the PR and approved by reviewers.
 
+## CDN Usage
+Never, I repeat, Never automatically add CDN links for JavaScript libraries or CSS frameworks in any project.
+All dependencies must be managed via NuGet packages or local static files to ensure version control, security, and offline availability.
+
 ## Quick Plan (must be included in every PR)
 - Goal: short summary of what the change does.
 - Approach: high-level steps and design decisions.

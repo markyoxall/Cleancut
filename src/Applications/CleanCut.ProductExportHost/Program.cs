@@ -11,8 +11,8 @@ builder.Services.AddLogging(logging =>
     logging.AddDebug();
 });
 
-// Add background services from infrastructure
-builder.Services.AddBackgroundServices(builder.Configuration);
+// Add background services from infrastructure (explicit static call to avoid ambiguity)
+CleanCut.Infrastructure.BackgroundServices.Extensions.ServiceCollectionExtensions.AddBackgroundServices(builder.Services, builder.Configuration);
 
 var host = builder.Build();
 

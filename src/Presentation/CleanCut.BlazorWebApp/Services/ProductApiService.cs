@@ -1,4 +1,4 @@
-﻿using CleanCut.Application.DTOs;
+using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 
@@ -11,6 +11,7 @@ public interface IProductApiService
     // v1 (simple) methods
     Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default);
     Task<ProductInfo?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ProductInfo?> GetProductAsync(Guid id, CancellationToken cancellationToken = default); // helper for shopping cart
     Task<IEnumerable<ProductInfo>> GetProductsByCustomerAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<ProductInfo> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default);
     Task<ProductInfo> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default);
@@ -39,6 +40,7 @@ public class ProductApiService : IProductApiService
     // v1 delegations
     public Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default) => _v1.GetAllAsync(cancellationToken);
     public Task<ProductInfo?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default) => _v1.GetByIdAsync(id, cancellationToken);
+    public async Task<ProductInfo?> GetProductAsync(Guid id, CancellationToken cancellationToken = default) => await _v1.GetByIdAsync(id, cancellationToken);
     public Task<IEnumerable<ProductInfo>> GetProductsByCustomerAsync(Guid userId, CancellationToken cancellationToken = default) => _v1.GetByCustomerAsync(userId, cancellationToken).ContinueWith(t => (IEnumerable<ProductInfo>)t.Result, cancellationToken);
     public Task<ProductInfo> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default) => _v1.CreateAsync(request, cancellationToken);
     public Task<ProductInfo> UpdateProductAsync(Guid id, UpdateProductRequest request, CancellationToken cancellationToken = default) => _v1.UpdateAsync(id, request, cancellationToken);

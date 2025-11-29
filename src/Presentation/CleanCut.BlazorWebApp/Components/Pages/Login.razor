@@ -1,6 +1,5 @@
 @page "/login"
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Login - CleanCut</PageTitle>
 
@@ -31,8 +30,9 @@
 </div>
 
 @code {
-    private async Task LoginAsync()
+    private void LoginAsync()
     {
-        await JSRuntime.InvokeVoidAsync("window.location.href", "/Account/Login");
+        // Force a full-page load to the MVC account controller which triggers OIDC Challenge
+        Navigation.NavigateTo("/Account/Login", true);
     }
 }

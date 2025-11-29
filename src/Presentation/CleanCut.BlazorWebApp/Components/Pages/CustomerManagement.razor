@@ -14,9 +14,9 @@
         <h2>
             <i class="fas fa-users text-primary"></i> Customer Management
         </h2>
-        <button type="button" class="btn btn-primary" @onclick="CreateCustomer">
+        <a class="btn btn-primary" href="/customers/create">
             <i class="fas fa-plus"></i> Add New Customer
-        </button>
+        </a>
     </div>
 
     @if (!string.IsNullOrEmpty(Message))
@@ -97,14 +97,12 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group" aria-label="Customer actions">
-                                                <button type="button" class="btn btn-outline-info" title="View Details" 
-                                                        @onclick="() => ViewCustomer(customer.Id)">
+                                                <a class="btn btn-outline-info" title="View Details" href="/customers/details/@customer.Id">
                                                     <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary" title="Edit" 
-                                                        @onclick="() => EditCustomer(customer.Id)">
+                                                </a>
+                                                <a class="btn btn-outline-primary" title="Edit" href="/customers/edit/@customer.Id">
                                                     <i class="fas fa-edit"></i>
-                                                </button>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -119,9 +117,9 @@
                         <i class="fas fa-users fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">No customers found</h5>
                         <p class="text-muted">Get started by creating your first customer</p>
-                        <button type="button" class="btn btn-primary" @onclick="CreateCustomer">
+                        <a class="btn btn-primary" href="/customers/create">
                             <i class="fas fa-plus"></i> Add First Customer
-                        </button>
+                        </a>
                     </div>
                 }
             </div>
@@ -187,23 +185,5 @@
             IsLoading = false;
             StateHasChanged();
         }
-    }
-
-    private void CreateCustomer()
-    {
-        Logger.LogInformation("Navigating to create customer page");
-        Navigation.NavigateTo("/customers/create");
-    }
-
-    private void ViewCustomer(Guid id)
-    {
-        Logger.LogInformation("Navigating to customer details: {CustomerId}", id);
-        Navigation.NavigateTo($"/customers/details/{id}");
-    }
-
-    private void EditCustomer(Guid id)
-    {
-        Logger.LogInformation("Navigating to edit customer: {CustomerId}", id);
-        Navigation.NavigateTo($"/customers/edit/{id}");
     }
 }

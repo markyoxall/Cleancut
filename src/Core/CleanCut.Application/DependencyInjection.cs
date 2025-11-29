@@ -17,12 +17,14 @@ public static class DependencyInjection
         services.AddMediatR(cfg => 
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-            
+
             // Add behaviors
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(CachingBehavior<,>));
             cfg.AddOpenBehavior(typeof(DomainEventDispatcherBehavior<,>));
             cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
+            // Add RabbitMQ publishing behavior near the end so handlers can return DTOs
+            cfg.AddOpenBehavior(typeof(RabbitMqPublishingBehavior<,>));
         });
 
         // Configure AutoMapper manually without relying on the deprecated extensions

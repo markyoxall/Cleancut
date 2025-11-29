@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using CleanCut.BlazorWebApp.Services;
 using CleanCut.BlazorWebApp.Services.HttpClients;
 using CleanCut.BlazorWebApp.Services.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using CleanCut.BlazorWebApp.State;
 
 namespace CleanCut.BlazorWebApp.Extensions;
 
@@ -77,6 +78,24 @@ services.AddScoped<AuthenticatedHttpMessageHandler>();
 
   // Adapter/service registration
    services.AddScoped<IProductApiService, ProductApiService>();
+
+   // Shopping cart and orders API
+   services.AddScoped<IShoppingCartService, ShoppingCartService>();
+
+   // Orders API client - uses the same base as products by default
+   var ordersBase = configuration["ApiClients:Orders:BaseUrl"] ?? configuration["ApiClients:BaseUrl"] ?? "https://localhost:7142";
+   services.AddHttpClient<IOrdersApiService, OrdersApiService>(client =>
+   {
+       client.BaseAddress = new Uri(ordersBase);
+       client.Timeout = TimeSpan.FromSeconds(30);
+   })
+   .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+        // Register feature state services and UI state
+        services.AddScoped<ICustomersState, CustomeraState>();
+        services.AddScoped<IProductsState, ProductsState>();
+        services.AddScoped<ICountriesState, CountriesState>();
+        services.AddScoped<IUiStateService, UiStateService>();
 
    return services;
     }

@@ -4,6 +4,7 @@ using CleanCut.Domain.Entities;
 using CleanCut.Domain.Repositories;
 using CleanCut.Application.DTOs;
 using CleanCut.Domain.Exceptions;
+using CleanCut.Application.Common.Interfaces;
 
 namespace CleanCut.Application.Commands.Orders.CreateOrder;
 
@@ -16,17 +17,23 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
     private readonly ICustomerRepository _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IRabbitMqPublisher? _publisher;
+    private readonly IRabbitMqRetryQueue? _retryQueue;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
         ICustomerRepository customerRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IRabbitMqPublisher? publisher = null,
+        IRabbitMqRetryQueue? retryQueue = null)
     {
         _orderRepository = orderRepository;
-        _customerRepository = customerRepository;
+        _customerRepository = customerRepository; // keep existing variable
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _publisher = publisher;
+        _retryQueue = retryQueue;
     }
 
     public async Task<OrderInfo> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -61,6 +68,25 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
         var orderInfo = _mapper.Map<OrderInfo>(order);
         orderInfo.CustomerName = customer.GetFullName();
         orderInfo.CustomerEmail = customer.Email;
+
+        // Enqueue order for background processing (email + RabbitMQ publish)
+        if (_retryQueue != null)
+        {
+            await _retryQueue.EnqueueAsync(orderInfo, cancellationToken);
+        }
+
+        // Try to publish immediately as well (best-effort)
+        if (_publisher != null)
+        {
+            try
+            {
+                await _publisher.PublishOrderCreatedAsync(orderInfo, cancellationToken);
+            }
+            catch
+            {
+                // ignored - background worker will retry from retry queue
+            }
+        }
 
         return orderInfo;
     }
