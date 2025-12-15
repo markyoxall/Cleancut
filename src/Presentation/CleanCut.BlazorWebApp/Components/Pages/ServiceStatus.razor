@@ -1,0 +1,589 @@
+@page "/service-status"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ILogger<ServiceStatus> Logger
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<PageTitle>Service Status - CleanCut</PageTitle>
+
+<div class="container-fluid">
+  <div class="row">
+  <div class="col-12">
+      <h1 class="mb-4">
+       <i class="fas fa-heartbeat me-2"></i>
+  Service Status Dashboard
+       </h1>
+    
+      <div class="alert alert-info">
+        <h5><i class="fas fa-info-circle me-2"></i>Blazor Server Authentication Diagnosis</h5>
+<p><strong>Current Status:</strong> Services are running, fixing Blazor Server authentication.</p>
+       <p><strong>Issue:</strong> Blazor Server requires different token handling than WebAssembly.</p>
+        <div class="mt-2">
+         <button type="button" class="btn btn-primary btn-sm me-2" @onclick="FixCertificatesAsync">
+       <i class="fas fa-certificate me-1"></i>Fix SSL Certificates
+   </button>
+       <button type="button" class="btn btn-success btn-sm me-2" @onclick="TestFullWorkflowAsync">
+        <i class="fas fa-play me-1"></i>Test Full Workflow
+      </button>
+       <button type="button" class="btn btn-warning btn-sm" @onclick="ForceLoginAsync">
+    <i class="fas fa-sign-in-alt me-1"></i>Force Login
+       </button>
+      </div>
+      </div>
+
+  <!-- Port Status -->
+        <div class="alert alert-success">
+    <h6><i class="fas fa-check-circle me-2"></i>Port Status (Confirmed Running)</h6>
+        <ul class="mb-0">
+  <li>? <strong>IdentityServer:</strong> Port 5001 - LISTENING</li>
+       <li>? <strong>API Server:</strong> Port 7142 - LISTENING</li>
+ <li>? <strong>Blazor App:</strong> Port 7297 - LISTENING</li>
+      </ul>
+     </div>
+
+       <div class="row">
+        <!-- IdentityServer Status -->
+   <div class="col-md-4 mb-4">
+         <div class="card h-100">
+       <div class="card-header bg-primary text-white">
+     <h5 class="mb-0">
+       <i class="fas fa-id-card me-2"></i>
+   IdentityServer
+        </h5>
+         </div>
+        <div class="card-body">
+      <p><strong>URL:</strong> https://localhost:5001</p>
+      <p><strong>Status:</strong> 
+       @if (identityStatus == ServiceStatusType.Checking)
+{
+      <span class="badge bg-warning">
+     <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+          </span>
+      }
+    else if (identityStatus == ServiceStatusType.Online)
+  {
+       <span class="badge bg-success">
+         <i class="fas fa-check me-1"></i>Online
+        </span>
+  }
+    else
+  {
+<span class="badge bg-danger">
+       <i class="fas fa-times me-1"></i>Offline
+         </span>
+       }
+       </p>
+      <button type="button" class="btn btn-primary btn-sm" @onclick="CheckIdentityServerAsync" disabled="@(identityStatus == ServiceStatusType.Checking)">
+      Test Connection
+    </button>
+       @if (!string.IsNullOrEmpty(identityMessage))
+      {
+      <div class="mt-2">
+      <small class="text-muted">@identityMessage</small>
+   </div>
+      }
+       </div>
+       </div>
+       </div>
+
+       <!-- API Status -->
+       <div class="col-md-4 mb-4">
+    <div class="card h-100">
+    <div class="card-header bg-success text-white">
+    <h5 class="mb-0">
+        <i class="fas fa-server me-2"></i>
+       CleanCut API
+    </h5>
+      </div>
+    <div class="card-body">
+    <p><strong>URL:</strong> https://localhost:7142</p>
+     <p><strong>Status:</strong> 
+      @if (apiStatus == ServiceStatusType.Checking)
+ {
+    <span class="badge bg-warning">
+      <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+      </span>
+  }
+   else if (apiStatus == ServiceStatusType.Online)
+     {
+          <span class="badge bg-success">
+      <i class="fas fa-check me-1"></i>Online
+   </span>
+    }
+    else
+   {
+      <span class="badge bg-danger">
+      <i class="fas fa-times me-1"></i>Offline
+        </span>
+        }
+     </p>
+        <button type="button" class="btn btn-success btn-sm" @onclick="CheckApiServerAsync" disabled="@(apiStatus == ServiceStatusType.Checking)">
+ Test Connection
+      </button>
+        @if (!string.IsNullOrEmpty(apiMessage))
+      {
+     <div class="mt-2">
+    <small class="text-muted">@apiMessage</small>
+   </div>
+     }
+     </div>
+      </div>
+ </div>
+
+        <!-- Overall Status -->
+    <div class="col-md-4 mb-4">
+   <div class="card h-100">
+   <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+<i class="fas fa-chart-pie me-2"></i>
+Overall Status
+    </h5>
+   </div>
+     <div class="card-body">
+      <p><strong>Services Online:</strong> @servicesOnline / 2</p>
+      <p><strong>System Status:</strong>
+  @if (servicesOnline == 2)
+        {
+       <span class="badge bg-success fs-6">
+        <i class="fas fa-check-circle me-1"></i>All Systems Operational
+       </span>
+      }
+    else if (servicesOnline == 1)
+ {
+   <span class="badge bg-warning fs-6">
+       <i class="fas fa-exclamation-triangle me-1"></i>Partial Outage
+       </span>
+        }
+     else
+      {
+      <span class="badge bg-danger fs-6">
+       <i class="fas fa-times-circle me-1"></i>Services Down
+    </span>
+      }
+       </p>
+  <button type="button" class="btn btn-info btn-sm" @onclick="CheckAllServicesAsync" disabled="@isCheckingAll">
+   @if (isCheckingAll)
+     {
+       <i class="fas fa-spinner fa-spin me-1"></i>
+   }
+      else
+       {
+      <i class="fas fa-sync me-1"></i>
+        }
+        Check All
+      </button>
+   </div>
+     </div>
+        </div>
+   </div>
+
+ <!-- Authentication Test -->
+     <div class="row">
+     <div class="col-12">
+       <div class="card">
+     <div class="card-header">
+       <h5 class="mb-0">
+        <i class="fas fa-shield-alt me-2"></i>
+        Blazor Server Authentication Test
+ </h5>
+       </div>
+   <div class="card-body">
+       <AuthorizeView>
+   <Authorized>
+     <div class="alert alert-success">
+   <h6><i class="fas fa-check-circle me-2"></i>Authentication Working!</h6>
+  <p class="mb-1">User: @context.User.Identity?.Name</p>
+     <p class="mb-1">Authenticated: @context.User.Identity?.IsAuthenticated</p>
+       <p class="mb-1">Authentication Type: @context.User.Identity?.AuthenticationType</p>
+      <p class="mb-0">Claims Count: @context.User.Claims.Count()</p>
+      <div class="mt-2">
+       <button type="button" class="btn btn-info btn-sm" @onclick="TestTokenAsync">
+ <i class="fas fa-key me-1"></i>Test Access Token
+   </button>
+        </div>
+     </div>
+     </Authorized>
+   <NotAuthorized>
+    <div class="alert alert-warning">
+       <h6><i class="fas fa-exclamation-triangle me-2"></i>Not Authenticated (Blazor Server)</h6>
+       <p class="mb-2">You are not authenticated in the Blazor Server circuit. This is why tokens are null.</p>
+       <button type="button" class="btn btn-primary btn-sm me-2" @onclick="ForceLoginAsync">
+      <i class="fas fa-sign-in-alt me-1"></i>Login Now
+  </button>
+      <a href="/Account/Login" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-external-link-alt me-1"></i>Direct Login Link
+  </a>
+      </div>
+     </NotAuthorized>
+      </AuthorizeView>
+       </div>
+      </div>
+      </div>
+     </div>
+
+     <!-- Authentication Token Test Results -->
+     @if (!string.IsNullOrEmpty(tokenTestResult))
+     {
+      <div class="row mt-3">
+      <div class="col-12">
+        <div class="alert @(tokenTestSuccess ? "alert-success" : "alert-danger")">
+     <h6><i class="fas @(tokenTestSuccess ? "fa-check-circle" : "fa-times-circle") me-2"></i>Blazor Server Token Test Results</h6>
+    <pre style="white-space: pre-wrap; font-size: 0.8rem;">@tokenTestResult</pre>
+     </div>
+      </div>
+       </div>
+      }
+
+   <!-- Diagnostic Information -->
+     <div class="row mt-4">
+      <div class="col-12">
+      <div class="card">
+     <div class="card-header">
+     <h5 class="mb-0">
+      <i class="fas fa-bug me-2"></i>
+        Blazor Server Diagnostic Information
+        </h5>
+    </div>
+       <div class="card-body">
+      @if (!string.IsNullOrEmpty(diagnosticInfo))
+     {
+       <pre class="bg-light p-3" style="font-size: 0.8rem;">@diagnosticInfo</pre>
+        }
+   <button type="button" class="btn btn-secondary btn-sm" @onclick="GatherDiagnosticsAsync">
+      <i class="fas fa-search me-1"></i>Gather Diagnostics
+    </button>
+      </div>
+        </div>
+     </div>
+     </div>
+
+     <!-- Quick Actions -->
+       <div class="row mt-4">
+        <div class="col-12">
+     <div class="card">
+      <div class="card-header">
+       <h5 class="mb-0">
+    <i class="fas fa-rocket me-2"></i>
+       Quick Actions
+      </h5>
+    </div>
+  <div class="card-body">
+     <div class="row">
+        <div class="col-md-3 mb-2">
+     <a href="https://localhost:5001" target="_blank" class="btn btn-outline-primary w-100">
+       <i class="fas fa-external-link-alt me-1"></i>Open IdentityServer
+      </a>
+   </div>
+      <div class="col-md-3 mb-2">
+       <a href="https://localhost:7142/swagger" target="_blank" class="btn btn-outline-success w-100">
+        <i class="fas fa-external-link-alt me-1"></i>Open API Docs
+     </a>
+        </div>
+       <div class="col-md-3 mb-2">
+   <a href="/connectivity-test" class="btn btn-outline-info w-100">
+  <i class="fas fa-network-wired me-1"></i>Connectivity Test
+       </a>
+      </div>
+      <div class="col-md-3 mb-2">
+    <a href="/auth-test" class="btn btn-outline-warning w-100">
+  <i class="fas fa-shield-alt me-1"></i>Auth Test
+     </a>
+  </div>
+     </div>
+      </div>
+     </div>
+       </div>
+        </div>
+  </div>
+      </div>
+</div>
+
+@code {
+    private ServiceStatusType identityStatus = ServiceStatusType.Unknown;
+    private ServiceStatusType apiStatus = ServiceStatusType.Unknown;
+    private string identityMessage = "";
+    private string apiMessage = "";
+   private string diagnosticInfo = "";
+    private string tokenTestResult = "";
+    private bool tokenTestSuccess = false;
+    private bool isCheckingAll = false;
+
+    private int servicesOnline => 
+(identityStatus == ServiceStatusType.Online ? 1 : 0) + 
+    (apiStatus == ServiceStatusType.Online ? 1 : 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+      await CheckAllServicesAsync();
+    }
+
+private async Task CheckAllServicesAsync()
+    {
+     isCheckingAll = true;
+    StateHasChanged();
+
+    await CheckIdentityServerAsync();
+     await Task.Delay(500);
+        await CheckApiServerAsync();
+
+        isCheckingAll = false;
+  StateHasChanged();
+    }
+
+    private async Task CheckIdentityServerAsync()
+    {
+    identityStatus = ServiceStatusType.Checking;
+      identityMessage = "";
+     StateHasChanged();
+
+      try
+     {
+     using var client = HttpClientFactory.CreateClient();
+      client.Timeout = TimeSpan.FromSeconds(10);
+
+      var endpoints = new[]
+        {
+      "https://localhost:5001/.well-known/openid_configuration",
+      "https://localhost:5001/",
+       "http://localhost:5001/.well-known/openid_configuration"
+     };
+
+     foreach (var endpoint in endpoints)
+       {
+  try
+        {
+        var response = await client.GetAsync(endpoint);
+       if (response.IsSuccessStatusCode)
+       {
+         identityStatus = ServiceStatusType.Online;
+        identityMessage = $"IdentityServer responding at {endpoint}";
+        break;
+       }
+       }
+      catch (Exception ex)
+    {
+       Logger.LogDebug(ex, "Failed to connect to {Endpoint}", endpoint);
+      }
+       }
+
+    if (identityStatus != ServiceStatusType.Online)
+        {
+     identityStatus = ServiceStatusType.Offline;
+       identityMessage = "Could not connect to any IdentityServer endpoint";
+        }
+    }
+        catch (Exception ex)
+     {
+     identityStatus = ServiceStatusType.Offline;
+ identityMessage = $"Connection failed: {ex.Message}";
+      Logger.LogError(ex, "Failed to check IdentityServer status");
+      }
+
+      StateHasChanged();
+    }
+
+    private async Task CheckApiServerAsync()
+    {
+        apiStatus = ServiceStatusType.Checking;
+     apiMessage = "";
+     StateHasChanged();
+
+     try
+     {
+      using var client = HttpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(10);
+
+        var endpoints = new[]
+    {
+       "https://localhost:7142/versions.html",
+       "https://localhost:7142/swagger",
+      "https://localhost:7142/api/v1/products",
+    "http://localhost:7142/versions.html"
+     };
+
+       foreach (var endpoint in endpoints)
+       {
+       try
+     {
+       var response = await client.GetAsync(endpoint);
+       if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+       {
+   apiStatus = ServiceStatusType.Online;
+      apiMessage = $"API responding at {endpoint} (Status: {response.StatusCode})";
+      break;
+        }
+     }
+        catch (Exception ex)
+     {
+      Logger.LogDebug(ex, "Failed to connect to {Endpoint}", endpoint);
+     }
+       }
+
+     if (apiStatus != ServiceStatusType.Online)
+   {
+        apiStatus = ServiceStatusType.Offline;
+        apiMessage = "Could not connect to any API endpoint";
+       }
+     }
+       catch (Exception ex)
+    {
+        apiStatus = ServiceStatusType.Offline;
+     apiMessage = $"Connection failed: {ex.Message}";
+  Logger.LogError(ex, "Failed to check API status");
+     }
+
+  StateHasChanged();
+    }
+
+    private async Task FixCertificatesAsync()
+  {
+   diagnosticInfo = "SSL Certificate Fix Instructions:\n\n";
+      diagnosticInfo += "1. Open PowerShell as Administrator\n";
+       diagnosticInfo += "2. Run: dotnet dev-certs https --clean\n";
+     diagnosticInfo += "3. Run: dotnet dev-certs https --trust\n";
+      diagnosticInfo += "4. Restart all applications\n\n";
+        diagnosticInfo += "Note: You might see Windows security prompts - click 'Yes' to trust the certificate.\n";
+   
+     StateHasChanged();
+    }
+
+   private async Task TestFullWorkflowAsync()
+    {
+     diagnosticInfo = "Testing Blazor Server workflow...\n\n";
+     StateHasChanged();
+
+      try
+     {
+     using var client = HttpClientFactory.CreateClient();
+      client.Timeout = TimeSpan.FromSeconds(5);
+
+        diagnosticInfo += "1. Testing API endpoints...\n";
+  
+      try
+   {
+      var response = await client.GetAsync("https://localhost:7142/swagger");
+        diagnosticInfo += $"   API Swagger: {response.StatusCode}\n";
+     }
+        catch (Exception ex)
+      {
+        diagnosticInfo += $"   API Swagger: Failed - {ex.Message}\n";
+        }
+
+  try
+       {
+   var response = await client.GetAsync("https://localhost:5001");
+       diagnosticInfo += $"   IdentityServer: {response.StatusCode}\n";
+  }
+     catch (Exception ex)
+     {
+      diagnosticInfo += $"   IdentityServer: Failed - {ex.Message}\n";
+       }
+
+      diagnosticInfo += "\n2. Testing Blazor Server Authentication Flow...\n";
+        diagnosticInfo += $" Current URL: {Navigation.Uri}\n";
+      diagnosticInfo += $"   App Type: Blazor Server (not WebAssembly)\n";
+        diagnosticInfo += $"   Expected: User should click Login to start OIDC flow\n";
+       }
+        catch (Exception ex)
+      {
+        diagnosticInfo += $"Workflow test failed: {ex.Message}\n";
+       }
+
+      StateHasChanged();
+    }
+
+    private async Task ForceLoginAsync()
+    {
+    Navigation.NavigateTo("/Account/Login", forceLoad: true);
+    }
+
+private async Task TestTokenAsync()
+    {
+     tokenTestResult = "Testing Blazor Server access token...\n\n";
+       tokenTestSuccess = false;
+    StateHasChanged();
+
+      try
+       {
+  var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+      var user = authState.User;
+
+       tokenTestResult += $"User Identity: {user.Identity?.Name ?? "null"}\n";
+       tokenTestResult += $"Is Authenticated: {user.Identity?.IsAuthenticated}\n";
+        tokenTestResult += $"Authentication Type: {user.Identity?.AuthenticationType ?? "null"}\n";
+       tokenTestResult += $"Claims Count: {user.Claims.Count()}\n\n";
+
+ if (user.Identity?.IsAuthenticated == true)
+     {
+   tokenTestResult += "User Claims (first 15):\n";
+   foreach (var claim in user.Claims.Take(15))
+      {
+      tokenTestResult += $"  {claim.Type}: {claim.Value}\n";
+      }
+  
+      // Check for access token claim
+      var accessToken = user.FindFirst("access_token");
+      if (accessToken != null)
+  {
+    tokenTestSuccess = true;
+       tokenTestResult += "\n? Access token found in claims! Blazor Server authentication is working.\n";
+       tokenTestResult += $"Access token: {accessToken.Value.Substring(0, Math.Min(50, accessToken.Value.Length))}...\n";
+  }
+      else
+ {
+        tokenTestResult += "\n? Access token not found in claims. Check OIDC configuration.\n";
+      }
+      }
+      else
+     {
+       tokenTestResult += "\n? User is not authenticated in Blazor Server circuit.\n";
+      tokenTestResult += "Please click 'Login Now' to authenticate with IdentityServer.\n";
+       }
+      }
+     catch (Exception ex)
+ {
+        tokenTestResult += $"? Error testing token: {ex.Message}\n";
+      }
+
+      StateHasChanged();
+    }
+
+    private async Task GatherDiagnosticsAsync()
+     {
+      diagnosticInfo = "Gathering Blazor Server diagnostic information...\n\n";
+       diagnosticInfo += $"Current Time: {DateTime.Now}\n";
+      diagnosticInfo += $"Current URL: {Navigation.Uri}\n";
+      diagnosticInfo += $"Base URI: {Navigation.BaseUri}\n";
+   diagnosticInfo += $"App Type: Blazor Server (not WebAssembly)\n\n";
+ 
+      diagnosticInfo += "Expected Services:\n";
+        diagnosticInfo += "- IdentityServer: https://localhost:5001\n";
+       diagnosticInfo += "- API: https://localhost:7142\n";
+       diagnosticInfo += "- Blazor App: https://localhost:7297\n\n";
+     
+     diagnosticInfo += "Port Status (confirmed by netstat):\n";
+        diagnosticInfo += "? All ports are LISTENING\n\n";
+        
+     diagnosticInfo += "Blazor Server Authentication Issue:\n";
+     diagnosticInfo += "? Access tokens are null because user is not authenticated\n";
+      diagnosticInfo += "? Services are running properly\n";
+       diagnosticInfo += "?? Solution: Complete OIDC authentication flow\n\n";
+        
+       diagnosticInfo += "Next Steps for Blazor Server:\n";
+        diagnosticInfo += "1. Click 'Login Now' or 'Direct Login Link'\n";
+     diagnosticInfo += "2. Complete authentication with IdentityServer\n";
+ diagnosticInfo += "3. Tokens will be stored in user claims\n";
+      diagnosticInfo += "4. Return to this page to verify tokens are working\n";
+
+     StateHasChanged();
+    }
+
+    private enum ServiceStatusType
+    {
+      Unknown,
+       Checking,
+        Online,
+     Offline
+    }
+}

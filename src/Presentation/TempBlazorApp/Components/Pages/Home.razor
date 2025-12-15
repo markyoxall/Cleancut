@@ -1,0 +1,194 @@
+﻿@page "/"
+@inject NavigationManager Navigation
+
+<PageTitle>Home - TempBlazorApp</PageTitle>
+
+<div class="container">
+    <div class="row">
+     <div class="col-12">
+   <div class="jumbotron bg-primary text-white rounded p-5 mb-4">
+       <h1 class="display-4">
+   <i class="fas fa-rocket me-3"></i>
+           Welcome to TempBlazorApp
+             </h1>
+    <p class="lead">
+    A demonstration Blazor Server application showcasing OAuth2/OIDC authentication with IdentityServer and CleanCut API integration.
+                </p>
+     <hr class="my-4 border-light">
+       
+         @* ✅ PROPER BLAZOR SERVER AUTHENTICATION DETECTION *@
+    <AuthorizeView>
+     <Authorized>
+    <p class="mb-4">
+           <i class="fas fa-user-check me-2"></i>
+ Welcome back, <strong>@context.User.Identity?.Name</strong>! You are successfully authenticated.
+    </p>
+        <div class="d-flex gap-3 flex-wrap">
+    <a class="btn btn-light btn-lg" href="/products" role="button">
+        <i class="fas fa-box me-2"></i>View Products
+   </a>
+   
+   @* ✅ FIX: Use form with POST method for logout to match MapPost endpoint *@
+   <form method="post" action="/Account/Logout" style="display:inline;">
+    <button type="submit" class="btn btn-outline-light btn-lg">
+   <i class="fas fa-sign-out-alt me-2"></i>Logout
+      </button>
+   </form>
+</div>
+          </Authorized>
+   <NotAuthorized>
+         <p class="mb-4">
+      This app demonstrates Authorization Code Flow with PKCE (Proof Key for Code Exchange) for secure user authentication.
+     </p>
+    <div class="d-flex gap-3 flex-wrap">
+     <a class="btn btn-light btn-lg" href="/products" role="button">
+        <i class="fas fa-box me-2"></i>View Products
+       </a>
+          <a class="btn btn-outline-light btn-lg" href="/Account/Login" role="button">
+          <i class="fas fa-sign-in-alt me-2"></i>Login
+        </a>
+     </div>
+ </NotAuthorized>
+   </AuthorizeView>
+   </div>
+        </div>
+  </div>
+
+    <div class="row">
+ <div class="col-md-4 mb-4">
+     <div class="card h-100">
+    <div class="card-body">
+               <h5 class="card-title">
+     <i class="fas fa-shield-alt text-primary me-2"></i>
+      Secure Authentication
+  </h5>
+ <p class="card-text">
+  Uses OAuth2/OIDC with IdentityServer for industry-standard authentication and authorization.
+</p>
+       <ul class="list-unstyled">
+         <li>✅ Authorization Code Flow</li>
+    <li>✅ PKCE (Proof Key for Code Exchange)</li>
+         <li>✅ No client secrets (Public client)</li>
+     <li>✅ JWT Bearer tokens</li>
+       </ul>
+    </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+   <div class="card h-100">
+   <div class="card-body">
+  <h5 class="card-title">
+          <i class="fas fa-server text-success me-2"></i>
+        Blazor Server
+       </h5>
+           <p class="card-text">
+   Built with Blazor Server in .NET 9, providing a rich interactive web experience with server-side rendering.
+     </p>
+      <ul class="list-unstyled">
+    <li>✅ .NET 9 Blazor Server</li>
+       <li>✅ Interactive components</li>
+           <li>✅ Real-time updates</li>
+ <li>✅ Server-side authentication</li>
+      </ul>
+           </div>
+        </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+        <div class="card h-100">
+        <div class="card-body">
+      <h5 class="card-title">
+     <i class="fas fa-plug text-info me-2"></i>
+ API Integration
+         </h5>
+    <p class="card-text">
+    Seamlessly integrates with the CleanCut API using user authentication tokens for secure data access.
+        </p>
+     <ul class="list-unstyled">
+     <li>✅ User token forwarding</li>
+           <li>✅ Automatic token refresh</li>
+    <li>✅ Secure API calls</li>
+       <li>✅ Error handling</li>
+  </ul>
+         </div>
+   </div>
+ </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+ <div class="card border-info">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-info-circle me-2"></i>
+     How It Works
+     </h5>
+                </div>
+    <div class="card-body">
+        <div class="row">
+    <div class="col-md-6">
+      <h6>Authentication Flow:</h6>
+         <ol>
+       <li>User clicks "Login" or accesses protected page</li>
+    <li>Redirected to IdentityServer for authentication</li>
+         <li>User enters credentials (admin@cleancut.com)</li>
+    <li>IdentityServer issues JWT token with CleanCutAPI scope</li>
+       <li>User redirected back to TempBlazorApp</li>
+        <li>Token stored securely server-side</li>
+     </ol>
+     </div>
+        <div class="col-md-6">
+    <h6>API Access:</h6>
+      <ol>
+  <li>User navigates to Products page</li>
+  <li>App extracts user's access token</li>
+      <li>Token added to Authorization header</li>
+    <li>API validates token against IdentityServer</li>
+  <li>API returns user-specific data</li>
+        <li>Products displayed in Blazor component</li>
+ </ol>
+      </div>
+       </div>
+       </div>
+  </div>
+        </div>
+  </div>
+
+    @* ✅ AUTHENTICATION STATUS DISPLAY *@
+    <div class="row mt-4">
+     <div class="col-12">
+    <AuthorizeView>
+     <Authorized>
+      <div class="alert alert-success" role="alert">
+          <h6 class="alert-heading">
+       <i class="fas fa-check-circle me-2"></i>
+       Authentication Active
+    </h6>
+          <p class="mb-1">
+      <strong>User:</strong> @context.User.Identity?.Name<br>
+  <strong>Auth Type:</strong> @context.User.Identity?.AuthenticationType<br>
+     <strong>Claims:</strong> @context.User.Claims.Count() claims loaded
+       </p>
+           <hr>
+   <p class="mb-0">
+     You can now access protected resources and API endpoints.
+   </p>
+        </div>
+          </Authorized>
+    <NotAuthorized>
+             <div class="alert alert-light" role="alert">
+ <h6 class="alert-heading">
+      <i class="fas fa-graduation-cap me-2"></i>
+         Learning Demo
+  </h6>
+       <p class="mb-0">
+         This TempBlazorApp serves as a learning demonstration of modern authentication patterns in .NET 9 Blazor applications.
+ <a href="/Account/Login" class="alert-link">Login to see authentication in action!</a>
+      </p>
+  </div>
+        </NotAuthorized>
+      </AuthorizeView>
+        </div>
+    </div>
+</div>

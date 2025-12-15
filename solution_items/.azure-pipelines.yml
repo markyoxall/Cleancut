@@ -1,0 +1,51 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  blazorProjectPath: 'src/Presentation/CleanCut.BlazorWebApp/CleanCut.BlazorWebApp.csproj'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '$(blazorProjectPath)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build Blazor Server app'
+  inputs:
+    command: 'build'
+    projects: '$(blazorProjectPath)'
+    arguments: '--configuration $(buildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish Blazor Server app'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(blazorProjectPath)'
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifacts'
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'blazorapp'
+    publishLocation: 'Container'
+
+- task: AzureWebApp@1
+  displayName: 'Deploy to Azure App Service'
+  inputs:
+    azureSubscription: 'CleanCut-BlazorWebApp-Connection'
+    appName: 'cleancut-blazor'
+    package: '$(Build.ArtifactStagingDirectory)'

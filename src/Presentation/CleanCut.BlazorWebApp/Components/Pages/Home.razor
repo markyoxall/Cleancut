@@ -1,0 +1,374 @@
+@page "/"
+@using CleanCut.Application.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+@using CleanCut.BlazorWebApp.Components.Base
+@inherits DisposableComponentBase
+@inject ILogger<Home> Logger
+@inject NavigationManager Navigation
+@inject ICustomersState CustomersState
+@inject IProductsState ProductsState
+@inject ICountriesState CountriesState
+@inject IUiStateService UiState
+
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Dashboard - CleanCut</PageTitle>
+
+<div class="dashboard-container">
+    <div class="container-fluid">
+        
+  <!-- Welcome Header -->
+        <div class="dashboard-header">
+         <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="display-6 fw-bold text-primary mb-2">
+          <i class="fas fa-tachometer-alt me-3"></i>CleanCut Dashboard
+        </h1>
+        <AuthorizeView>
+        <Authorized>
+         <p class="text-muted mb-0">Welcome back, <strong>@context.User.Identity?.Name</strong>!</p>
+   </Authorized>
+      <NotAuthorized>
+  <p class="text-muted mb-0">Welcome! Please log in to access your data.</p>
+   </NotAuthorized>
+          </AuthorizeView>
+      </div>
+ <div class="col-md-4 text-md-end">
+ <div class="text-muted">
+  <i class="fas fa-clock me-2"></i>
+   <small>Last updated: @DateTime.Now.ToString("MMM dd, yyyy HH:mm")</small>
+  </div>
+        </div>
+  </div>
+        </div>
+
+    <!-- Authentication Status -->
+        <AuthorizeView>
+     <NotAuthorized>
+    <div class="alert alert-info">
+       <div class="row align-items-center">
+            <div class="col-md-8">
+  <h5 class="alert-heading mb-2">
+ <i class="fas fa-info-circle me-2"></i>Authentication Required
+      </h5>
+            <p class="mb-0">Please log in to view your dashboard data and access all features.</p>
+    </div>
+          <div class="col-md-4 text-md-end">
+     <a class="btn btn-primary" href="/Account/Login">
+        <i class="fas fa-sign-in-alt me-2"></i>Log In
+     </a>
+</div>
+           </div>
+         </div>
+            </NotAuthorized>
+  <Authorized>
+      <!-- Quick Actions (use shared component to avoid duplication) -->
+      <QuickActions />
+
+      <!-- Legacy duplicate quick-actions (kept for compatibility) -->
+      <div class="quick-action-card mb-4">
+         <h5 class="card-title mb-3">
+        <i class="fas fa-rocket me-2"></i>Quick Actions (Legacy)
+   </h5>
+           <div class="row g-3">
+      <div class="col-md-6 col-lg-3">
+       <a class="btn quick-action-btn w-100" href="/customers/management-enhanced">
+   <i class="fas fa-users quick-action-icon"></i>
+  <div class="quick-action-title">Customer Portal</div>
+    <div class="quick-action-subtitle">Enhanced Management</div>
+     </a>
+   </div>
+  <div class="col-md-6 col-lg-3">
+      <a class="btn quick-action-btn w-100" href="/store">
+   <i class="fas fa-search quick-action-icon"></i>
+  <div class="quick-action-title">Product Search</div>
+ <div class="quick-action-subtitle">Browse & Filter</div>
+     </a>
+   </div>
+   <div class="col-md-6 col-lg-3">
+  <a class="btn quick-action-btn success w-100" href="https://localhost:7142/openapi/v1.json" target="_blank">
+  <i class="fas fa-code quick-action-icon"></i>
+ <div class="quick-action-title">API Docs</div>
+  <div class="quick-action-subtitle">OpenAPI JSON</div>
+   </a>
+       </div>
+  <div class="col-md-6 col-lg-3">
+  <a class="btn quick-action-btn warning w-100" href="javascript:location.reload()">
+  <i class="fas fa-sync quick-action-icon"></i>
+   <div class="quick-action-title">Refresh Data</div>
+     <div class="quick-action-subtitle">Reload Dashboard</div>
+      </a>
+    </div>
+        </div>
+      </div>
+
+ @if (!string.IsNullOrEmpty(testResult))
+  {
+       <div class="row mb-4">
+   <div class="col-12">
+   <div class="alert @(testSuccess ? "alert-success" : "alert-danger")">
+    <h5><i class="fas @(testSuccess ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>Test Result</h5>
+          <p class="mb-0">@testResult</p>
+ </div>
+      </div>
+    </div>
+  }
+
+      @if (IsLoading)
+      {
+       <div class="loading-container">
+    <div class="spinner-border spinner-border-lg text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+  </div>
+       <p class="mt-3 text-muted">Loading dashboard data...</p>
+        </div>
+      }
+        else
+       {
+         @if (!string.IsNullOrEmpty(UiState.CurrentMessage))
+ {
+     <div class="alert @(UiState.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+  <i class="fas @(UiState.IsSuccess ? "fa-check-circle" : "fa-exclamation-circle") me-2"></i>
+  @UiState.CurrentMessage
+    <button type="button" class="btn-close" @onclick="UiState.ClearMessage"></button>
+           </div>
+     }
+
+  <!-- Statistics Cards -->
+       <div class="row mb-4">
+     <div class="col-md-6 col-xl-3 mb-3">
+   <div class="stat-card">
+        <div class="stat-icon primary">
+         <i class="fas fa-users"></i>
+   </div>
+  <div class="stat-number text-primary">@TotalCustomers</div>
+     <div class="stat-label">Total Customers</div>
+   <div class="stat-meta">
+       <i class="fas fa-user-check me-1"></i>@ActiveCustomers Active
+   </div>
+       </div>
+  </div>
+
+      <div class="col-md-6 col-xl-3 mb-3">
+ <div class="stat-card">
+    <div class="stat-icon success">
+    <i class="fas fa-box"></i>
+      </div>
+   <div class="stat-number text-success">@TotalProducts</div>
+       <div class="stat-label">Total Products</div>
+<div class="stat-meta">
+        <i class="fas fa-check me-1"></i>@AvailableProducts Available
+         </div>
+         </div>
+ </div>
+
+      <div class="col-md-6 col-xl-3 mb-3">
+  <div class="stat-card">
+    <div class="stat-icon info">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+        <div class="stat-number text-info">@TotalValue.ToString("C0")</div>
+      <div class="stat-label">Total Value</div>
+        <div class="stat-meta">
+         <i class="fas fa-chart-line me-1"></i>Portfolio Value
+  </div>
+</div>
+      </div>
+
+<div class="col-md-6 col-xl-3 mb-3">
+      <div class="stat-card">
+         <div class="stat-icon warning">
+        <i class="fas fa-chart-bar"></i>
+       </div>
+     <div class="stat-number text-warning">@AverageProductsPerCustomer.ToString("F1")</div>
+      <div class="stat-label">Avg Products/Customer</div>
+  <div class="stat-meta">
+     <i class="fas fa-calculator me-1"></i>Performance Metric
+  </div>
+          </div>
+  </div>
+      </div>
+ }
+  </Authorized>
+ </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    private string testResult = "";
+    private bool testSuccess = false;
+    private bool IsLoading => (UiState != null) ? UiState.IsLoading : (CustomersState.IsLoading || ProductsState.IsLoading || CountriesState.IsLoading);
+    private List<CustomerInfo> Customers => CustomersState?.Customers?.ToList() ?? new();
+    private List<ProductInfo> Products => ProductsState?.Products?.ToList() ?? new();
+
+    private int TotalCustomers => Customers.Count;
+    private int ActiveCustomers => Customers.Count(c => c.IsActive);
+    private int TotalProducts => Products.Count;
+    private int AvailableProducts => Products.Count(p => p.IsAvailable);
+    private decimal TotalValue => Products.Sum(p => p.Price);
+  private double AverageProductsPerCustomer => TotalCustomers > 0 ? (double)TotalProducts / TotalCustomers : 0;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to feature events
+    CustomersState.CustomersChanged += OnCustomersChanged;
+     ProductsState.ProductsChanged += OnProductsChanged;
+        CountriesState.CountriesChanged += OnCountriesChanged;
+
+        CustomersState.MessageChanged += OnFeatureMessage;
+    ProductsState.MessageChanged += OnFeatureMessage;
+     CountriesState.MessageChanged += OnFeatureMessage;
+
+        // Subscribe to global UI messages
+ if (UiState != null)
+   UiState.MessageChanged += OnUiMessage;
+
+   // Only load data if user is authenticated
+  await LoadDataIfAuthenticated();
+    }
+
+    private async Task LoadDataIfAuthenticated()
+    {
+        try
+      {
+         if (AuthenticationStateTask != null)
+      {
+   var authState = await AuthenticationStateTask;
+       if (authState.User.Identity?.IsAuthenticated == true)
+     {
+        Logger.LogInformation("User is authenticated, loading dashboard data");
+      await LoadDashboardDataAsync();
+   }
+     else
+      {
+      Logger.LogInformation("User is not authenticated, skipping data load");
+     }
+            }
+      }
+        catch (Exception ex)
+        {
+        Logger.LogError(ex, "Error checking authentication state");
+ }
+    }
+
+    private void OnCustomersChanged(List<CustomerInfo> customers) => SafeStateHasChanged();
+  private void OnProductsChanged(List<ProductInfo> products) => SafeStateHasChanged();
+    private void OnCountriesChanged(List<CountryInfo> countries) => SafeStateHasChanged();
+
+    private void OnFeatureMessage(string message, bool isSuccess)
+  {
+        // Mirror feature messages into the global UI service so UI is consistent
+      UiState?.SetMessage(message, isSuccess);
+    }
+
+    private void OnUiMessage(string message, bool isSuccess)
+  {
+        // UI service raised a message — refresh UI
+        SafeStateHasChanged();
+    }
+
+    // Navigation methods
+    private void NavigateToCustomers() => Navigation.NavigateTo("/customers/management");
+    // Products listing lives at /store; navigate there so users can add items to cart
+    private void NavigateToProducts() => Navigation.NavigateTo("/store");
+    private void OpenSwagger() => Navigation.NavigateTo("https://localhost:7142/swagger", true);
+    // StartLogin removed in favor of centralized LoginDisplay and /login page
+
+    private async Task LoadDashboardDataAsync()
+    {
+    try
+      {
+         // Check authentication first
+  if (AuthenticationStateTask != null)
+     {
+       var authState = await AuthenticationStateTask;
+   if (authState.User.Identity?.IsAuthenticated != true)
+   {
+       Logger.LogInformation("User not authenticated, cannot load data");
+        UiState?.SetMessage("Please log in to access your data", false);
+ return;
+      }
+      }
+
+    // Add timeout and error handling
+       using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        // Try to load data with timeout
+    try
+      {
+        await CustomersState.LoadAsync(cancellationToken: cts.Token);
+     }
+    catch (Exception ex)
+    {
+Logger.LogWarning(ex, "Failed to load customers");
+    UiState?.SetMessage("Could not load customers - API may be unavailable", false);
+       }
+
+ try
+  {
+   await ProductsState.LoadAllAsync(cancellationToken: cts.Token);
+            }
+     catch (Exception ex)
+    {
+     Logger.LogWarning(ex, "Failed to load products");
+            UiState?.SetMessage("Could not load products - API may be unavailable", false);
+   }
+
+       try
+      {
+     await CountriesState.LoadAsync(cancellationToken: cts.Token);
+   }
+    catch (Exception ex)
+  {
+  Logger.LogWarning(ex, "Failed to load countries");
+     UiState?.SetMessage("Could not load countries - API may be unavailable", false);
+      }
+
+      Logger.LogInformation("Dashboard loaded - {CustomerCount} customers, {ProductCount} products",
+  CustomersState.Customers.Count,
+       ProductsState.Products.Count);
+
+   // Only show success if we loaded some data
+ if (CustomersState.Customers.Any() || ProductsState.Products.Any())
+     {
+        UiState?.SetMessage("Dashboard loaded successfully", true);
+      }
+      else
+   {
+  UiState?.SetMessage("Dashboard loaded but no data available - check API connectivity", false);
+            }
+  }
+  catch (Exception ex)
+  {
+   Logger.LogError(ex, "Error loading dashboard data");
+    UiState?.SetMessage("Failed to load dashboard data - check authentication", false);
+  }
+        finally
+  {
+    SafeStateHasChanged();
+  }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+     {
+  CustomersState.CustomersChanged -= OnCustomersChanged;
+     ProductsState.ProductsChanged -= OnProductsChanged;
+      CountriesState.CountriesChanged -= OnCountriesChanged;
+
+    CustomersState.MessageChanged -= OnFeatureMessage;
+            ProductsState.MessageChanged -= OnFeatureMessage;
+          CountriesState.MessageChanged -= OnFeatureMessage;
+
+     if (UiState != null)
+  UiState.MessageChanged -= OnUiMessage;
+        }
+        
+        base.Dispose(disposing);
+    }
+}

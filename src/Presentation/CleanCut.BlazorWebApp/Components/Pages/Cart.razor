@@ -1,0 +1,95 @@
+@page "/cart"
+@inject IShoppingCartService CartService
+@inject IOrdersApiService OrdersApi
+@inject NavigationManager Navigation
+@inject ILogger<Cart> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<PageTitle>Your Basket - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-shopping-cart me-2"></i>Your Basket</h2>
+        <div>
+            <button class="btn btn-outline-secondary me-2" @onclick="ContinueShopping">Continue Shopping</button>
+            <button class="btn btn-success" @onclick="ProceedToCheckout">Checkout</button>
+        </div>
+    </div>
+
+    @if (!Items.Any())
+    {
+        <div class="text-center py-5 text-muted">Your basket is empty.</div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th style="width:120px">Unit Price</th>
+                            <th style="width:120px">Quantity</th>
+                            <th style="width:120px">Line Total</th>
+                            <th style="width:60px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Items)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.UnitPrice.ToString("C")</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm" value="@item.Quantity" @onchange="@(async (ChangeEventArgs e) => await UpdateQuantity(item.ProductId, Convert.ToInt32(e.Value)))" />
+                                </td>
+                                <td>@(item.UnitPrice * item.Quantity).ToString("C")</td>
+                                <td><button class="btn btn-sm btn-danger" @onclick="() => Remove(item.ProductId)">Remove</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-end mt-3">
+                    <h5>Total: <strong class="ms-2">@Total.ToString("C")</strong></h5>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code{
+    private IReadOnlyList<CartItemDto> Items = Array.Empty<CartItemDto>();
+    private decimal Total = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCartAsync();
+    }
+
+    private async Task LoadCartAsync()
+    {
+        Items = await CartService.GetItemsAsync();
+        Total = await CartService.GetTotalAsync();
+        StateHasChanged();
+    }
+
+    private async Task UpdateQuantity(Guid productId, int quantity)
+    {
+        await CartService.UpdateQuantityAsync(productId, quantity);
+        await LoadCartAsync();
+    }
+
+    private async Task Remove(Guid productId)
+    {
+        await CartService.RemoveItemAsync(productId);
+        await LoadCartAsync();
+    }
+
+    private void ContinueShopping() => Navigation.NavigateTo("/store");
+
+    private async Task ProceedToCheckout()
+    {
+        // Basic flow: navigate to checkout page
+        Navigation.NavigateTo("/checkout");
+    }
+}

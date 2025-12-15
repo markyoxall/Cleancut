@@ -1,0 +1,363 @@
+@inject IJSRuntime JSRuntime
+@inject ILogger<ProductsV1Demo> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@inject IProductApiService ProductApi
+<div class="row">
+    
+    <!-- Get All Products -->
+  <div class="col-lg-6 mb-4">
+  <div class="card h-100">
+          <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-list me-2"></i>GET All Products
+      </h5>
+        <small>GET /api/v1/products</small>
+       </div>
+   <div class="card-body">
+         <p class="text-muted">Retrieves all products for the default customer</p>
+      
+     <button class="btn btn-info" @onclick="GetAllProducts" disabled="@isLoadingAll">
+    @if (isLoadingAll)
+            {
+         <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+}
+      <i class="fas fa-download me-1"></i>Load All Products
+         </button>
+
+     @if (!string.IsNullOrEmpty(getAllError))
+       {
+   <div class="alert alert-danger mt-3">@getAllError</div>
+      }
+
+       @if (allProducts?.Any() == true)
+  {
+       <div class="mt-3">
+               <h6>Products Found: @allProducts.Count</h6>
+             <div style="max-height: 300px; overflow-y: auto;">
+        @foreach (var product in allProducts)
+     {
+      <div class="border rounded p-2 mb-2 bg-light">
+        <strong>@product.Name</strong> - $@product.Price.ToString("F2")
+       <br><small class="text-muted">@product.Description</small>
+        </div>
+           }
+       </div>
+           </div>
+        }
+     </div>
+        </div>
+    </div>
+
+    <!-- Get Product By ID -->
+    <div class="col-lg-6 mb-4">
+ <div class="card h-100">
+   <div class="card-header bg-success text-white">
+   <h5 class="mb-0">
+        <i class="fas fa-search me-2"></i>GET Product by ID
+         </h5>
+          <small>GET /api/v1/products/{id}</small>
+      </div>
+       <div class="card-body">
+    <p class="text-muted">Retrieve a specific product by its GUID</p>
+ 
+<div class="mb-3">
+    <label class="form-label">Product ID:</label>
+      <input type="text" class="form-control" @bind="productIdToGet" 
+       placeholder="Enter product GUID" disabled="@isLoadingById">
+   </div>
+
+      <button class="btn btn-success" @onclick="GetProductById" 
+        disabled="@(isLoadingById || string.IsNullOrWhiteSpace(productIdToGet))">
+       @if (isLoadingById)
+  {
+    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+       }
+     <i class="fas fa-search me-1"></i>Get Product
+   </button>
+
+                @if (!string.IsNullOrEmpty(getByIdError))
+           {
+    <div class="alert alert-danger mt-3">@getByIdError</div>
+                }
+
+     @if (foundProduct != null)
+      {
+       <div class="mt-3 border rounded p-3 bg-light">
+<h6>@foundProduct.Name</h6>
+ <p>@foundProduct.Description</p>
+        <p><strong>Price:</strong> $@foundProduct.Price.ToString("F2")</p>
+      <p><strong>Available:</strong> @(foundProduct.IsAvailable ? "Yes" : "No")</p>
+        </div>
+         }
+    </div>
+        </div>
+  </div>
+
+    <!-- Get Products by Customer -->
+ <div class="col-lg-6 mb-4">
+      <div class="card h-100">
+          <div class="card-header bg-warning text-dark">
+     <h5 class="mb-0">
+  <i class="fas fa-user-tag me-2"></i>GET Products by Customer
+         </h5>
+       <small>GET /api/v1/products/customer/{customerId}</small>
+ </div>
+  <div class="card-body">
+   <p class="text-muted">Retrieve all products for a specific customer</p>
+      
+    <div class="mb-3">
+  <label class="form-label">Customer ID:</label>
+       <input type="text" class="form-control" @bind="customerIdToGet" 
+       placeholder="Enter customer GUID" disabled="@isLoadingByCustomer">
+        </div>
+
+     <button class="btn btn-warning" @onclick="GetProductsByCustomer" 
+        disabled="@(isLoadingByCustomer || string.IsNullOrWhiteSpace(customerIdToGet))">
+         @if (isLoadingByCustomer)
+     {
+             <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+     }
+    <i class="fas fa-search me-1"></i>Get Customer Products
+   </button>
+
+     @if (!string.IsNullOrEmpty(getByCustomerError))
+    {
+   <div class="alert alert-danger mt-3">@getByCustomerError</div>
+   }
+
+    @if (customerProducts?.Any() == true)
+      {
+       <div class="mt-3">
+  <h6>Products Found: @customerProducts.Count</h6>
+     <div style="max-height: 200px; overflow-y: auto;">
+      @foreach (var product in customerProducts)
+      {
+    <div class="border rounded p-2 mb-2 bg-light">
+        <strong>@product.Name</strong> - $@product.Price.ToString("F2")
+      </div>
+         }
+         </div>
+   </div>
+      }
+    </div>
+        </div>
+    </div>
+
+    <!-- Create Product -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+  <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+     <i class="fas fa-plus me-2"></i>POST Create Product
+       </h5>
+     <small>POST /api/v1/products</small>
+  </div>
+       <div class="card-body">
+   <p class="text-muted">Create a new product</p>
+   
+     <div class="mb-3">
+<label class="form-label">Product Name:</label>
+       <input type="text" class="form-control" @bind="newProduct.Name" 
+        placeholder="Product name" disabled="@isCreating">
+     </div>
+
+  <div class="mb-3">
+       <label class="form-label">Description:</label>
+      <textarea class="form-control" @bind="newProduct.Description" 
+        placeholder="Product description" disabled="@isCreating"></textarea>
+  </div>
+
+          <div class="mb-3">
+  <label class="form-label">Price:</label>
+           <input type="number" step="0.01" class="form-control" @bind="newProduct.Price" 
+        placeholder="0.00" disabled="@isCreating">
+     </div>
+
+          <div class="mb-3">
+          <label class="form-label">Customer ID:</label>
+        <input type="text" class="form-control" @bind="newProduct.CustomerId" 
+       placeholder="Customer GUID" disabled="@isCreating">
+           </div>
+
+     <button class="btn btn-primary" @onclick="CreateProduct" 
+         disabled="@(isCreating || !IsValidProduct())">
+  @if (isCreating)
+          {
+ <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        }
+          <i class="fas fa-plus me-1"></i>Create Product
+     </button>
+
+    @if (!string.IsNullOrEmpty(createError))
+     {
+  <div class="alert alert-danger mt-3">@createError</div>
+      }
+
+     @if (createdProduct != null)
+ {
+       <div class="alert alert-success mt-3">
+              <strong>Product Created!</strong><br>
+  ID: @createdProduct.Id<br>
+        Name: @createdProduct.Name
+      </div>
+         }
+     </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+ // State variables
+    private bool isLoadingAll = false;
+    private bool isLoadingById = false;
+    private bool isLoadingByCustomer = false;
+    private bool isCreating = false;
+
+    // Data
+    private List<ProductInfo>? allProducts;
+  private ProductInfo? foundProduct;
+    private List<ProductInfo>? customerProducts;
+    private ProductInfo? createdProduct;
+
+    // Form inputs
+    private string productIdToGet = "b6cc1306-75ea-45f0-902e-6cdf34260651";
+    private string customerIdToGet = "11111111-1111-1111-1111-111111111111";
+  private CreateProductRequest newProduct = new();
+
+    // Error messages
+    private string getAllError = string.Empty;
+    private string getByIdError = string.Empty;
+    private string getByCustomerError = string.Empty;
+    private string createError = string.Empty;
+
+    private async Task GetAllProducts()
+    {
+     isLoadingAll = true;
+        getAllError = string.Empty;
+        allProducts = null;
+        StateHasChanged();
+
+        try
+        {
+     var products = await ProductApi.GetAllProductsAsync();
+   if (products is not null)
+            {
+          allProducts = products;
+      }
+    else
+   {
+    getAllError = $"API Error: products is null";
+            }
+        }
+  catch (Exception ex)
+        {
+   getAllError = $"Error: {ex.Message}";
+   }
+        finally
+     {
+            isLoadingAll = false;
+         StateHasChanged();
+        }
+    }
+
+    private async Task GetProductById()
+    {
+        isLoadingById = true;
+        getByIdError = string.Empty;
+        foundProduct = null;
+    StateHasChanged();
+
+        try
+      {
+ var product = await ProductApi.GetProductByIdAsync(Guid.Parse(productIdToGet));  
+  if (product is not null)
+      {
+   foundProduct = product;
+            }
+            else
+        {
+        getByIdError = $"Product not found";
+       }
+        }
+   catch (Exception ex)
+        {
+            getByIdError = $"Error: {ex.Message}";
+        }
+finally
+    {
+    isLoadingById = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetProductsByCustomer()
+    {
+  isLoadingByCustomer = true;
+        getByCustomerError = string.Empty;
+      customerProducts = null;
+        StateHasChanged();
+
+    try
+        {
+         // FIXED: Now correctly calls customer endpoint
+  var products = await ProductApi.GetProductsByCustomerAsync(Guid.Parse(customerIdToGet));
+         if (products is not null)
+ {
+          customerProducts = products.ToList();
+          }
+            else
+    {
+              getByCustomerError = $"API Error: products is null";
+            }
+        }
+catch (Exception ex)
+     {
+     getByCustomerError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+       isLoadingByCustomer = false;
+    StateHasChanged();
+     }
+    }
+
+    private async Task CreateProduct()
+    {
+     isCreating = true;
+        createError = string.Empty;
+  createdProduct = null;
+        StateHasChanged();
+
+        try
+        {
+     var product = await ProductApi.CreateProductAsync(newProduct);
+       if (product is not null)
+      {
+        createdProduct = product;
+              newProduct = new(); // Reset form
+      }
+    else
+            {
+ createError = $"API Error: failed to create product";
+            }
+      }
+        catch (Exception ex)
+        {
+    createError = $"Error: {ex.Message}";
+     }
+        finally
+        {
+        isCreating = false;
+         StateHasChanged();
+        }
+    }
+
+    private bool IsValidProduct()
+    {
+        return !string.IsNullOrWhiteSpace(newProduct.Name) &&
+     !string.IsNullOrWhiteSpace(newProduct.Description) &&
+               newProduct.Price > 0 &&
+           !string.IsNullOrWhiteSpace(newProduct.CustomerId.ToString());
+    }
+}

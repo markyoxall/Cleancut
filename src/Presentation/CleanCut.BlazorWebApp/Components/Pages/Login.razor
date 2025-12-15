@@ -1,0 +1,38 @@
+@page "/login"
+@inject NavigationManager Navigation
+
+<PageTitle>Login - CleanCut</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+            <div class="card shadow">
+    <div class="card-header bg-primary text-white text-center">
+       <h3><i class="fas fa-cut me-2"></i>CleanCut Login</h3>
+           </div>
+    <div class="card-body text-center p-5">
+       <p class="lead mb-4">Please sign in to access the application</p>
+           
+   <button class="btn btn-primary btn-lg" @onclick="LoginAsync">
+       <i class="fas fa-sign-in-alt me-2"></i>
+        Sign In with IdentityServer
+          </button>
+               
+    <div class="mt-4">
+     <small class="text-muted">
+  You will be redirected to IdentityServer for authentication
+   </small>
+     </div>
+           </div>
+            </div>
+      </div>
+    </div>
+</div>
+
+@code {
+    private void LoginAsync()
+    {
+        // Force a full-page load to the MVC account controller which triggers OIDC Challenge
+        Navigation.NavigateTo("/Account/Login", true);
+    }
+}

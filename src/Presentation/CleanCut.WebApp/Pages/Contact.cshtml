@@ -1,0 +1,129 @@
+﻿@page
+@model CleanCut.WebApp.Pages.ContactModel
+@{
+    ViewData["Title"] = "Contact";
+}
+
+<h2>Contact Us</h2>
+
+<form id="contactForm" method="post">
+    @Html.AntiForgeryToken()
+    <div id="formMessage"></div>
+    <div class="mb-3">
+        <label asp-for="Input.FirstName" class="form-label"></label>
+        <input asp-for="Input.FirstName" class="form-control" />
+        <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.LastName" class="form-label"></label>
+        <input asp-for="Input.LastName" class="form-control" />
+        <span asp-validation-for="Input.LastName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.Email" class="form-label"></label>
+        <input asp-for="Input.Email" class="form-control" />
+        <span asp-validation-for="Input.Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Contact Type</label>
+        <select asp-for="Input.IsActive" class="form-select">
+            <option value="true">Work</option>
+            <option value="false">Personal</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function(){
+            document.addEventListener('DOMContentLoaded', function(){
+                var form = document.getElementById('contactForm');
+                if (!form) return;
+
+                var messageDiv = document.getElementById('formMessage');
+                function clearMessages() {
+                    if (!messageDiv) return;
+                    // remove all children safely
+                    while (messageDiv.firstChild) messageDiv.removeChild(messageDiv.firstChild);
+                }
+
+                function showMessage(type, text) {
+                    if (!messageDiv) return;
+                    clearMessages();
+                    var alert = document.createElement('div');
+                    alert.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-danger');
+                    alert.textContent = text || (type === 'success' ? 'Success' : 'An error occurred');
+                    messageDiv.appendChild(alert);
+                }
+
+                form.addEventListener('submit', async function(e){
+                    e.preventDefault();
+                    var submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = true;
+
+                    // Clear previous messages
+                    clearMessages();
+
+                    var fd = new FormData(form);
+
+                    try {
+                        var res = await fetch(window.location.href, {
+                            method: 'POST',
+                            body: fd,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        var contentType = res.headers.get('content-type') || '';
+
+                        if (res.ok) {
+                            if (contentType.indexOf('application/json') !== -1) {
+                                var data = await res.json();
+                                if (data && data.success) {
+                                    showMessage('success', data.message || 'Submitted');
+                                    form.reset();
+                                    // clear validation messages
+                                    document.querySelectorAll('.text-danger').forEach(function(el){ el.textContent = ''; });
+                                } else {
+                                    showMessage('success', 'Submitted');
+                                }
+                            } else {
+                                // non-json success, show generic message
+                                showMessage('success', 'Submitted');
+                                form.reset();
+                            }
+
+                        } else if (res.status === 400 && contentType.indexOf('application/json') !== -1) {
+                            var err = await res.json();
+                            if (err && err.errors) {
+                                // clear old
+                                document.querySelectorAll('.text-danger').forEach(function(el){ el.textContent = ''; });
+                                for (var key in err.errors) {
+                                    if (!Object.prototype.hasOwnProperty.call(err.errors, key)) continue;
+                                    var msgs = err.errors[key];
+                                    // find validation span
+                                    var span = document.querySelector('[data-valmsg-for="' + key + '"]');
+                                    if (span) span.textContent = msgs.join(' ');
+                                }
+                            }
+                        } else {
+                            showMessage('error', 'An error occurred. Please try again.');
+                        }
+                    } catch (ex) {
+                        showMessage('error', 'An error occurred. Please try again.');
+                    } finally {
+                        if (submitBtn) submitBtn.disabled = false;
+                    }
+                });
+            });
+        })();
+    //# sourceURL=contact.inline.js
+    </script>
+}

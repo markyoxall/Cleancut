@@ -1,0 +1,252 @@
+@baseUrl = https://localhost:7142
+@identity = https://localhost:5001
+@auth = Bearer <ACCESS_TOKEN>
+@countryId = 11111111-2222-3333-4444-555555555555
+@productId = 22222222-3333-4444-5555-666666666666
+@customerId = 11111111-1111-1111-1111-111111111111
+@orderId = 33333333-4444-5555-6666-777777777777
+
+### IdentityServer: Client Credentials token (replace client_id/secret)
+POST {{identity}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=my_client&client_secret=my_secret&scope=CleanCutAPI
+
+# Copy the returned access_token into @auth variable above as: Bearer <ACCESS_TOKEN>
+
+### --- Countries ---
+
+### Get all countries
+GET {{baseUrl}}/api/countries
+Authorization: {{auth}}
+Accept: application/json
+
+### Create a country
+POST {{baseUrl}}/api/countries
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "name": "Testland",
+  "code": "TL",
+  "isActive": true
+}
+
+### Get country by id
+GET {{baseUrl}}/api/countries/{{countryId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Update a country
+PUT {{baseUrl}}/api/countries/{{countryId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "id": "{{countryId}}",
+  "name": "Testland Updated",
+  "code": "TLU",
+  "isActive": true
+}
+
+### Delete a country
+DELETE {{baseUrl}}/api/countries/{{countryId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### --- Products (v1) ---
+
+### Get all products (v1)
+GET {{baseUrl}}/api/v1/products
+Authorization: {{auth}}
+Accept: application/json
+
+### Get product by id (v1)
+GET {{baseUrl}}/api/v1/products/{{productId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Get products for a customer (v1)
+GET {{baseUrl}}/api/v1/products/customer/{{customerId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Create a product (v1)
+POST {{baseUrl}}/api/v1/products
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "name": "Example Product V1",
+  "description": "A sample product created by tests",
+  "price": 19.99,
+  "customerId": "{{customerId}}",
+  "isAvailable": true
+}
+
+### Update a product (v1)
+PUT {{baseUrl}}/api/v1/products/{{productId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "id": "{{productId}}",
+  "name": "Example Product V1 (Updated)",
+  "description": "Updated description",
+  "price": 24.99,
+  "isAvailable": false
+}
+
+### Delete a product (v1)
+DELETE {{baseUrl}}/api/v1/products/{{productId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### --- Products (v2) ---
+
+### Get paged products (v2)
+GET {{baseUrl}}/api/v2/products?page=1&pageSize=10
+Authorization: {{auth}}
+Accept: application/json
+
+### Get product by id (v2)
+GET {{baseUrl}}/api/v2/products/{{productId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Get products for a customer (v2) - paged
+GET {{baseUrl}}/api/v2/products/customer/{{customerId}}?page=1&pageSize=10
+Authorization: {{auth}}
+Accept: application/json
+
+### Create a product (v2)
+POST {{baseUrl}}/api/v2/products
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "name": "Example Product",
+  "description": "A sample product created by tests",
+  "price": 19.99,
+  "customerId": "{{customerId}}",
+  "isAvailable": true
+}
+
+### Update a product (v2)
+PUT {{baseUrl}}/api/v2/products/{{productId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "id": "{{productId}}",
+  "name": "Example Product (Updated)",
+  "description": "Updated description",
+  "price": 24.99,
+  "customerId": "{{customerId}}",
+  "isAvailable": false
+}
+
+### Get product statistics (v2)
+GET {{baseUrl}}/api/v2/products/statistics
+Authorization: {{auth}}
+Accept: application/json
+
+### --- Customers ---
+
+### Get all customers
+GET {{baseUrl}}/api/customers
+Authorization: {{auth}}
+Accept: application/json
+
+### Create a customer
+POST {{baseUrl}}/api/customers
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "isActive": true
+}
+
+### Get customer by id
+GET {{baseUrl}}/api/customers/{{customerId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Update a customer
+PUT {{baseUrl}}/api/customers/{{customerId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "id": "{{customerId}}",
+  "firstName": "John",
+  "lastName": "Doe Updated",
+  "email": "john.doe+updated@example.com",
+  "isActive": true
+}
+
+### Delete a customer
+DELETE {{baseUrl}}/api/customers/{{customerId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### --- Orders ---
+
+### Get all orders
+GET {{baseUrl}}/api/orders
+Authorization: {{auth}}
+Accept: application/json
+
+### Create an order
+POST {{baseUrl}}/api/orders
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "orderDate": "2025-01-01T12:00:00Z",
+  "lineItems": [
+    { "productId": "{{productId}}", "quantity": 2 }
+  ]
+}
+
+### Get order by id
+GET {{baseUrl}}/api/orders/{{orderId}}
+Authorization: {{auth}}
+Accept: application/json
+
+### Update an order
+PUT {{baseUrl}}/api/orders/{{orderId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "id": "{{orderId}}",
+  "customerId": "{{customerId}}",
+  "orderDate": "2025-01-02T12:00:00Z"
+}
+
+### Add line item to order
+POST {{baseUrl}}/api/orders/{{orderId}}/lineitems
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "quantity": 1
+}
+
+### Delete an order
+DELETE {{baseUrl}}/api/orders/{{orderId}}
+Authorization: {{auth}}
+Accept: application/json
+
+# Notes:
+# - Replace <ACCESS_TOKEN> with a valid bearer token for the API or use the token request above.
+# - Replace the sample GUIDs with actual IDs returned by create operations.
+# - Use the VS Code REST Client extension or any HTTP client that supports `.http` files.
+# - If your API or IdentityServer runs on a different port, update @baseUrl/@identity accordingly.
+# - For user-interactive auth flows use the IdentityServer UI or the token helper in the API project.

@@ -1,0 +1,51 @@
+@using Microsoft.AspNetCore.Components.Authorization
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<base href="/" />
+
+	<ResourcePreloader />
+
+	<!-- Your app CSS (processed by Blazor asset pipeline) -->
+
+	<link rel="stylesheet" href='@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]' />
+	<link rel="stylesheet" href='@Assets["lib/fontawesome/css/all.min.css"]' />
+	<link rel="stylesheet" href='@Assets["lib/blazorise/css/blazorise.min.css"]' />
+	<link rel="stylesheet" href='@Assets["lib/blazorise.bootstrap5/css/blazorise.bootstrap5.min.css"]' />
+
+	<link rel="stylesheet" href='@Assets["app.css"]' />
+	<link rel="stylesheet" href='@Assets["CleanCut.BlazorWebApp.styles.css"]' />
+
+
+	<ImportMap />
+
+	<link rel="icon" type="image/png" href="favicon.png" />
+ 
+	<HeadOutlet />
+
+</head>
+
+
+<body>
+        <Routes />
+        <ReconnectModal />
+	<!-- Bootstrap JS -->
+	 
+	<script src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.min.js"]"></script>
+	<!-- Blazor Error UI -->
+	<div id="blazor-error-ui" data-nosnippet>
+		<i class="fas fa-exclamation-triangle me-2"></i>
+		An unhandled error has occurred.
+		<a href="." class="reload btn btn-sm btn-warning ms-2">Reload</a>
+		<span class="dismiss">🗙</span>
+	</div>
+
+		<!-- Blazor scripts -->
+		<script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

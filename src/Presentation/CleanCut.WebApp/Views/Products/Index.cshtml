@@ -1,0 +1,216 @@
+@model CleanCut.WebApp.Models.Products.ProductListViewModel
+
+@{
+    ViewData["Title"] = "Product Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-box text-success"></i> Product Management
+    </h2>
+    <a asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus"></i> Add New Product
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+        <i class="fas @(Model.IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Search and Filter Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-search"></i> Search & Filter
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <div class="row g-3">
+            <div class="col-md-4">
+          <label for="customerId" class="form-label">Filter by Owner</label>
+  <select class="form-select" id="customerId" name="customerId">
+<option value="">All Customers</option>
+        @foreach (var customer in Model.Customers)
+     {
+    <option value="@customer.Id" selected="@(Model.SelectedCustomerId == customer.Id)">
+             @customer.FirstName @customer.LastName
+        </option>
+                    }
+          </select>
+       </div>
+                <div class="col-md-4">
+                    <label for="searchTerm" class="form-label">Search Products</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           value="@Model.SearchTerm" placeholder="Search by name or description...">
+                </div>
+                <div class="col-md-2">
+                    <label for="isAvailableFilter" class="form-label">Availability</label>
+                    <select class="form-select" id="isAvailableFilter" name="isAvailableFilter">
+                        <option value="">All Products</option>
+                        <option value="true" selected="@(Model.IsAvailableFilter == true)">Available Only</option>
+                        <option value="false" selected="@(Model.IsAvailableFilter == false)">Unavailable Only</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Products (@Model.TotalProducts)</h5>
+        @if (Model.Products.Any())
+        {
+            <small class="text-muted">
+                Showing @Model.Products.Count products
+            </small>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Products.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th width="200">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in Model.Products)
+                        {
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>@product.Name</strong>
+                                        <br>
+                                        <small class="text-muted">@product.Description</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong class="text-success">@product.Price.ToString("C")</strong>
+                                </td>
+                                <td>
+                                    @if (product.Customer != null)
+                                    {
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-small me-2">
+                                                @product.Customer.FirstName.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <div>
+                                                <small>@product.Customer.FirstName @product.Customer.LastName</small>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Unknown</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (product.IsAvailable)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Available
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-times"></i> Unavailable
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @product.CreatedAt.ToString("MMM d, yyyy")
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Product actions">
+                                        <a href="@Url.Action("Details", "Products", new { id = product.Id })" 
+                                           class="btn btn-outline-info" title="View Details" data-bs-toggle="tooltip">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "Products", new { id = product.Id })" 
+                                           class="btn btn-outline-primary" title="Edit" data-bs-toggle="tooltip">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", "Products", new { id = product.Id })" 
+                                           class="btn btn-outline-danger" title="Delete" data-bs-toggle="tooltip">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No products found</h5>
+                <p class="text-muted">
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.SelectedCustomerId.HasValue || Model.IsAvailableFilter.HasValue)
+                    {
+                        <text>Try adjusting your search criteria or </text>
+                        <a asp-action="Index" class="text-decoration-none">clear filters</a>
+                    }
+                    else
+                    {
+                        <text>Get started by creating your first product</text>
+                    }
+                </p>
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add First Product
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .avatar-small {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #28a745;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+    
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+}

@@ -1,0 +1,78 @@
+﻿@using CleanCut.Application.DTOs
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-search"></i> Search & Filter
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="customerId" class="form-label">Filter by Owner</label>
+                <select class="form-select" id="customerId" @bind="SelectedCustomerId" @bind:after="OnFilterChanged">
+                    <option value="">All Customers</option>
+                    @foreach (var customer in Customers)
+                    {
+                        <option value="@customer.Id">@customer.FirstName @customer.LastName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="searchTerm" class="form-label">Search Products</label>
+                <input type="text" class="form-control" id="searchTerm"
+                       @bind="SearchTerm" @bind:after="OnFilterChanged"
+                       placeholder="Search by name or description..." />
+            </div>
+            <div class="col-md-2">
+                <label for="isAvailableFilter" class="form-label">Availability</label>
+                <select class="form-select" id="isAvailableFilter" @bind="IsAvailableFilter" @bind:after="OnFilterChanged">
+                    <option value="">All Products</option>
+                    <option value="true">Available Only</option>
+                    <option value="false">Unavailable Only</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-primary w-100" @onclick="OnSearchClick" disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<CustomerInfo> Customers { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnFiltersChanged { get; set; }
+
+    // Two-way binding parameters
+    [Parameter] public string? SearchTerm { get; set; }
+    [Parameter] public EventCallback<string?> SearchTermChanged { get; set; }
+
+    [Parameter] public Guid? SelectedCustomerId { get; set; }
+    [Parameter] public EventCallback<Guid?> SelectedCustomerIdChanged { get; set; }
+
+    [Parameter] public bool? IsAvailableFilter { get; set; }
+    [Parameter] public EventCallback<bool?> IsAvailableFilterChanged { get; set; }
+
+    private async Task OnFilterChanged()
+    {
+        // Update parent component parameters
+        await SearchTermChanged.InvokeAsync(SearchTerm);
+        await SelectedCustomerIdChanged.InvokeAsync(SelectedCustomerId);
+        await IsAvailableFilterChanged.InvokeAsync(IsAvailableFilter);
+        
+        // Trigger the filters changed event
+        await OnFiltersChanged.InvokeAsync();
+    }
+
+    private async Task OnSearchClick()
+    {
+        await OnFiltersChanged.InvokeAsync();
+    }
+}

@@ -1,0 +1,39 @@
+@* Fallback quick actions implemented as plain anchors so they always work even if Blazor circuit is down. *@
+<div class="quick-action-card mb-4">
+    <h5 class="card-title mb-3">
+        <i class="fas fa-rocket me-2"></i>Quick Actions (Fallback)
+    </h5>
+    <div class="row g-3">
+        <div class="col-md-6 col-lg-3">
+            <a class="btn quick-action-btn w-100" href="/Account/Login">
+                <i class="fas fa-users quick-action-icon"></i>
+                <div class="quick-action-title">Customer Portal</div>
+                <div class="quick-action-subtitle">Enhanced Management</div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <a class="btn quick-action-btn w-100" href="/Account/Login">
+                <i class="fas fa-search quick-action-icon"></i>
+                <div class="quick-action-title">Product Search</div>
+                <div class="quick-action-subtitle">Browse & Filter</div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <a class="btn quick-action-btn success w-100" href="https://localhost:7142/swagger" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-code quick-action-icon"></i>
+                <div class="quick-action-title">API Docs</div>
+                <div class="quick-action-subtitle">Swagger UI</div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <a class="btn quick-action-btn warning w-100" href="javascript:location.reload()">
+                <i class="fas fa-sync quick-action-icon"></i>
+                <div class="quick-action-title">Refresh Data</div>
+                <div class="quick-action-subtitle">Reload Dashboard</div>
+            </a>
+        </div>
+    </div>
+</div>

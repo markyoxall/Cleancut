@@ -1,0 +1,31 @@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex align-items-center">
+     <span class="navbar-text me-3 text-light">
+          <i class="fas fa-user-circle me-1"></i>
+    <span class="d-none d-md-inline">Welcome, </span><strong>@context.User.Identity?.Name</strong>
+    </span>
+   <form action="/Account/Logout" method="post" class="d-inline">
+      <AntiforgeryToken />
+      <button type="submit" class="btn btn-outline-light btn-sm">
+       <i class="fas fa-sign-out-alt me-1"></i>
+    <span class="d-none d-sm-inline">Logout</span>
+     </button>
+       </form>
+</div>
+ </Authorized>
+    <NotAuthorized>
+   <div class="d-flex align-items-center">
+  <span class="navbar-text me-2 text-light d-none d-md-inline">
+       <i class="fas fa-info-circle me-1"></i>Not logged in
+   </span>
+ <a href="/Account/Login" class="btn btn-success btn-sm">
+     <i class="fas fa-sign-in-alt me-1"></i>
+      <span>Login</span>
+   </a>
+     </div>
+    </NotAuthorized>
+</AuthorizeView>

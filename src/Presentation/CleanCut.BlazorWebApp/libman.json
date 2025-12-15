@@ -1,0 +1,22 @@
+{
+    "version": "1.0",
+    "defaultProvider": "jsdelivr",
+    "libraries": [
+        {
+            "library": "bootstrap@5.3.8",
+            "destination": "wwwroot/lib/bootstrap",
+            "files": [
+                "dist/css/bootstrap.css",
+                "dist/css/bootstrap.min.css",
+                "dist/css/bootstrap-grid.css",
+                "dist/css/bootstrap-grid.min.css",
+                "dist/css/bootstrap-utilities.css",
+                "dist/css/bootstrap-utilities.min.css",
+                "dist/css/bootstrap.rtl.css",
+                "dist/css/bootstrap.rtl.min.css",
+                "dist/js/bootstrap.bundle.js",
+                "dist/js/bootstrap.bundle.min.js"
+            ]
+        }
+    ]
+}

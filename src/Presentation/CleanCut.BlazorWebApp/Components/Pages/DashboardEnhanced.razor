@@ -1,0 +1,483 @@
+@page "/dashboard-enhanced"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Components.Base
+@using CleanCut.BlazorWebApp.State
+@inherits StatefulComponent
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Enhanced Dashboard - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold text-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Enhanced Dashboard
+                    </h1>
+                    <p class="text-muted">Real-time state management with automatic updates</p>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-outline-primary me-2" @onclick="RefreshAll">
+                        <i class="fas fa-sync-alt"></i> Refresh All
+                    </button>
+                    <small class="text-muted">Last updated: @DateTime.Now.ToString("MMM dd, yyyy HH:mm")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border spinner-border-lg" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading dashboard...</p>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(LocalMessage))
+        {
+            <div class="alert @(LocalIsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                <i class="fas @(LocalIsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @LocalMessage
+                <button type="button" class="btn-close" @onclick="ClearLocalMessage"></button>
+            </div>
+        }
+
+        <!-- Real-time Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-6 col-xl-3 mb-3">
+                <div class="card border-0 shadow-sm h-100 @(Customers.Any() ? "border-primary" : "")">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-primary p-3">
+                                    <i class="fas fa-users fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold text-primary fs-4">@Customers.Count</div>
+                                <div class="text-muted">Total Customers</div>
+                                <small class="text-success">
+                                    <i class="fas fa-user-check me-1"></i>@Customers.Count(u => u.IsActive) Active
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3 mb-3">
+                <div class="card border-0 shadow-sm h-100 @(Products.Any() ? "border-success" : "")">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-success p-3">
+                                    <i class="fas fa-box fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold text-success fs-4">@Products.Count</div>
+                                <div class="text-muted">Total Products</div>
+                                <small class="text-success">
+                                    <i class="fas fa-check me-1"></i>@Products.Count(p => p.IsAvailable) Available
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-info p-3">
+                                    <i class="fas fa-dollar-sign fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold text-info fs-4">@TotalValue.ToString("C0")</div>
+                                <div class="text-muted">Total Value</div>
+                                <small class="text-info">
+                                    <i class="fas fa-chart-line me-1"></i>Portfolio Value
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-warning p-3">
+                                    <i class="fas fa-chart-bar fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold text-warning fs-4">@AverageProductsPerCustomer.ToString("F1")</div>
+                                <div class="text-muted">Avg Products/Customer</div>
+                                <small class="text-warning">
+                                    <i class="fas fa-calculator me-1"></i>Performance
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Management Information -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>State Management Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>Current Selection</h6>
+                                <p><strong>Customer:</strong> @(SelectedCustomerLocal != null ? $"{SelectedCustomerLocal.FirstName} {SelectedCustomerLocal.LastName}" : "None selected")</p>
+                                <p><strong>Product:</strong> @(SelectedProductLocal?.Name ?? "None selected")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Loading States</h6>
+                                <p><strong>Global Loading:</strong> @(IsLoading ? "Yes" : "No")</p>
+                                <p><strong>Local Loading:</strong> @(LocalIsLoading ? "Yes" : "No")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Messages</h6>
+                                <p><strong>Local:</strong> @(LocalMessage ?? "None")</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>Quick Actions</h6>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="SetStateMessage">
+                                    Set Global Message (local demo)
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" @onclick="SetLocalTestMessage">
+                                    Set Local Message
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" @onclick="ClearLocalMessage">
+                                    Clear Message
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" @onclick="InvalidateAllCaches">
+                                    Invalidate Cache
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-rocket me-2"></i>Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <button type="button" class="btn btn-primary w-100 p-3" @onclick="NavigateToCreateCustomer">
+                                    <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                                    <span class="fw-bold">Add Customer</span>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button type="button" class="btn btn-success w-100 p-3" @onclick="NavigateToCreateProduct">
+                                    <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                                    <span class="fw-bold">Add Product</span>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button type="button" class="btn btn-info w-100 p-3" @onclick="NavigateToManageCustomers">
+                                    <i class="fas fa-users fa-2x d-block mb-2"></i>
+                                    <span class="fw-bold">Manage Customers</span>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button type="button" class="btn btn-warning w-100 p-3" @onclick="NavigateToManageProducts">
+                                    <i class="fas fa-box fa-2x d-block mb-2"></i>
+                                    <span class="fw-bold">Manage Products</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Products
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                @onclick="NavigateToAllProducts">
+                            View All
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (RecentProducts.Any())
+                        {
+                            @foreach (var product in RecentProducts.Take(5))
+                            {
+                                <div class="d-flex align-items-center py-2 border-bottom @(SelectedProductLocal?.Id == product.Id ? "bg-light" : "")">
+                                    <div class="avatar-small me-3">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">@product.Name</div>
+                                        <small class="text-muted">by @(product.Customer?.FirstName ?? "Unknown") • @product.CreatedAt.ToString("MMM dd")</small>
+                                    </div>
+                                    <div class="text-success fw-bold me-2">@product.Price.ToString("C")</div>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => SelectProduct(product)">
+                                        <i class="fas fa-hand-pointer"></i>
+                                    </button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-3">
+                                <i class="fas fa-box fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No products yet</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>Active Customers
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-info"
+                                @onclick="NavigateToAllCustomers">
+                            View All
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (ActiveCustomersList.Any())
+                        {
+                            @foreach (var user in ActiveCustomersList.Take(5))
+                            {
+                                <div class="d-flex align-items-center py-2 @(SelectedCustomerLocal?.Id == user.Id ? "bg-light" : "")">
+                                    <div class="avatar-small-user me-3">
+                                        @user.FirstName.Substring(0, 1).ToUpper()
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">@user.FirstName @user.LastName</div>
+                                        <small class="text-muted">@user.Email</small>
+                                    </div>
+                                    <div class="text-success me-2">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => SelectCustomer(user)">
+                                        <i class="fas fa-hand-pointer"></i>
+                                    </button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-3">
+                                <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No active users</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .avatar-small {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .avatar-small-user {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    // Local selection (since feature states don't expose selection)
+    private CustomerInfo? SelectedCustomerLocal;
+    private ProductInfo? SelectedProductLocal;
+
+    // Dashboard statistics computed from state
+    private decimal TotalValue => Products.Sum(p => p.Price);
+    private double AverageProductsPerCustomer => Customers.Count > 0 ? (double)Products.Count / Customers.Count : 0;
+
+    // Recent data computed from state
+    private List<ProductInfo> RecentProducts => Products.OrderByDescending(p => p.CreatedAt).ToList();
+    private List<CustomerInfo> ActiveCustomersList => Customers.Where(u => u.IsActive).OrderByDescending(u => u.CreatedAt).ToList();
+
+    // Convenience accessors to feature state collections
+    private List<CustomerInfo> Customers => CustomersState.Customers?.ToList() ?? new();
+    private List<ProductInfo> Products => ProductsState.Products?.ToList() ?? new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Enhanced Dashboard loading");
+
+        // Subscribe to feature events for this component's handlers
+        CustomersState.CustomersChanged += OnCustomersChanged;
+        ProductsState.ProductsChanged += OnProductsChanged;
+
+        CustomersState.MessageChanged += OnFeatureMessage;
+        ProductsState.MessageChanged += OnFeatureMessage;
+        CountriesState.CountriesChanged += OnCountriesChanged;
+
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task LoadDashboardDataAsync()
+    {
+        await ExecuteWithLoading(async () =>
+        {
+            // Load all data through feature states
+            await CustomersState.LoadAsync();
+
+            // Load products for each user (conservative approach)
+            foreach (var user in Customers)
+            {
+                try
+                {
+                    await ProductsState.LoadByCustomerAsync(user.Id);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Failed to load products for user {CustomerId}", user.Id);
+                }
+            }
+
+            // Load countries as well
+            await CountriesState.LoadAsync();
+        }, "Dashboard loaded successfully");
+    }
+
+    private async Task RefreshAll()
+    {
+        InvalidateAllCaches();
+        await LoadDashboardDataAsync();
+    }
+
+    private void SetStateMessage()
+    {
+        // No centralized facade to set a global message — use local demo message
+        SetLocalMessage($"Global-like message set at {DateTime.Now:HH:mm:ss}", true);
+    }
+
+    private void SetLocalTestMessage()
+    {
+        SetLocalMessage("Local message set!", true);
+    }
+
+    private void InvalidateAllCaches()
+    {
+        CustomersState.Invalidate();
+        ProductsState.Invalidate();
+        CountriesState.Invalidate();
+        SetLocalMessage("Caches invalidated", true);
+    }
+
+    // Event handlers for state changes
+    private void OnCustomersChanged(List<CustomerInfo> users)
+    {
+        Logger.LogInformation("Dashboard: Customers changed - {Count} users", users.Count);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnProductsChanged(List<ProductInfo> products)
+    {
+        Logger.LogInformation("Dashboard: Products changed - {Count} products", products.Count);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnCountriesChanged(List<CountryInfo> countries)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnFeatureMessage(string message, bool isSuccess)
+    {
+        SetLocalMessage(message, isSuccess);
+    }
+
+    // Selection helpers (component-local)
+    private void SelectProduct(ProductInfo product)
+    {
+        SelectedProductLocal = product;
+        SetLocalMessage($"Selected product: {product.Name}", true);
+    }
+
+    private void SelectCustomer(CustomerInfo user)
+    {
+        SelectedCustomerLocal = user;
+        SetLocalMessage($"Selected user: {user.FirstName} {user.LastName}", true);
+    }
+
+    // Navigation methods
+    private void NavigateToCreateCustomer() => Navigation.NavigateTo("/users/create");
+    private void NavigateToCreateProduct() => Navigation.NavigateTo("/products/create");
+    private void NavigateToManageCustomers() => Navigation.NavigateTo("/users/management-enhanced");
+    private void NavigateToManageProducts() => Navigation.NavigateTo("/products/management");
+    private void NavigateToAllProducts() => Navigation.NavigateTo("/products/management");
+    private void NavigateToAllCustomers() => Navigation.NavigateTo("/users/management-enhanced");
+
+    public override void Dispose()
+    {
+        CustomersState.CustomersChanged -= OnCustomersChanged;
+        ProductsState.ProductsChanged -= OnProductsChanged;
+        CountriesState.CountriesChanged -= OnCountriesChanged;
+
+        CustomersState.MessageChanged -= OnFeatureMessage;
+        ProductsState.MessageChanged -= OnFeatureMessage;
+        CountriesState.MessageChanged -= OnFeatureMessage;
+
+        base.Dispose();
+    }
+}

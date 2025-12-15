@@ -1,0 +1,300 @@
+@page "/customers/management-enhanced"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Components.Base
+@using CleanCut.BlazorWebApp.State
+@inherits StatefulComponent
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+ 
+
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Enhanced Customer Management - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-users text-primary"></i> Enhanced Customer Management
+            </h2>
+            <small class="text-muted">Powered by Advanced State Management</small>
+        </div>
+        <button type="button" class="btn btn-primary" @onclick="CreateCustomer" disabled="@IsLoading">
+            <i class="fas fa-plus"></i> Add New Customer
+        </button>
+    </div>
+
+    <!-- State Information Panel -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@CustomersState.Customers.Count</h3>
+                    <small>Total Customers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@CustomersState.Customers.Count(u => u.IsActive)</h3>
+                    <small>Active Customers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@(SelectedCustomerLocal?.FirstName ?? "None")</h3>
+                    <small>Selected Customer</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>@DateTime.Now.ToString("HH:mm:ss")</h3>
+                    <small>Current Time</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            <i class="fas @(IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Message
+            <button type="button" class="btn-close" @onclick="ClearLocalMessage"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border spinner-border-lg" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading customers...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Customers Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Customers (@CustomersState.Customers.Count)</h5>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-2" @onclick="RefreshCustomers">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" @onclick="ClearSelection">
+                        <i class="fas fa-times"></i> Clear Selection
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (CustomersState.Customers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th width="200">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var customer in CustomersState.Customers)
+                                {
+                                    <tr class="@(SelectedCustomerLocal?.Id == customer.Id ? "table-info" : "")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-medium me-3">
+                                                    @customer.FirstName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <strong>@customer.FirstName @customer.LastName</strong>
+                                                    <br>
+                                                    <small class="text-muted">ID: @customer.Id.ToString("N")[..8]</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:@customer.Email" class="text-decoration-none">@customer.Email</a>
+                                        </td>
+                                        <td>
+                                            @if (customer.IsActive)
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Active
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-times"></i> Inactive
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                @customer.CreatedAt.ToString("MMM d, yyyy")
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="Customer actions">
+                                                <button type="button" class="btn btn-outline-secondary" title="Select"
+                                                        @onclick="() => SelectCustomer(customer)">
+                                                    <i class="fas fa-hand-pointer"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info" title="View Details"
+                                                        @onclick="() => ViewCustomer(customer.Id)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary" title="Edit"
+                                                        @onclick="() => EditCustomer(customer.Id)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" title="Delete"
+                                                        @onclick="() => DeleteCustomer(customer.Id)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No users found</h5>
+                        <p class="text-muted">Get started by creating your first customer</p>
+                        <button type="button" class="btn btn-primary" @onclick="CreateCustomer">
+                            <i class="fas fa-plus"></i> Add First Customer
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .avatar-medium {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .table-info {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+    }
+</style>
+
+@code {
+    private CustomerInfo? SelectedCustomerLocal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Enhanced Customer Management page loading");
+
+        CustomersState.CustomersChanged += OnCustomersChanged;
+
+        // Check for refresh parameter
+        var uri = new Uri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.ContainsKey("refresh"))
+        {
+            SetLocalMessage("Operation completed successfully!", true);
+        }
+
+        // Load customers using feature state
+        await RefreshCustomers();
+    }
+
+    private async Task RefreshCustomers()
+    {
+        await ExecuteWithLoading(
+            async () => await CustomersState.LoadAsync(),
+            "Customers refreshed successfully"
+        );
+    }
+
+    private void SelectCustomer(CustomerInfo customer)
+    {
+        SelectedCustomerLocal = customer;
+        SetLocalMessage($"Selected customer: {customer.FirstName} {customer.LastName}", true);
+    }
+
+    private void ClearSelection()
+    {
+        SelectedCustomerLocal = null;
+        SetLocalMessage("Selection cleared", true);
+    }
+
+    private async Task DeleteCustomer(Guid customerId)
+    {
+        var customer = CustomersState.Customers.FirstOrDefault(u => u.Id == customerId);
+        if (customer == null) return;
+
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete customer '{customer.FirstName} {customer.LastName}'?"))
+        {
+            await ExecuteWithLoading(
+                async () => await CustomersState.DeleteAsync(customerId),
+                null,
+                "Failed to delete customer"
+            );
+        }
+    }
+
+    private void CreateCustomer()
+    {
+        Logger.LogInformation("Navigating to create customer page");
+        Navigation.NavigateTo("/customers/create");
+    }
+
+    private void ViewCustomer(Guid id)
+    {
+        Logger.LogInformation("Navigating to customer details: {CustomerId}", id);
+        Navigation.NavigateTo($"/customers/details/{id}");
+    }
+
+    private void EditCustomer(Guid id)
+    {
+        Logger.LogInformation("Navigating to edit customer: {CustomerId}", id);
+        Navigation.NavigateTo($"/customers/edit/{id}");
+    }
+
+    private void OnCustomersChanged(List<CustomerInfo> users)
+    {
+        Logger.LogInformation("Customers changed event received: {CustomerCount} customers", users.Count);
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnCustomersChangedAsync(List<CustomerInfo> customers)
+    {
+        Logger.LogInformation("Customers state updated: {CustomerCount} customers loaded", customers.Count);
+        await Task.CompletedTask;
+    }
+
+    public override void Dispose()
+    {
+        CustomersState.CustomersChanged -= OnCustomersChanged;
+        base.Dispose();
+    }
+}

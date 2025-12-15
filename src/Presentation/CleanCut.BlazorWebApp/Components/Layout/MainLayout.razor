@@ -1,0 +1,126 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using CleanCut.BlazorWebApp.Components.Account
+@inherits LayoutComponentBase
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <i class="fas fa-cut me-2"></i>
+         CleanCut
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+        </button>
+     
+        <div class="collapse navbar-collapse" id="navbarNav">
+     <ul class="navbar-nav me-auto">
+       <li class="nav-item">
+        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+<i class="fas fa-home me-1"></i>Home
+     </NavLink>
+          </li>
+
+        <!-- Customers: show management link only to authorized users; otherwise point to server login -->
+        <li class="nav-item">
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-link" href="/customers/management">
+                        <i class="fas fa-users me-1"></i>Customers
+                    </NavLink>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="nav-link" href="/Account/Login">
+                        <i class="fas fa-users me-1"></i>Customers (login)
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </li>
+
+        <!-- Products: require login to view management/product pages -->
+        <li class="nav-item">
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-link" href="/products">
+                        <i class="fas fa-box me-1"></i>Products
+                    </NavLink>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="nav-link" href="/Account/Login">
+                        <i class="fas fa-box me-1"></i>Products (login)
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </li>
+
+ <li class="nav-item">
+   <AuthorizeView>
+       <Authorized>
+           <NavLink class="nav-link" href="/countries">
+               <i class="fas fa-globe me-1"></i>Countries
+           </NavLink>
+       </Authorized>
+       <NotAuthorized>
+           <a class="nav-link" href="/Account/Login">
+               <i class="fas fa-globe me-1"></i>Countries (login)
+           </a>
+       </NotAuthorized>
+   </AuthorizeView>
+    </li>
+
+ <li class="nav-item dropdown">
+       <AuthorizeView>
+           <Authorized>
+               <a class="nav-link dropdown-toggle" href="#" id="developerDropdown" role="button" data-bs-toggle="dropdown">
+                   <i class="fas fa-tools me-1"></i>Developer
+               </a>
+               <ul class="dropdown-menu">
+                   <li><a class="dropdown-item" href="/auth-test">
+                       <i class="fas fa-shield-alt me-2"></i>Auth Test
+                   </a></li>
+                   <li><a class="dropdown-item" href="/test-page">
+                       <i class="fas fa-vial me-2"></i>Test Page
+                   </a></li>
+                   <li><hr class="dropdown-divider"></li>
+                   <li><a class="dropdown-item" href="https://localhost:7142/swagger" target="_blank">
+                       <i class="fas fa-book me-2"></i>API Documentation
+                   </a></li>
+               </ul>
+           </Authorized>
+           <NotAuthorized>
+               <a class="nav-link" href="/Account/Login">
+                   <i class="fas fa-tools me-1"></i>Developer (login)
+               </a>
+           </NotAuthorized>
+       </AuthorizeView>
+       </li>
+  </ul>
+            
+            <ul class="navbar-nav">
+           <li class="nav-item">
+     <LoginDisplay />
+     </li>
+      </ul>
+ </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-4">
+    @Body
+</main>
+
+<!-- Footer -->
+<footer class="bg-primary text-light py-3 mt-5">
+    <div class="container text-center">
+        <p class="mb-1">
+      <strong>CleanCut Management System</strong>
+</p>
+     <p class="small text-light mb-0">
+            <i class="fas fa-shield-alt me-1"></i>OAuth2 + OIDC Authentication • 
+            <i class="fas fa-api me-1"></i>RESTful API • 
+            <i class="fas fa-rocket me-1"></i>.NET 10 Blazor Server
+     </p>
+    </div>
+</footer>

@@ -1,0 +1,86 @@
+@page "/store"
+@inject IProductApiService ProductApi
+@inject IShoppingCartService Cart
+@inject NavigationManager Navigation
+@inject ILogger<Store> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<PageTitle>Store - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-store me-2"></i>Product Catalog</h2>
+        <button class="btn btn-primary" @onclick="GoToCart">View Basket</button>
+    </div>
+
+    <div class="mb-3">
+        <input class="form-control" placeholder="Search products..." @bind="searchTerm" />
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border" role="status"></div></div>
+    }
+    else if (!Products.Any())
+    {
+        <div class="text-center py-5 text-muted">No products available</div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var p in FilteredProducts)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@p.Name</h5>
+                            <p class="card-text text-muted">@p.Description</p>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <div class="fw-bold text-success">@p.Price.ToString("C")</div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => ViewDetails(p.Id)">View</button>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(p.Id)">Add to Basket</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code{
+    private List<ProductInfo> Products = new();
+    private string searchTerm = string.Empty;
+    private bool IsLoading = true;
+
+    private IEnumerable<ProductInfo> FilteredProducts =>
+        string.IsNullOrWhiteSpace(searchTerm) ? Products : Products.Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || (p.Description ?? string.Empty).Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            Products = (await ProductApi.GetAllProductsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load products for store");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ViewDetails(Guid id) => Navigation.NavigateTo($"/products/details/{id}");
+
+    private async Task AddToCart(Guid id)
+    {
+        await Cart.AddItemAsync(id, 1);
+        Navigation.NavigateTo("/cart");
+    }
+
+    private void GoToCart() => Navigation.NavigateTo("/cart");
+}

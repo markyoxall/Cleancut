@@ -1,0 +1,56 @@
+@page "/checkout"
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<PageTitle>Checkout - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-credit-card me-2"></i>Checkout</h2>
+        <button class="btn btn-outline-secondary" @onclick="BackToBasket">Back to Basket</button>
+    </div>
+
+    @if (!Items.Any())
+    {
+        <div class="text-center py-5 text-muted">Your basket is empty.</div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <h5>Order Summary</h5>
+                <ul class="list-group mb-3">
+                    @foreach (var item in Items)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">@item.Name</div>
+                                <div class="text-muted small">@item.Quantity x @item.UnitPrice.ToString("C")</div>
+                            </div>
+                            <div>@(item.UnitPrice * item.Quantity).ToString("C")</div>
+                        </li>
+                    }
+                </ul>
+
+                <div class="d-flex justify-content-end mb-3">
+                    <h5>Total: <strong class="ms-2">@Total.ToString("C")</strong></h5>
+                </div>
+
+                <EditForm Model="Model" OnValidSubmit="PlaceOrder">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label">Shipping Address</label>
+                        <InputTextArea class="form-control" @bind-Value="Model.ShippingAddress" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Billing Address</label>
+                        <InputTextArea class="form-control" @bind-Value="Model.BillingAddress" />
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+                        <button class="btn btn-success" type="submit">Place Order</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>

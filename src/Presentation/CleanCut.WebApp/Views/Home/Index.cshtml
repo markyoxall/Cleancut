@@ -1,0 +1,186 @@
+﻿@using CleanCut.WebApp.Models
+@{
+	ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+	<h1 class="display-4">
+		<i class="fas fa-cut text-primary"></i> Welcome to CleanCut
+	</h1>
+	<p class="lead">Enterprise-grade application with Clean Architecture</p>
+</div>
+
+<div class="row mt-4">
+	<div class="col-12">
+		@if (User.Identity?.IsAuthenticated == true)
+		{
+			<div class="alert alert-success" role="alert">
+				<h6 class="alert-heading">
+					<i class="fas fa-check-circle me-2"></i>
+					Welcome back, @(User.Identity.Name ?? "User")!
+				</h6>
+				<p class="mb-1">
+					You are successfully logged in and can access all features.
+				</p>
+				<hr>
+				<p class="mb-0">
+					<a href="@Url.Action("Profile", "Account")" class="alert-link">View your profile</a>
+					to see authentication details and token information.
+				</p>
+			</div>
+		}
+		else
+		{
+			<div class="alert alert-primary" role="alert">
+				<h6 class="alert-heading">
+					<i class="fas fa-info-circle me-2"></i>
+					Welcome to CleanCut
+				</h6>
+				<p class="mb-1">
+					This application uses OAuth 2.1 with PKCE for secure authentication.
+				</p>
+				<hr>
+				<p class="mb-0">
+					<a href="@Url.Action("Login", "Account")" class="alert-link">Login</a>
+					to access customer and product management features.
+				</p>
+			</div>
+		}
+	</div>
+</div>
+
+<div class="row mt-5">
+	<div class="col-md-4">
+		<div class="card h-100 border-primary">
+			<div class="card-header bg-primary text-white">
+				<h5 class="card-title mb-0">
+					<i class="fas fa-users"></i> Customer Management
+				</h5>
+			</div>
+			<div class="card-body">
+				<p class="card-text">Manage customers in the system with full CRUD operations.</p>
+				<ul class="list-unstyled">
+					<li><i class="fas fa-check text-success"></i> View all customers</li>
+					<li><i class="fas fa-check text-success"></i> Create new customers</li>
+					<li><i class="fas fa-check text-success"></i> Edit customer details</li>
+					<li><i class="fas fa-check text-success"></i> Search and filter</li>
+				</ul>
+			</div>
+			<div class="card-footer">
+				@if (User.Identity?.IsAuthenticated == true)
+				{
+					<a asp-controller="Customers" asp-action="Index" class="btn btn-primary">
+						<i class="fas fa-arrow-right"></i> Manage Customers
+					</a>
+				}
+				else
+				{
+					<a href="@Url.Action("Login", "Account")" class="btn btn-outline-primary">
+						<i class="fas fa-sign-in-alt"></i> Login to Access
+					</a>
+				}
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-4">
+		<div class="card h-100 border-success">
+			<div class="card-header bg-success text-white">
+				<h5 class="card-title mb-0">
+					<i class="fas fa-box"></i> Product Management
+				</h5>
+			</div>
+			<div class="card-body">
+				<p class="card-text">Manage products with pricing and availability.</p>
+				<ul class="list-unstyled">
+					<li><i class="fas fa-check text-success"></i> View all products</li>
+					<li><i class="fas fa-check text-success"></i> Create new products</li>
+					<li><i class="fas fa-check text-success"></i> Edit product details</li>
+					<li><i class="fas fa-check text-success"></i> Filter by customer</li>
+				</ul>
+			</div>
+			<div class="card-footer">
+				@if (User.Identity?.IsAuthenticated == true)
+				{
+					<a asp-controller="Products" asp-action="Index" class="btn btn-success">
+						<i class="fas fa-arrow-right"></i> Manage Products
+					</a>
+				}
+				else
+				{
+					<a href="@Url.Action("Login", "Account")" class="btn btn-outline-success">
+						<i class="fas fa-sign-in-alt"></i> Login to Access
+					</a>
+				}
+			</div>
+		</div>
+	</div>
+
+
+	<div class="col-md-4">
+		<div class="card h-100 border-success">
+			<div class="card-header bg-success text-white">
+				<h5 class="card-title mb-0">
+					<i class="fas fa-box"></i> Country Management
+				</h5>
+			</div>
+			<div class="card-body">
+				<p class="card-text">Manage Countries.</p>
+				<ul class="list-unstyled">
+					<li><i class="fas fa-check text-success"></i> View all countries</li>
+					<li><i class="fas fa-check text-success"></i> Create new country</li>
+					<li><i class="fas fa-check text-success"></i> Edit country details</li>
+					<li><i class="fas fa-check text-success"></i> Filter by country</li>
+				</ul>
+			</div>
+			<div class="card-footer">
+				@if (User.Identity?.IsAuthenticated == true)
+				{
+					<a asp-controller="Countries" asp-action="Index" class="btn btn-success">
+						<i class="fas fa-arrow-right"></i> Manage Countries
+					</a>
+				}
+				else
+				{
+					<a href="@Url.Action("Login", "Account")" class="btn btn-outline-success">
+						<i class="fas fa-sign-in-alt"></i> Login to Access
+					</a>
+				}
+			</div>
+		</div>
+	</div>
+
+
+</div>
+
+<div class="row mt-5">
+	<div class="col-md-12">
+		<div class="card border-info">
+			<div class="card-header bg-info text-white">
+				<h5 class="card-title mb-0">
+					<i class="fas fa-info-circle"></i> Enterprise Features
+				</h5>
+			</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-md-3">
+						<h6><i class="fas fa-layer-group text-primary"></i> Clean Architecture</h6>
+						<p class="small">Domain-driven design with clear separation of concerns</p>
+					</div>
+					<div class="col-md-3">
+						<h6><i class="fas fa-exchange-alt text-success"></i> CQRS Pattern</h6>
+						<p class="small">Command Query Responsibility Segregation with MediatR</p>
+					</div>
+					<div class="col-md-3">
+						<h6><i class="fas fa-rocket text-warning"></i> Redis Caching</h6>
+						<p class="small">High-performance caching with automatic fallback</p>
+					</div>
+					<div class="col-md-3">
+						<h6><i class="fas fa-shield-alt text-danger"></i> OAuth 2.1 Security</h6>
+						<p class="small">Enterprise authentication with PKCE security</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

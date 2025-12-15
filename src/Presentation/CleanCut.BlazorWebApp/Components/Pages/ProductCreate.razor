@@ -1,0 +1,180 @@
+@page "/products/create"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Services
+@using System.ComponentModel.DataAnnotations
+@inject ILogger<ProductCreate> Logger
+@inject IProductApiService ProductApi
+@inject ICustomerApiService CustomerApi
+@inject NavigationManager Navigation
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Create Product - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+      <i class="fas fa-plus text-success"></i> Create New Product
+  </h2>
+     <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+         <i class="fas fa-arrow-left"></i> Back to Products
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+ {
+        <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+  <i class="fas @(IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Message
+ <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+      </div>
+    }
+
+    <div class="card">
+  <div class="card-header">
+            <h5 class="card-title mb-0">
+             <i class="fas fa-box me-2"></i>Product Information
+</h5>
+        </div>
+  <div class="card-body">
+   <EditForm Model="Model" OnValidSubmit="HandleValidSubmit">
+  <DataAnnotationsValidator />
+         
+<div class="row">
+     <div class="col-md-6">
+<div class="mb-3">
+            <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
+      <InputText id="name" class="form-control" @bind-Value="Model.Name" placeholder="Enter product name" />
+       <ValidationMessage For="@(() => Model.Name)" class="text-danger" />
+   </div>
+</div>
+          <div class="col-md-6">
+          <div class="mb-3">
+    <label for="price" class="form-label">Price <span class="text-danger">*</span></label>
+           <InputNumber id="price" class="form-control" @bind-Value="Model.Price" placeholder="0.00" />
+              <ValidationMessage For="@(() => Model.Price)" class="text-danger" />
+    </div>
+  </div>
+           </div>
+
+   <div class="mb-3">
+    <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+       <InputTextArea id="description" class="form-control" @bind-Value="Model.Description" rows="3" placeholder="Enter product description" />
+        <ValidationMessage For="@(() => Model.Description)" class="text-danger" />
+         </div>
+
+   <div class="mb-3">
+   <label for="customerId" class="form-label">Owner <span class="text-danger">*</span></label>
+        <InputSelect id="customerId" class="form-select" @bind-Value="Model.CustomerId">
+                <option value="">Select an owner...</option>
+            @foreach (var customer in Customers)
+  {
+     <option value="@customer.Id">@customer.FirstName @customer.LastName (@customer.Email)</option>
+        }
+    </InputSelect>
+          <ValidationMessage For="@(() => Model.CustomerId)" class="text-danger" />
+</div>
+
+     <div class="d-flex justify-content-between">
+       <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+     <i class="fas fa-times"></i> Cancel
+           </button>
+  <button type="submit" class="btn btn-success" disabled="@IsLoading">
+         @if (IsLoading)
+    {
+     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+               }
+ <i class="fas fa-save"></i> Create Product
+           </button>
+        </div>
+     </EditForm>
+        </div>
+  </div>
+</div>
+
+@code {
+    private List<CustomerInfo> Customers { get; set; } = new();
+    private ProductCreateModel Model { get; set; } = new();
+private bool IsLoading { get; set; }
+    private string? Message { get; set; }
+    private bool IsSuccess { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+   Logger.LogInformation("Product Create page loading");
+        await LoadCustomersAsync();
+  }
+
+    private async Task LoadCustomersAsync()
+    {
+        try
+        {
+          Customers = await CustomerApi.GetAllCustomersAsync();
+            Logger.LogInformation("Loaded {CustomerCount} customers for create form", Customers.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading customers for create form");
+         Message = "Error loading customers. Please try again.";
+            IsSuccess = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        IsLoading = true;
+ try
+ {
+            Logger.LogInformation("Creating product: {ProductName} for customer {CustomerId}", Model.Name, Model.CustomerId);
+
+         var request = new CreateProductRequest
+     {
+   Name = Model.Name,
+       Description = Model.Description,
+         Price = Model.Price,
+            CustomerId = Model.CustomerId
+  };
+
+    var createdProduct = await ProductApi.CreateProductAsync(request);
+
+  Logger.LogInformation("Product created successfully with ID {ProductId}", createdProduct.Id);
+
+   // ? FIXED: Navigate back to management page with correct parameter name
+        Navigation.NavigateTo($"/products/management?customerId={Model.CustomerId}&refresh={DateTime.UtcNow.Ticks}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating product {ProductName}", Model.Name);
+  Message = "An error occurred while creating the product. Please try again.";
+    IsSuccess = false;
+    }
+        finally
+        {
+            IsLoading = false;
+     StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+  {
+        Logger.LogInformation("Product creation cancelled");
+   Navigation.NavigateTo("/products/management");
+    }
+
+    // Form model class
+    public class ProductCreateModel
+    {
+ [Required(ErrorMessage = "Product name is required")]
+ [StringLength(100, ErrorMessage = "Product name cannot exceed 100 characters")]
+        public string Name { get; set; } = string.Empty;
+
+     [Required(ErrorMessage = "Description is required")]
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string Description { get; set; } = string.Empty;
+
+   [Required(ErrorMessage = "Price is required")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+        public decimal Price { get; set; }
+
+      [Required(ErrorMessage = "Owner is required")]
+        public Guid CustomerId { get; set; }
+    }
+}

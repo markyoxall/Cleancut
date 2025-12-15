@@ -1,0 +1,83 @@
+@page "/test-page"
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Test Page - CleanCut</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+       <h1 class="mb-4">
+  <i class="fas fa-vial me-2"></i>
+     Test Page
+   </h1>
+  
+     <div class="alert alert-info">
+   <h5><i class="fas fa-info-circle me-2"></i>Authentication Test</h5>
+     <p>This page tests the authentication setup without strict authorization requirements.</p>
+  </div>
+
+            <div class="card">
+     <div class="card-header">
+         <h5 class="mb-0">Authentication Status</h5>
+     </div>
+    <div class="card-body">
+         <AuthorizeView>
+            <Authorized>
+               <div class="alert alert-success">
+      <h6><i class="fas fa-check-circle me-2"></i>? You are authenticated!</h6>
+          <ul class="mb-0">
+   <li><strong>User:</strong> @context.User.Identity?.Name</li>
+ <li><strong>Auth Type:</strong> @context.User.Identity?.AuthenticationType</li>
+      <li><strong>Is Authenticated:</strong> @context.User.Identity?.IsAuthenticated</li>
+          <li><strong>Claims Count:</strong> @context.User.Claims.Count()</li>
+</ul>
+          </div>
+           
+      @if (context.User.Claims.Any())
+            {
+           <h6 class="mt-3">User Claims (first 10):</h6>
+             <div class="table-responsive">
+        <table class="table table-sm table-striped">
+        <thead>
+   <tr>
+         <th>Type</th>
+      <th>Value</th>
+              </tr>
+          </thead>
+         <tbody>
+       @foreach (var claim in context.User.Claims.Take(10))
+    {
+   <tr>
+  <td><small><code>@claim.Type</code></small></td>
+      <td><small>@claim.Value</small></td>
+                 </tr>
+          }
+           </tbody>
+            </table>
+    </div>
+       }
+     </Authorized>
+         <NotAuthorized>
+          <div class="alert alert-warning">
+           <h6><i class="fas fa-exclamation-triangle me-2"></i>? Not authenticated</h6>
+   <p class="mb-2">You are not currently authenticated.</p>
+ <a href="/Account/Login" class="btn btn-primary btn-sm">
+           <i class="fas fa-sign-in-alt me-1"></i>Login
+</a>
+     </div>
+        </NotAuthorized>
+   </AuthorizeView>
+      </div>
+            </div>
+
+            <div class="mt-4">
+     <a href="/" class="btn btn-outline-primary">
+         <i class="fas fa-arrow-left me-1"></i>Back to Home
+      </a>
+        <a href="/auth-test" class="btn btn-outline-info ms-2">
+          <i class="fas fa-shield-alt me-1"></i>Advanced Auth Test
+            </a>
+     </div>
+        </div>
+</div>
+</div>

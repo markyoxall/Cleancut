@@ -1,0 +1,166 @@
+@{
+    ViewData["Title"] = "User Profile";
+}
+
+<div class="container">
+    <div class="row">
+       <div class="col-12">
+        <h1 class="display-6 fw-bold text-primary">
+ <i class="fas fa-user"></i> User Profile
+   </h1>
+       <p class="text-muted">Authentication and token information</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+       <div class="card-header">
+     <h5 class="card-title mb-0">
+       <i class="fas fa-id-card"></i> User Information
+    </h5>
+  </div>
+       <div class="card-body">
+         <table class="table table-borderless">
+    <tbody>
+  <tr>
+     <th scope="row">Name:</th>
+       <td>@(User.Identity?.Name ?? "Not available")</td>
+    </tr>
+   <tr>
+        <th scope="row">Authentication Type:</th>
+   <td>@(User.Identity?.AuthenticationType ?? "Not available")</td>
+        </tr>
+    <tr>
+  <th scope="row">Is Authenticated:</th>
+       <td>
+     <span class="badge @(User.Identity?.IsAuthenticated == true ? "bg-success" : "bg-danger")">
+      @(User.Identity?.IsAuthenticated == true ? "Yes" : "No")
+    </span>
+  </td>
+   </tr>
+  </tbody>
+   </table>
+     </div>
+    </div>
+ </div>
+
+        <div class="col-md-6">
+     <div class="card">
+       <div class="card-header">
+   <h5 class="card-title mb-0">
+      <i class="fas fa-key"></i> Token Status
+        </h5>
+     </div>
+       <div class="card-body">
+      <table class="table table-borderless">
+       <tbody>
+      <tr>
+  <th scope="row">Access Token:</th>
+    <td>
+        <span class="badge @(ViewBag.AccessToken != null ? "bg-success" : "bg-danger")">
+           @(ViewBag.AccessToken != null ? "Present" : "Not available")
+   </span>
+ </td>
+      </tr>
+          <tr>
+ <th scope="row">ID Token:</th>
+      <td>
+ <span class="badge @(ViewBag.IdToken != null ? "bg-success" : "bg-danger")">
+    @(ViewBag.IdToken != null ? "Present" : "Not available")
+         </span>
+       </td>
+          </tr>
+      <tr>
+    <th scope="row">Refresh Token:</th>
+      <td>
+        <span class="badge @(ViewBag.RefreshToken != null ? "bg-success" : "bg-danger")">
+     @(ViewBag.RefreshToken != null ? "Present" : "Not available")
+        </span>
+ </td>
+       </tr>
+         </tbody>
+        </table>
+</div>
+ </div>
+     </div>
+    </div>
+
+    @if (User.Claims.Any())
+    {
+        <div class="row mt-4">
+     <div class="col-12">
+  <div class="card">
+<div class="card-header">
+    <h5 class="card-title mb-0">
+          <i class="fas fa-list"></i> User Claims
+    </h5>
+ </div>
+     <div class="card-body">
+           <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead>
+     <tr>
+     <th>Type</th>
+           <th>Value</th>
+     </tr>
+        </thead>
+  <tbody>
+      @foreach (var claim in User.Claims.OrderBy(c => c.Type))
+         {
+ <tr>
+  <td><code>@claim.Type</code></td>
+   <td>@claim.Value</td>
+        </tr>
+         }
+ </tbody>
+           </table>
+    </div>
+        </div>
+   </div>
+     </div>
+      </div>
+ }
+
+ <div class="row mt-4">
+ <div class="col-12">
+           <div class="card border-info">
+     <div class="card-header bg-info text-white">
+   <h5 class="card-title mb-0">
+      <i class="fas fa-info-circle"></i> Authentication Flow Information
+       </h5>
+       </div>
+       <div class="card-body">
+    <p>This application uses <strong>OAuth 2.1 Authorization Code flow with PKCE</strong> for secure authentication.</p>
+ 
+   <h6>How it works:</h6>
+      <ol>
+    <li>User clicks "Login" and is redirected to IdentityServer</li>
+     <li>User authenticates with IdentityServer using username/password</li>
+            <li>IdentityServer redirects back with an authorization code</li>
+     <li>Application exchanges the code (+ PKCE verifier) for tokens</li>
+      <li>Access tokens are used to make authenticated API calls</li>
+      </ol>
+
+         <div class="alert alert-success mt-3">
+         <strong>? Security Features:</strong>
+      <ul class="mb-0">
+  <li>PKCE (Proof Key for Code Exchange) for enhanced security</li>
+ <li>No client secrets stored in browser</li>
+  <li>Tokens stored securely server-side</li>
+      <li>Automatic token refresh</li>
+    </ul>
+ </div>
+</div>
+        </div>
+       </div>
+    </div>
+
+<div class="row mt-4">
+    <div class="col-12">
+ <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+         <i class="fas fa-home"></i> Back to Home
+           </a>
+      </div>
+    </div>
+</div>

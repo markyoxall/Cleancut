@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token Helper - CleanCut API</title>
+    <style>
+        body {
+   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+   padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+margin: 0 auto;
+     background: white;
+       padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+ text-align: center;
+          margin-bottom: 30px;
+       border-bottom: 2px solid #007bff;
+padding-bottom: 10px;
+        }
+ .card {
+        border: 1px solid #ddd;
+            border-radius: 6px;
+     padding: 20px;
+      margin: 20px 0;
+       background: #fafafa;
+        }
+        .card h2 {
+            color: #007bff;
+  margin-top: 0;
+    }
+        .btn {
+        display: inline-block;
+            padding: 10px 20px;
+      margin: 5px 10px 5px 0;
+  background-color: #007bff;
+     color: white;
+            text-decoration: none;
+       border: none;
+  border-radius: 4px;
+       cursor: pointer;
+   transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+      background-color: #28a745;
+        }
+      .btn-success:hover {
+            background-color: #1e7e34;
+  }
+        .btn-warning {
+            background-color: #ffc107;
+    color: #212529;
+        }
+ .btn-warning:hover {
+       background-color: #e0a800;
+        }
+    .code-block {
+        background: #2d3748;
+       color: #e2e8f0;
+      padding: 15px;
+   border-radius: 4px;
+            font-family: 'Courier New', monospace;
+      font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .token-display {
+          background: #f8f9fa;
+            border: 1px solid #dee2e6;
+ border-radius: 4px;
+      padding: 15px;
+     margin: 10px 0;
+      word-break: break-all;
+            font-family: 'Courier New', monospace;
+     max-height: 200px;
+       overflow-y: auto;
+        }
+        .alert {
+  padding: 12px;
+     margin: 10px 0;
+        border-radius: 4px;
+        }
+    .alert-info {
+          background-color: #d1ecf1;
+        border: 1px solid #b3d7ea;
+       color: #0c5460;
+        }
+        .alert-success {
+  background-color: #d4edda;
+ border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+     .alert-warning {
+        background-color: #fff3cd;
+     border: 1px solid #ffeaa7;
+color: #856404;
+        }
+   .form-group {
+      margin: 15px 0;
+        }
+     .form-group label {
+          display: block;
+            margin-bottom: 5px;
+       font-weight: bold;
+  }
+        .form-group input, .form-group select {
+ width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+         box-sizing: border-box;
+        }
+        .flex {
+            display: flex;
+        gap: 15px;
+      flex-wrap: wrap;
+        }
+        .flex > div {
+     flex: 1;
+            min-width: 200px;
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+   <h1>?? JWT Token Helper</h1>
+        <p style="text-align: center; color: #666;">Get JWT tokens for testing your CleanCut API in Swagger</p>
+
+        <div class="card">
+<h2>?? Quick Token Request</h2>
+     <p>Use this form to get a JWT token from your IdentityServer:</p>
+      
+ <div class="flex">
+      <div class="form-group">
+      <label for="clientId">Client ID:</label>
+         <select id="clientId" onchange="updateClientSecret()">
+  <option value="m2m.client">m2m.client (Machine-to-Machine)</option>
+    <option value="api-testing">api-testing (Resource Owner)</option>
+                <option value="CleanCutBlazorWebApp">CleanCutBlazorWebApp (Public Client)</option>
+     <option value="TempBlazorApp">TempBlazorApp (Public Client)</option>
+ <option value="CleanCutWebApp">CleanCutWebApp (Public Client)</option>
+  </select>
+        </div>
+      <div class="form-group">
+              <label for="clientSecret">Client Secret:</label>
+        <input type="text" id="clientSecret" value="511536EF-F270-4058-80CA-1C89C192F69A" readonly>
+     </div>
+         </div>
+
+     <div class="flex">
+        <div class="form-group">
+            <label for="authority">Authority URL:</label>
+         <input type="text" id="authority" value="https://localhost:5001">
+         </div>
+     <div class="form-group">
+         <label for="scope">Scope:</label>
+         <input type="text" id="scope" value="CleanCutAPI">
+</div>
+            </div>
+
+            <button class="btn btn-success" onclick="getToken()">?? Get JWT Token</button>
+     <button class="btn btn-warning" onclick="copyTokenToClipboard()">?? Copy Token</button>
+       <button class="btn" onclick="openSwagger()">?? Open Swagger</button>
+        </div>
+
+        <div class="card">
+            <h2>?? Token Response</h2>
+     <div id="tokenResponse" class="alert alert-info" style="display: none;">
+    <strong>Token obtained successfully!</strong>
+      </div>
+            <div id="tokenError" class="alert alert-warning" style="display: none;">
+          <strong>Error getting token:</strong> <span id="errorMessage"></span>
+            </div>
+            <div id="tokenDisplay" class="token-display" style="display: none;"></div>
+        </div>
+
+        <div class="card">
+    <h2>?? How to Use in Swagger</h2>
+            <ol>
+  <li><strong>Get Token:</strong> Click "Get JWT Token" above to obtain a valid JWT token</li>
+       <li><strong>Open Swagger:</strong> Click "Open Swagger" or navigate to <a href="/swagger" target="_blank">/swagger</a></li>
+   <li><strong>Authorize:</strong> In Swagger UI, click the "Authorize" button (?? icon)</li>
+ <li><strong>Enter Token:</strong> In the authorization dialog, enter: <code>Bearer YOUR_TOKEN_HERE</code></li>
+       <li><strong>Test APIs:</strong> Now you can test all protected endpoints!</li>
+     </ol>
+            
+    <div class="alert alert-info">
+                <strong>?? Pro Tip:</strong> The token helper will automatically copy the token to your clipboard. 
+  Just paste it in Swagger with "Bearer " prefix.
+   </div>
+ </div>
+
+        <div class="card">
+<h2>🔧 Manual Token Request (cURL)</h2>
+   <p>You can also get tokens manually using cURL:</p>
+        <div class="code-block">
+curl -X POST "https://localhost:5001/connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials&client_id=m2m.client&client_secret=511536EF-F270-4058-80CA-1C89C192F69A&scope=CleanCutAPI"
+        </div>
+        </div>
+
+        <div class="card">
+   <h2>🔍 IdentityServer Connectivity Test</h2>
+    <p>Test if IdentityServer is running and accessible:</p>
+            
+ <button class="btn btn-warning" onclick="testIdentityServerConnection()">🏥 Test IdentityServer Health</button>
+  <button class="btn" onclick="openIdentityServerDiscovery()">📋 View Discovery Document</button>
+      
+  <div id="connectivityResults" class="alert alert-info" style="display: none; margin-top: 15px;">
+      <strong>Connectivity Test Results:</strong>
+       <div id="connectivityOutput"></div>
+     </div>
+        </div>
+
+        <div class="card">
+     <h2>?? Quick Links</h2>
+      <a href="/swagger" class="btn" target="_blank">?? Swagger UI</a>
+       <a href="/versions.html" class="btn" target="_blank">?? API Versions</a>
+            <a href="https://localhost:5001/.well-known/openid_configuration" class="btn" target="_blank">?? IdentityServer Config</a>
+</div>
+    </div>
+
+    <script>
+        let currentToken = '';
+
+ const clientSecrets = {
+   'm2m.client': '511536EF-F270-4058-80CA-1C89C192F69A',
+ 'api-testing': 'testing-secret-123',
+       'CleanCutBlazorWebApp': '', // ✅ Public client - no secret
+       'TempBlazorApp': '',        // ✅ Public client - no secret  
+     'CleanCutWebApp': ''         // ✅ Public client - no secret
+      };
+
+      function updateClientSecret() {
+        const clientId = document.getElementById('clientId').value;
+const clientSecret = clientSecrets[clientId] || '';
+    document.getElementById('clientSecret').value = clientSecret;
+        
+        // ✅ Show warning for public clients
+        const isPublicClient = ['CleanCutBlazorWebApp', 'TempBlazorApp', 'CleanCutWebApp'].includes(clientId);
+        if (isPublicClient) {
+            document.getElementById('clientSecret').placeholder = 'Public client - no secret required';
+            document.getElementById('clientSecret').disabled = true;
+        } else {
+            document.getElementById('clientSecret').placeholder = '';
+        document.getElementById('clientSecret').disabled = false;
+      }
+  }
+
+   async function getToken() {
+        const clientId = document.getElementById('clientId').value;
+   const clientSecret = document.getElementById('clientSecret').value;
+            const authority = document.getElementById('authority').value;
+            const scope = document.getElementById('scope').value;
+
+          const tokenResponse = document.getElementById('tokenResponse');
+    const tokenError = document.getElementById('tokenError');
+            const tokenDisplay = document.getElementById('tokenDisplay');
+  const errorMessage = document.getElementById('errorMessage');
+
+   // Hide previous results
+   tokenResponse.style.display = 'none';
+   tokenError.style.display = 'none';
+     tokenDisplay.style.display = 'none';
+
+            // Add loading indicator
+          errorMessage.textContent = 'Requesting token...';
+      tokenError.style.display = 'block';
+
+try {
+       console.log(`Making token request to: ${authority}/connect/token`);
+            console.log(`Client ID: ${clientId}`);
+            console.log(`Scope: ${scope}`);
+
+  const response = await fetch(`${authority}/connect/token`, {
+        method: 'POST',
+          headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+         },
+     body: new URLSearchParams({
+ grant_type: 'client_credentials',
+               client_id: clientId,
+             client_secret: clientSecret,
+          scope: scope
+        })
+   });
+
+ console.log(`Response status: ${response.status}`);
+          console.log(`Response headers:`, response.headers);
+
+  const data = await response.json();
+            console.log('Response data:', data);
+
+     if (response.ok && data.access_token) {
+         currentToken = data.access_token;
+          tokenResponse.style.display = 'block';
+   tokenError.style.display = 'none';
+  tokenDisplay.style.display = 'block';
+     tokenDisplay.textContent = `Bearer ${currentToken}`;
+      
+     // Auto-copy to clipboard
+         try {
+     await navigator.clipboard.writeText(`Bearer ${currentToken}`);
+    console.log('Token copied to clipboard');
+  } catch (clipboardError) {
+  console.log('Could not copy to clipboard:', clipboardError);
+       }
+   } else {
+   throw new Error(data.error_description || data.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+   } catch (error) {
+           tokenResponse.style.display = 'none';
+          tokenError.style.display = 'block';
+            
+            // Provide more detailed error information
+    let errorText = error.message;
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+ errorText = `
+    Cannot connect to IdentityServer at ${authority}. 
+                    Please ensure:
+ 1. IdentityServer is running on port 5001
+ 2. The URL ${authority} is accessible
+    3. CORS is properly configured
+ 
+    Try running: dotnet run --project src/Infrastructure/CleanCut.Infranstructure.Identity
+     `;
+      }
+        
+     errorMessage.innerHTML = errorText.replace(/\n/g, '<br>');
+         console.error('Token request failed:', error);
+       }
+    }
+
+        async function copyTokenToClipboard() {
+       if (!currentToken) {
+alert('Please get a token first!');
+      return;
+     }
+
+            try {
+    await navigator.clipboard.writeText(`Bearer ${currentToken}`);
+        alert('Token copied to clipboard! You can now paste it in Swagger.');
+            } catch (error) {
+      console.error('Could not copy to clipboard:', error);
+  // Fallback: select text
+       const tokenDisplay = document.getElementById('tokenDisplay');
+  if (tokenDisplay.style.display !== 'none') {
+              const range = document.createRange();
+range.selectNodeContents(tokenDisplay);
+         const selection = window.getSelection();
+      selection.removeAllRanges();
+        selection.addRange(range);
+          alert('Token selected. Please copy manually (Ctrl+C).');
+         }
+            }
+  }
+
+        function openSwagger() {
+            window.open('/swagger', '_blank');
+      }
+
+      // Test IdentityServer connectivity
+      async function testIdentityServerConnection() {
+      const authority = document.getElementById('authority').value;
+    const resultsDiv = document.getElementById('connectivityResults');
+       const outputDiv = document.getElementById('connectivityOutput');
+   
+  resultsDiv.style.display = 'block';
+       outputDiv.innerHTML = 'Testing connectivity...<br>';
+
+        try {
+     // Test discovery endpoint
+            const discoveryResponse = await fetch(`${authority}/.well-known/openid_configuration`);
+      outputDiv.innerHTML += `Discovery endpoint: ${discoveryResponse.status} ${discoveryResponse.statusText}<br>`;
+    
+      if (discoveryResponse.ok) {
+       const discoveryData = await discoveryResponse.json();
+      outputDiv.innerHTML += `✅ IdentityServer is running and accessible<br>`;
+     outputDiv.innerHTML += `Token endpoint: ${discoveryData.token_endpoint}<br>`;
+    outputDiv.innerHTML += `Issuer: ${discoveryData.issuer}<br>`;
+        } else {
+     outputDiv.innerHTML += `❌ Discovery endpoint failed<br>`;
+   }
+   
+       // Test the custom health endpoint
+      const healthResponse = await fetch(`${authority}/test-discovery`);
+    outputDiv.innerHTML += `Health endpoint: ${healthResponse.status} ${healthResponse.statusText}<br>`;
+      
+  if (healthResponse.ok) {
+    const healthData = await healthResponse.json();
+          outputDiv.innerHTML += `✅ Custom health check passed<br>`;
+  outputDiv.innerHTML += `Status: ${healthData.status}<br>`;
+     } else {
+            outputDiv.innerHTML += `⚠️ Custom health endpoint not available<br>`;
+        }
+      
+        } catch (error) {
+ outputDiv.innerHTML += `❌ Connection failed: ${error.message}<br>`;
+    outputDiv.innerHTML += `<br><strong>Troubleshooting:</strong><br>`;
+      outputDiv.innerHTML += `1. Make sure IdentityServer is running on port 5001<br>`;
+          outputDiv.innerHTML += `2. Run: <code>dotnet run --project src/Infrastructure/CleanCut.Infranstructure.Identity</code><br>`;
+      outputDiv.innerHTML += `3. Check that no firewall is blocking port 5001<br>`;
+            outputDiv.innerHTML += `4. Verify the URL: <a href="${authority}" target="_blank">${authority}</a><br>`;
+   }
+ }
+
+        function openIdentityServerDiscovery() {
+   const authority = document.getElementById('authority').value;
+   window.open(`${authority}/.well-known/openid_configuration`, '_blank');
+      }
+
+     // Initialize with default client secret
+        updateClientSecret();
+    </script>
+</body>
+</html>

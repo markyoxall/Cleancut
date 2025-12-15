@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <!-- Microsoft.OpenApi models required by Swagger/OpenAPI configuration -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\CleanCut.Application\CleanCut.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Data\CleanCut.Infrastructure.Data.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Caching\CleanCut.Infrastructure.Caching.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Shared\CleanCut.Infrastructure.Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.BackgroundServices\CleanCut.Infrastructure.BackgroundServices.csproj" />
+  </ItemGroup>
+
+</Project>

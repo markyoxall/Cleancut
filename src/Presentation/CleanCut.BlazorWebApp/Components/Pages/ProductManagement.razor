@@ -1,0 +1,481 @@
+@page "/products/management"
+@using CleanCut.Application.DTOs
+@inject ILogger<ProductManagement> Logger
+@inject CleanCut.BlazorWebApp.Services.IProductApiService ProductApi
+@inject ICustomerApiService CustomerApi
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Product Management - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-box text-success"></i> Product Management
+        </h2>
+        <a class="btn btn-success" href="/products/create">
+            <i class="fas fa-plus"></i> Add New Product
+        </a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            <i class="fas @(IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+
+    <!-- Product Filters Component -->
+    <ProductFilters Customers="Customers"
+                    @bind-SearchTerm="SearchTerm"
+                    @bind-SelectedCustomerId="SelectedCustomerId"
+                    @bind-IsAvailableFilter="IsAvailableFilter"
+                    IsLoading="@IsLoading"
+                    OnFiltersChanged="OnFiltersChanged" />
+
+    <!-- Products Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Products (@FilteredProducts.Count)</h5>
+            @if (FilteredProducts.Any())
+            {
+                <small class="text-muted">
+                    Showing @FilteredProducts.Count products
+                </small>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (FilteredProducts.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th width="200">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in FilteredProducts)
+                            {
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>@product.Name</strong>
+                                            <br>
+                                            <small class="text-muted">@product.Description</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">@product.Price.ToString("C")</strong>
+                                    </td>
+                                    <td>
+                                        @if (product.Customer != null)
+                                        {
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-small me-2">
+                                                    @product.Customer.FirstName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <small>@product.Customer.FirstName @product.Customer.LastName</small>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Unknown</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (product.IsAvailable)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Available
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-times"></i> Unavailable
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @product.CreatedAt.ToString("MMM d, yyyy")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group" aria-label="Product actions">
+                                            <a class="btn btn-outline-info" title="View Details" href="/products/details/@product.Id">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a class="btn btn-outline-primary" title="Edit" href="/products/edit/@product.Id">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" title="Delete" @onclick="() => ShowDeleteModal(product.Id, product.Name)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No products found</h5>
+                    <p class="text-muted">
+                        @if (!string.IsNullOrEmpty(SearchTerm) || SelectedCustomerId.HasValue || IsAvailableFilter.HasValue)
+                        {
+                            <text>Try adjusting your search criteria or </text>
+                            <button type="button" class="btn btn-link p-0" @onclick="ClearFilters">clear filters</button>
+                        }
+                        else
+                        {
+                            <text>Get started by creating your first product</text>
+                        }
+                    </p>
+                    <a class="btn btn-success" href="/products/create">
+                        <i class="fas fa-plus"></i> Add First Product
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (ShowingDeleteModal)
+{
+    <div class="modal fade show" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-trash fa-2x text-danger me-3 mt-1"></i>
+                        <div>
+                            <h6 class="mb-2">Are you sure you want to delete this product?</h6>
+                            <p class="mb-2">
+                                <strong>@ProductToDelete?.Name</strong>
+                            </p>
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                This action cannot be undone. The product will be permanently removed from the system.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDeleteModal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@IsDeleting">
+                        @if (IsDeleting)
+                        {
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            <span>Deleting...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-trash me-1"></i>
+                            <span>Delete Product</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .avatar-small {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+    }
+</style>
+
+@code {
+    // State
+    private List<CustomerInfo> Customers { get; set; } = new();
+    private List<ProductInfo> Products { get; set; } = new();
+    private string? SearchTerm { get; set; }
+    private Guid? SelectedCustomerId { get; set; }
+    private bool? IsAvailableFilter { get; set; }
+    private bool IsLoading { get; set; }
+    private string? Message { get; set; }
+    private bool IsSuccess { get; set; }
+
+    // Delete modal state
+    private bool ShowingDeleteModal { get; set; }
+    private bool IsDeleting { get; set; }
+    private ProductInfo? ProductToDelete { get; set; }
+
+    // Computed property for filtered products (matches MVC logic)
+    private List<ProductInfo> FilteredProducts
+    {
+        get
+        {
+            var filtered = Products.AsEnumerable();
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                filtered = filtered.Where(p =>
+                    p.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    p.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Apply availability filter
+            if (IsAvailableFilter.HasValue)
+            {
+                filtered = filtered.Where(p => p.IsAvailable == IsAvailableFilter.Value);
+            }
+
+            return filtered.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Product Management page loading");
+        
+        // Check for URL parameters
+        var uri = new Uri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        
+        // Check for Customer filter parameter
+        if (query.ContainsKey("CustomerId") && Guid.TryParse(query["CustomerId"], out var CustomerId))
+        {
+            SelectedCustomerId = CustomerId;
+            Logger.LogInformation("Customer filter parameter detected: {CustomerId}", CustomerId);
+        }
+        
+        // Check for refresh parameter
+        if (query.ContainsKey("refresh"))
+        {
+            Logger.LogInformation("Refresh parameter detected, showing success message");
+            Message = "Product created successfully!";
+            IsSuccess = true;
+        }
+        
+        await LoadInitialDataAsync();
+    }
+
+    private async Task LoadInitialDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            // Load Customers
+            Customers = await CustomerApi.GetAllCustomersAsync();
+
+            // Determine which Customer to load products for
+            if (SelectedCustomerId.HasValue)
+            {
+                // Use the specified Customer (from URL parameter or filter)
+                Products = (await ProductApi.GetProductsByCustomerAsync(SelectedCustomerId.Value)).ToList();
+            }
+            else if (Customers.Any())
+            {
+                // Default to first Customer
+                var firstCustomer = Customers.First();
+                SelectedCustomerId = firstCustomer.Id;
+                Products = (await ProductApi.GetProductsByCustomerAsync(firstCustomer.Id)).ToList();
+            }
+            else
+            {
+                Products = new List<ProductInfo>();
+            }
+
+            Logger.LogInformation("Loaded {CustomerCount} Customers and {ProductCount} products for Customer {CustomerId}", Customers.Count, Products.Count, SelectedCustomerId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading initial product management data");
+            Message = "An error occurred while loading data.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnFiltersChanged()
+    {
+        Logger.LogInformation("Filters changed - SearchTerm: {SearchTerm}, SelectedCustomerId: {CustomerId}, IsAvailableFilter: {IsAvailable}", 
+            SearchTerm, SelectedCustomerId, IsAvailableFilter);
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            // Load products based on selected Customer (match MVC logic)
+            if (SelectedCustomerId.HasValue)
+            {
+                Products = (await ProductApi.GetProductsByCustomerAsync(SelectedCustomerId.Value)).ToList();
+            }
+            else if (Customers.Any())
+            {
+                var firstCustomer = Customers.First();
+                SelectedCustomerId = firstCustomer.Id;
+                Products = (await ProductApi.GetProductsByCustomerAsync(firstCustomer.Id)).ToList();
+            }
+            else
+            {
+                Products = new List<ProductInfo>();
+            }
+
+            Logger.LogInformation("Reloaded {ProductCount} products for Customer {CustomerId}", Products.Count, SelectedCustomerId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading products");
+            Message = "An error occurred while loading products.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // Navigation methods
+    private void CreateProduct()
+    {
+        Logger.LogInformation("Navigating to create product page");
+        Navigation.NavigateTo("/products/create");
+    }
+
+    private void ViewProduct(Guid id)
+    {
+        Logger.LogInformation("Navigating to product details: {ProductId}", id);
+        Navigation.NavigateTo($"/products/details/{id}");
+    }
+
+    private void EditProduct(Guid id)
+    {
+        Logger.LogInformation("Navigating to edit product: {ProductId}", id);
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    // Delete modal methods
+    private void ShowDeleteModal(Guid productId, string productName)
+    {
+        ProductToDelete = FilteredProducts.FirstOrDefault(p => p.Id == productId);
+        ShowingDeleteModal = true;
+        Logger.LogInformation("Showing delete confirmation for product: {ProductName} (ID: {ProductId})", productName, productId);
+        StateHasChanged();
+    }
+
+    private void HideDeleteModal()
+    {
+        ShowingDeleteModal = false;
+        ProductToDelete = null;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (ProductToDelete == null) return;
+
+        IsDeleting = true;
+        try
+        {
+            Logger.LogInformation("Deleting product: {ProductName} (ID: {ProductId})", ProductToDelete.Name, ProductToDelete.Id);
+            
+            var success = await ProductApi.DeleteProductAsync(ProductToDelete.Id);
+            
+            if (success)
+            {
+                Message = $"Product '{ProductToDelete.Name}' was deleted successfully.";
+                IsSuccess = true;
+                
+                // Remove from local list for immediate UI update
+                Products.Remove(ProductToDelete);
+                
+                Logger.LogInformation("Product deleted successfully: {ProductId}", ProductToDelete.Id);
+            }
+            else
+            {
+                // Product not found on server - API returned false
+                Logger.LogWarning("Product {ProductId} not found on server during delete", ProductToDelete.Id);
+                Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted by another Customer.";
+                IsSuccess = false;
+                
+                // Remove from local list anyway since it's not on server
+                Products.Remove(ProductToDelete);
+            }
+            
+            // Always refresh to ensure consistency with server
+            await LoadProductsAsync();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.Message.Contains("404"))
+        {
+            Logger.LogWarning(httpEx, "Product {ProductId} returned 404 during delete", ProductToDelete.Id);
+            Message = $"Product '{ProductToDelete.Name}' was not found on the server. It may have already been deleted.";
+            IsSuccess = false;
+            
+            // Remove from local list and refresh
+            Products.Remove(ProductToDelete);
+            await LoadProductsAsync();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Logger.LogError(httpEx, "HTTP error deleting product {ProductId}", ProductToDelete.Id);
+            Message = $"Network error while deleting '{ProductToDelete.Name}'. Please check your connection and try again.";
+            IsSuccess = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error deleting product {ProductId}", ProductToDelete.Id);
+            Message = $"An unexpected error occurred while deleting '{ProductToDelete.Name}'. Please try again.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsDeleting = false;
+            HideDeleteModal();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        SearchTerm = null;
+        SelectedCustomerId = Customers.Any() ? Customers.First().Id : null;
+        IsAvailableFilter = null;
+        await LoadProductsAsync();
+    }
+}

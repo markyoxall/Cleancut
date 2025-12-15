@@ -1,0 +1,137 @@
+@page "/auth-test"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authentication
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ILogger<AuthTest> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<PageTitle>Authentication Test - CleanCut</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+       <i class="fas fa-shield-alt me-2"></i>
+    Authentication Test
+    </h1>
+         
+            <AuthorizeView>
+       <Authorized>
+    <div class="alert alert-success">
+  <h4 class="alert-heading">
+         <i class="fas fa-check-circle me-2"></i>
+       Authentication Successful!
+               </h4>
+              <p>You are successfully authenticated. Here are your details:</p>
+         <hr>
+        
+     <!-- User Information -->
+         <div class="row">
+        <div class="col-md-6">
+   <h5>User Claims:</h5>
+    <table class="table table-sm">
+         @foreach (var claim in context.User.Claims)
+          {
+        <tr>
+  <td><strong>@claim.Type</strong></td>
+          <td>@claim.Value</td>
+           </tr>
+             }
+   </table>
+         </div>
+      <div class="col-md-6">
+      <h5>Authentication Info:</h5>
+   <ul class="list-unstyled">
+           <li><strong>Name:</strong> @GetUserName(context.User)</li>
+    <li><strong>Email:</strong> @GetUserEmail(context.User)</li>
+   <li><strong>Identity:</strong> @context.User.Identity?.Name</li>
+       <li><strong>Authenticated:</strong> @context.User.Identity?.IsAuthenticated</li>
+        <li><strong>Auth Type:</strong> @context.User.Identity?.AuthenticationType</li>
+        </ul>
+  
+          <h5 class="mt-3">Test API Call:</h5>
+          <button class="btn btn-primary" @onclick="TestApiCall">
+      <i class="fas fa-api me-2"></i>
+         Test API with Token
+    </button>
+
+   @if (!string.IsNullOrEmpty(apiResult))
+              {
+ <div class="mt-3">
+             <strong>API Result:</strong>
+            <pre class="bg-light p-2 mt-2"><code>@apiResult</code></pre>
+        </div>
+                  }
+                  </div>
+    </div>
+   </div>
+     </Authorized>
+    <NotAuthorized>
+   <div class="alert alert-warning">
+       <h4 class="alert-heading">
+             <i class="fas fa-exclamation-triangle me-2"></i>
+        Not Authenticated
+          </h4>
+     <p>You need to log in to access this page.</p>
+        <hr>
+          <a href="/Account/Login" class="btn btn-primary">
+      <i class="fas fa-sign-in-alt me-2"></i>
+    Login
+     </a>
+   </div>
+          </NotAuthorized>
+     </AuthorizeView>
+        </div>
+    </div>
+</div>
+
+@code {
+ private string apiResult = "";
+
+    private async Task TestApiCall()
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://localhost:7142");
+
+            // Get the access token from the current HTTP context
+            var context = HttpContextAccessor.HttpContext;
+            if (context != null)
+            {
+                var accessToken = await context.GetTokenAsync("access_token");
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                }
+            }
+
+            var response = await httpClient.GetAsync("/api/v1/products");
+            apiResult = $"Status: {response.StatusCode}\nContent: {await response.Content.ReadAsStringAsync()}";
+        }
+        catch (Exception ex)
+        {
+            apiResult = $"Error: {ex.Message}";
+            Logger.LogError(ex, "Error testing API call");
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetUserName(ClaimsPrincipal user)
+    {
+    return user.FindFirst("name")?.Value 
+            ?? user.FindFirst(ClaimTypes.Name)?.Value 
+          ?? user.FindFirst("preferred_username")?.Value 
+            ?? "Unknown";
+  }
+
+    private string GetUserEmail(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.Email)?.Value 
+      ?? user.FindFirst("email")?.Value 
+       ?? "No email";
+    }
+}

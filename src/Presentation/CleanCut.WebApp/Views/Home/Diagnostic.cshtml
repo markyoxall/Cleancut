@@ -1,0 +1,165 @@
+@{
+    ViewData["Title"] = "Diagnostic Test";
+}
+
+<h2>?? MVC Action Link Diagnostic Test</h2>
+
+<div class="alert alert-info">
+    <strong>Testing different navigation approaches to identify the issue</strong>
+</div>
+
+<!-- URL Generation Test -->
+<div class="card mb-3">
+    <div class="card-header">?? URL Generation Test</div>
+    <div class="card-body">
+        <h6>Static URLs:</h6>
+        <p><strong>Users Details:</strong> <code>/Users/Details/12345678-1234-1234-1234-123456789012</code></p>
+        <p><strong>Products Details:</strong> <code>/Products/Details/12345678-1234-1234-1234-123456789012</code></p>
+        
+        <h6>Generated URLs:</h6>
+        <p><strong>Users Details (Url.Action):</strong> <code>@Url.Action("Details", "Users", new { id = Guid.Parse("12345678-1234-1234-1234-123456789012") })</code></p>
+        <p><strong>Products Details (Url.Action):</strong> <code>@Url.Action("Details", "Products", new { id = Guid.Parse("12345678-1234-1234-1234-123456789012") })</code></p>
+        
+        <h6>Live Test Links:</h6>
+        <a href="/Users/Details/12345678-1234-1234-1234-123456789012" class="btn btn-outline-primary btn-sm me-2">
+            Users Details (Static)
+        </a>
+        <a href="/Products/Details/12345678-1234-1234-1234-123456789012" class="btn btn-outline-success btn-sm me-2">
+            Products Details (Static)
+        </a>
+        <a href="@Url.Action("Details", "Users", new { id = Guid.Parse("12345678-1234-1234-1234-123456789012") })" class="btn btn-primary btn-sm me-2">
+            Users Details (Generated)
+        </a>
+        <a href="@Url.Action("Details", "Products", new { id = Guid.Parse("12345678-1234-1234-1234-123456789012") })" class="btn btn-success btn-sm">
+            Products Details (Generated)
+        </a>
+    </div>
+</div>
+
+<!-- Controller Action Test -->
+<div class="card mb-3">
+    <div class="card-header">?? Controller Action Test</div>
+    <div class="card-body">
+        <h6>Index Actions (No Parameters):</h6>
+        <a href="@Url.Action("Index", "Users")" class="btn btn-primary me-2">Users Index</a>
+        <a href="@Url.Action("Index", "Products")" class="btn btn-success me-2">Products Index</a>
+        <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">Home Index</a>
+        
+        <h6 class="mt-3">Create Actions (No Parameters):</h6>
+        <a href="@Url.Action("Create", "Users")" class="btn btn-outline-primary me-2">Users Create</a>
+        <a href="@Url.Action("Create", "Products")" class="btn btn-outline-success">Products Create</a>
+    </div>
+</div>
+
+<!-- JavaScript Navigation Test -->
+<div class="card mb-3">
+    <div class="card-header">?? JavaScript Navigation Test</div>
+    <div class="card-body">
+        <button onclick="testNavigation('/Users')" class="btn btn-dark btn-sm me-2">
+            Test Users (JS)
+        </button>
+        <button onclick="testNavigation('/Products')" class="btn btn-dark btn-sm me-2">
+            Test Products (JS)
+        </button>
+        <button onclick="testNavigation('/Users/Create')" class="btn btn-outline-dark btn-sm me-2">
+            Test Users Create (JS)
+        </button>
+        <button onclick="testNavigation('/Home')" class="btn btn-outline-dark btn-sm">
+            Test Home (JS)
+        </button>
+        
+        <div id="jsResults" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+                <strong>JavaScript Test Results:</strong>
+                <div id="jsOutput"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Browser Information -->
+<div class="card mb-3">
+    <div class="card-header">?? Browser & Environment Info</div>
+    <div class="card-body">
+        <p><strong>Current URL:</strong> <span id="currentUrl"></span></p>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Base URL:</strong> <code>@Context.Request.Scheme://@Context.Request.Host@Context.Request.PathBase</code></p>
+        <p><strong>Current Route:</strong> Controller=@ViewContext.RouteData.Values["controller"], Action=@ViewContext.RouteData.Values["action"]</p>
+    </div>
+</div>
+
+<!-- Click Test Area -->
+<div class="card mb-3">
+    <div class="card-header">?? Click Detection Test</div>
+    <div class="card-body">
+        <p>Click these buttons to test if click events are being captured:</p>
+        <button onclick="logClick('Button 1')" class="btn btn-info btn-sm me-2">Test Button 1</button>
+        <button onclick="logClick('Button 2')" class="btn btn-warning btn-sm me-2">Test Button 2</button>
+        <a href="#" onclick="logClick('Link 1'); return false;" class="btn btn-outline-info btn-sm me-2">Test Link 1</a>
+        <a href="javascript:void(0)" onclick="logClick('Link 2')" class="btn btn-outline-warning btn-sm">Test Link 2</a>
+        
+        <div id="clickResults" class="mt-3" style="display: none;">
+            <div class="alert alert-success">
+                <strong>Click Results:</strong>
+                <ul id="clickList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Set browser info on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+    });
+
+    // Test navigation function
+    function testNavigation(url) {
+        const resultsDiv = document.getElementById('jsResults');
+        const outputDiv = document.getElementById('jsOutput');
+        
+        resultsDiv.style.display = 'block';
+        outputDiv.innerHTML = `Testing navigation to: <strong>${url}</strong><br>`;
+        
+        try {
+            // Test if we can navigate
+            outputDiv.innerHTML += `Attempting to navigate...<br>`;
+            window.location.href = url;
+        } catch (error) {
+            outputDiv.innerHTML += `<span class="text-danger">Error: ${error.message}</span><br>`;
+        }
+    }
+
+    // Log click events
+    function logClick(buttonName) {
+        const resultsDiv = document.getElementById('clickResults');
+        const clickList = document.getElementById('clickList');
+        
+        resultsDiv.style.display = 'block';
+        
+        const li = document.createElement('li');
+        li.textContent = `${buttonName} clicked at ${new Date().toLocaleTimeString()}`;
+        clickList.appendChild(li);
+        
+        console.log(`Click detected: ${buttonName}`);
+    }
+
+    // Log all click events on the page
+    document.addEventListener('click', function(event) {
+        console.log('Global click detected on:', event.target.tagName, event.target.className, event.target.textContent?.substring(0, 50));
+    });
+
+    // Log all link clicks specifically
+    document.addEventListener('click', function(event) {
+        if (event.target.tagName === 'A') {
+            console.log('Link clicked:', {
+                href: event.target.href,
+                text: event.target.textContent,
+                target: event.target
+            });
+        }
+    });
+</script>
+}

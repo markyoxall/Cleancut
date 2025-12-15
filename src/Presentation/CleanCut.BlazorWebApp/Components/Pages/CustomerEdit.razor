@@ -1,0 +1,533 @@
+@page "/customers/edit/{id:guid}"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Services
+@using System.ComponentModel.DataAnnotations
+@inject ILogger<CustomerEdit> Logger
+@inject ICustomerApiService CustomerApi
+@inject IProductApiService ProductApi
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Edit Customer - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user-edit text-primary"></i> Edit Customer
+        </h2>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="fas fa-arrow-left"></i> Back to Customers
+        </button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border spinner-border-lg" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading user...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            <i class="fas @(IsSuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+    
+    @if (Model != null && !IsLoading)
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user me-2"></i>Customer Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="Model" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                        <InputText id="firstName" class="form-control" @bind-Value="Model.FirstName" placeholder="Enter first name" />
+                                        <ValidationMessage For="@(() => Model.FirstName)" class="text-danger" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                        <InputText id="lastName" class="form-control" @bind-Value="Model.LastName" placeholder="Enter last name" />
+                                        <ValidationMessage For="@(() => Model.LastName)" class="text-danger" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <InputText id="email" class="form-control" @bind-Value="Model.Email" placeholder="Enter email address" type="email" />
+                                <ValidationMessage For="@(() => Model.Email)" class="text-danger" />
+                                <div class="form-text">This email address will be used for user identification.</div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                <div>
+                                    @if (OriginalCustomer != null)
+                                    {
+                                        <button type="button" class="btn btn-outline-danger me-2" @onclick="() => ShowDeleteModal(OriginalCustomer.Id, OriginalCustomer.FirstName + ' ' + OriginalCustomer.LastName)">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    }
+                                    <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                                        @if (IsSubmitting)
+                                        {
+                                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        }
+                                        <i class="fas fa-save"></i> Update Customer
+                                    </button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                @if (OriginalCustomer != null)
+                {
+                    <!-- Customer Preview Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-eye me-2"></i>Current Details
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="avatar-large mx-auto mb-3">
+                                @OriginalCustomer.FirstName.Substring(0, 1).ToUpper()
+                            </div>
+                            <h6 class="fw-bold">@OriginalCustomer.FirstName @OriginalCustomer.LastName</h6>
+                            <p class="text-muted">@OriginalCustomer.Email</p>
+                            
+                            <div class="row text-center mt-3">
+                                <div class="col-6">
+                                    <span class="d-block fw-bold text-primary">@CustomerProducts.Count</span>
+                                    <small class="text-muted">Products</small>
+                                </div>
+                                <div class="col-6">
+                                    <span class="d-block fw-bold">
+                                        @if (OriginalCustomer.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </span>
+                                    <small class="text-muted">Status</small>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="mb-2">
+                                    <small class="text-muted">Member Since</small>
+                                    <p class="small mb-0">@OriginalCustomer.CreatedAt.ToString("MMMM dd, yyyy")</p>
+                                </div>
+                                @if (OriginalCustomer.UpdatedAt.HasValue)
+                                {
+                                    <div class="mb-2">
+                                        <small class="text-muted">Last Updated</small>
+                                        <p class="small mb-0">@OriginalCustomer.UpdatedAt.Value.ToString("MMMM dd, yyyy")</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Products Card -->
+                    @if (CustomerProducts.Any())
+                    {
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-box me-2"></i>Products (@CustomerProducts.Count)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @foreach (var product in CustomerProducts.Take(3))
+                                {
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="me-2">
+                                            <i class="fas fa-box text-success"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold small">@product.Name</div>
+                                            <div class="text-muted small">@product.Price.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                }
+                                @if (CustomerProducts.Count > 3)
+                                {
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">and @(CustomerProducts.Count - 3) more...</small>
+                                    </div>
+                                }
+                                <div class="d-grid mt-3">
+                                    <button type="button" class="btn btn-outline-success btn-sm" 
+                                            @onclick="() => ViewAllProducts(OriginalCustomer.Id)">
+                                        <i class="fas fa-eye me-1"></i> View All Products
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (ShowingDeleteModal)
+{
+    <div class="modal fade show" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-trash fa-2x text-danger me-3 mt-1"></i>
+                        <div>
+                            <h6 class="mb-2">Are you sure you want to delete this customer?</h6>
+                            <p class="mb-2">
+                                <strong>@CustomerToDelete?.FirstName @CustomerToDelete?.LastName</strong>
+                            </p>
+                            @if (CustomerProducts.Any())
+                            {
+                                <div class="alert alert-warning small mb-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    This user has <strong>@CustomerProducts.Count product(s)</strong> associated with them.
+                                </div>
+                            }
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                This action cannot be undone. The user will be permanently removed from the system.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDeleteModal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@IsDeleting">
+                        @if (IsDeleting)
+                        {
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            <span>Deleting...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-trash me-1"></i>
+                            <span>Delete Customer</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ?? SUCCESS TOAST NOTIFICATION (Customer Edit Special Feature!) -->
+@if (ShowSuccessToast)
+{
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div class="toast show border-0 bg-warning text-dark" role="alert">
+            <div class="toast-header bg-warning text-dark border-0">
+                <i class="fas fa-user-check me-2"></i>
+                <strong class="me-auto">Customer Updated! ??</strong>
+                <button type="button" class="btn-close" @onclick="HideSuccessToast"></button>
+            </div>
+            <div class="toast-body">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-user-edit me-2"></i>
+                    <span>@ToastMessage has been updated successfully!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+    display: flex;
+        align-items: center;
+      justify-content: center;
+     font-weight: bold;
+        font-size: 2rem;
+    }
+
+    .toast {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        animation: slideInFromRight 0.3s ease-out;
+    }
+
+    @@keyframes slideInFromRight {
+     from {
+    transform: translateX(100%);
+      opacity: 0;
+    }
+        to {
+          transform: translateX(0);
+       opacity: 1;
+  }
+    }
+</style>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    
+    private CustomerEditModel? Model { get; set; }
+    private CustomerInfo? OriginalCustomer { get; set; }
+    private List<ProductInfo> CustomerProducts { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    private bool IsSubmitting { get; set; }
+    private string? Message { get; set; }
+    private bool IsSuccess { get; set; }
+
+    // Delete modal state
+    private bool ShowingDeleteModal { get; set; }
+    private bool IsDeleting { get; set; }
+    private CustomerInfo? CustomerToDelete { get; set; }
+
+    // ?? Toast notification state (Special for Customer Edit!)
+    private bool ShowSuccessToast { get; set; }
+    private string ToastMessage { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Customer Edit page loading for ID: {CustomerId}", Id);
+        await LoadCustomerAsync();
+    }
+
+    private async Task LoadCustomerAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            OriginalCustomer = await CustomerApi.GetCustomerByIdAsync(Id);
+            
+            if (OriginalCustomer == null)
+            {
+                Message = "Customer not found.";
+                Logger.LogWarning("Customer with ID {CustomerId} not found", Id);
+                return;
+            }
+
+            // Initialize the edit model with current user data
+            Model = new CustomerEditModel
+            {
+                Id = OriginalCustomer.Id,
+                FirstName = OriginalCustomer.FirstName,
+                LastName = OriginalCustomer.LastName,
+                Email = OriginalCustomer.Email
+            };
+
+            // Load user's products
+            CustomerProducts = (await ProductApi.GetProductsByCustomerAsync(OriginalCustomer.Id)).ToList();
+
+            Logger.LogInformation("Loaded customer for editing: {CustomerName}", OriginalCustomer.FirstName + " " + OriginalCustomer.LastName);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading user {CustomerId} for editing", Id);
+            Message = "An error occurred while loading the user.";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Model == null) return;
+
+        IsSubmitting = true;
+        try
+        {
+            Logger.LogInformation("Updating user: {CustomerName} (ID: {CustomerId})", 
+                Model.FirstName + " " + Model.LastName, Model.Id);
+
+            var request = new UpdateCustomerRequest
+            {
+                FirstName = Model.FirstName,
+                LastName = Model.LastName,
+                Email = Model.Email
+            };
+
+            var updatedCustomer = await CustomerApi.UpdateCustomerAsync(Model.Id, request);
+
+            Logger.LogInformation("Customer updated successfully: {CustomerId}", updatedCustomer.Id);
+
+            // ?? Show SUCCESS TOAST instead of navigation!
+            ToastMessage = $"{updatedCustomer.FirstName} {updatedCustomer.LastName}";
+            ShowSuccessToast = true;
+            StateHasChanged();
+            
+            // Update the original user data
+            OriginalCustomer = updatedCustomer;
+
+            // Auto-hide toast and navigate after delay
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(4000); // Show toast for 4 seconds
+                await InvokeAsync(() =>
+                {
+                    ShowSuccessToast = false;
+                    StateHasChanged();
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating user {CustomerName} (ID: {CustomerId})", 
+                Model.FirstName + " " + Model.LastName, Model.Id);
+            Message = "An error occurred while updating the user. Please try again.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Logger.LogInformation("Customer edit cancelled");
+        Navigation.NavigateTo("/customers/management");
+    }
+
+    private void ViewAllProducts(Guid customerId)
+    {
+        Logger.LogInformation("Navigating to products for user: {CustomerId}", customerId);
+        Navigation.NavigateTo($"/products/management?customerId={customerId}");
+    }
+
+    // Delete modal methods
+    private void ShowDeleteModal(Guid customerId, string userName)
+    {
+        CustomerToDelete = OriginalCustomer;
+        ShowingDeleteModal = true;
+        Logger.LogInformation("Showing delete confirmation for user: {CustomerName} (ID: {CustomerId})", userName, customerId);
+        StateHasChanged();
+    }
+
+    private void HideDeleteModal()
+    {
+        ShowingDeleteModal = false;
+        CustomerToDelete = null;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (CustomerToDelete == null) return;
+
+        IsDeleting = true;
+        try
+        {
+            Logger.LogInformation("Deleting user: {CustomerName} (ID: {CustomerId})", 
+                CustomerToDelete.FirstName + " " + CustomerToDelete.LastName, CustomerToDelete.Id);
+            
+            var success = await CustomerApi.DeleteCustomerAsync(CustomerToDelete.Id);
+    
+            if (success)
+            {
+                Logger.LogInformation("Customer deleted successfully: {CustomerId}", CustomerToDelete.Id);
+                
+                // ? FIXED: Navigate to correct customer management URL
+                Navigation.NavigateTo($"/customers/management?refresh={DateTime.UtcNow.Ticks}");
+            }
+            else
+            {
+                // Customer not found on server - API returned false
+                Logger.LogWarning("Customer {CustomerId} not found on server during delete", CustomerToDelete.Id);
+                Message = $"Customer '{CustomerToDelete.FirstName} {CustomerToDelete.LastName}' was not found on the server. It may have already been deleted by another user.";
+                IsSuccess = false;
+            }
+        }
+        catch (HttpRequestException httpEx) when (httpEx.Message.Contains("404"))
+        {
+            Logger.LogWarning(httpEx, "Customer {CustomerId} returned 404 during delete", CustomerToDelete.Id);
+            Message = $"Customer '{CustomerToDelete.FirstName} {CustomerToDelete.LastName}' was not found on the server. It may have already been deleted.";
+            IsSuccess = false;
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Logger.LogError(httpEx, "HTTP error deleting user {CustomerId}", CustomerToDelete.Id);
+            Message = $"Network error while deleting '{CustomerToDelete.FirstName} {CustomerToDelete.LastName}'. Please check your connection and try again.";
+            IsSuccess = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error deleting user {CustomerId}", CustomerToDelete.Id);
+            Message = $"An unexpected error occurred while deleting '{CustomerToDelete.FirstName} {CustomerToDelete.LastName}'. Please try again.";
+            IsSuccess = false;
+        }
+        finally
+        {
+            IsDeleting = false;
+            HideDeleteModal();
+            StateHasChanged();
+        }
+    }
+
+    private void HideSuccessToast()
+    {
+        ShowSuccessToast = false;
+        StateHasChanged();
+    }
+
+    // Form model class for editing
+    public class CustomerEditModel
+    {
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50, ErrorMessage = "Last name cannot exceed 50 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters")]
+        public string Email { get; set; } = string.Empty;
+    }
+}

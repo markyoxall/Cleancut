@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+  redisinsight:
+    ports:
+      - "5540:8001"

@@ -1,0 +1,6 @@
+@CleanCut.API_HostAddress = http://localhost:5008
+
+GET {{CleanCut.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

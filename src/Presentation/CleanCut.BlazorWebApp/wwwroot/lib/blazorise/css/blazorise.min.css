@@ -1,0 +1,6 @@
+/* Minimal Blazorise CSS stub to provide basic layout for components used in the app */
+.b-card{border:1px solid #e0e0e0;border-radius:.35rem;padding:1rem;background:#fff}
+.b-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;border-radius:.35rem;background:#0d6efd;color:#fff;border:1px solid #0d6efd}
+.b-btn:disabled{opacity:.65}
+.b-form-check{display:flex;align-items:center;gap:.5rem}
+.b-icon{display:inline-block}

@@ -1,0 +1,66 @@
+@page "/countries"
+@attribute [Authorize]
+@using CleanCut.Application.DTOs
+@inject ICountryApiService CountryApi
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+<h3>Countries</h3>
+
+<input class="form-control mb-3"
+       placeholder="Search by name or code..."
+       value="@searchTerm"
+       @oninput="OnSearchChanged" />
+
+@if (countries == null)
+{
+    <p>Loading...</p>
+}
+else if (!FilteredCountries.Any())
+{
+    <p>No countries found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var country in FilteredCountries)
+            {
+                <tr>
+                    <td>@country.Name</td>
+                    <td>@country.Code</td>
+                    <td>@country.Id</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CountryInfo>? countries;
+    private string searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        countries = await CountryApi.GetAllCountriesAsync();
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private IEnumerable<CountryInfo> FilteredCountries =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? countries ?? Enumerable.Empty<CountryInfo>()
+            : countries?.Where(c =>
+                (!string.IsNullOrEmpty(c.Name) && c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Code) && c.Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            ) ?? Enumerable.Empty<CountryInfo>();
+}

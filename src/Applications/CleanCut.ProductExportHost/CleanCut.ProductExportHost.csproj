@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-CleanCut.ProductExportHost-8a8a8a8a-8a8a-8a8a-8a8a-8a8a8a8a8a8a</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.BackgroundServices\CleanCut.Infrastructure.BackgroundServices.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Data\CleanCut.Infrastructure.Data.csproj" />
+    <ProjectReference Include="..\..\Core\CleanCut.Application\CleanCut.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="exports\" />
+  </ItemGroup>
+
+</Project>

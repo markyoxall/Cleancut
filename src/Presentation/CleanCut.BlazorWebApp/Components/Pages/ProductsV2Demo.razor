@@ -1,0 +1,407 @@
+@using CleanCut.BlazorWebApp.Services
+@inject IJSRuntime JSRuntime
+@inject ILogger<ProductsV2Demo> Logger
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@inject IProductApiService ProductApi
+
+<div class="row">
+    
+    <!-- Get All Products with Pagination -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>GET All Products (Paginated)
+                </h5>
+                <small>GET /api/v2/products?page={page}&pageSize={pageSize}</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Retrieves paginated products with enhanced metadata</p>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Page:</label>
+                        <input type="number" class="form-control" @bind="page" min="1" disabled="@isLoadingAll">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Page Size:</label>
+                        <input type="number" class="form-control" @bind="pageSize" min="1" max="100" disabled="@isLoadingAll">
+                    </div>
+                </div>
+
+                <button class="btn btn-info" @onclick="GetAllProductsV2" disabled="@isLoadingAll">
+                    @if (isLoadingAll)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-download me-1"></i>Load Products
+                </button>
+
+                @if (!string.IsNullOrEmpty(getAllError))
+                {
+                    <div class="alert alert-danger mt-3">@getAllError</div>
+                }
+
+                @if (allProductsResponse != null)
+                {
+                    <div class="mt-3">
+                        <div class="alert alert-info">
+                            <strong>API v2.0 Response</strong><br>
+                            Total Items: @allProductsResponse.Pagination.TotalItems<br>
+                            Page @allProductsResponse.Pagination.Page of @allProductsResponse.Pagination.TotalPages<br>
+                            <small>Timestamp: @allProductsResponse.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                        </div>
+                        
+                        @if (allProductsResponse.Data?.Any() == true)
+                        {
+                            <div style="max-height: 250px; overflow-y: auto;">
+                                @foreach (var product in allProductsResponse.Data)
+                                {
+                                    <div class="border rounded p-2 mb-2 bg-light">
+                                        <strong>@product.Name</strong> - $@product.Price.ToString("F2")
+                                        <br><small class="text-muted">@product.Description</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Get Product By ID with Enhanced Response -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>GET Product by ID (Enhanced)
+                </h5>
+                <small>GET /api/v2/products/{id}</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Retrieve a specific product with enhanced API v2 response format</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">Product ID:</label>
+                    <input type="text" class="form-control" @bind="productIdToGet" 
+                           placeholder="Enter product GUID" disabled="@isLoadingById">
+                </div>
+
+                <button class="btn btn-success" @onclick="GetProductByIdV2" 
+                        disabled="@(isLoadingById || string.IsNullOrWhiteSpace(productIdToGet))">
+                    @if (isLoadingById)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-search me-1"></i>Get Product
+                </button>
+
+                @if (!string.IsNullOrEmpty(getByIdError))
+                {
+                    <div class="alert alert-danger mt-3">@getByIdError</div>
+                }
+
+                @if (foundProductResponse != null)
+                {
+                    <div class="mt-3">
+                        <div class="alert alert-success">
+                            <strong>API v2.0 Response</strong><br>
+                            <small>Timestamp: @foundProductResponse.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                        </div>
+                        
+                        @if (foundProductResponse.Data != null)
+                        {
+                            <div class="border rounded p-3 bg-light">
+                                <h6>@foundProductResponse.Data.Name</h6>
+                                <p>@foundProductResponse.Data.Description</p>
+                                <p><strong>Price:</strong> $@foundProductResponse.Data.Price.ToString("F2")</p>
+                                <p><strong>Available:</strong> @(foundProductResponse.Data.IsAvailable ? "Yes" : "No")</p>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Get Products by Customer with Pagination -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tag me-2"></i>GET Products by Customer (Paginated)
+                </h5>
+                <small>GET /api/v2/products/customer/{customerId}?page={page}&pageSize={pageSize}</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Retrieve paginated products for a specific customer</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">Customer ID:</label>
+                    <input type="text" class="form-control" @bind="customerIdToGet" 
+                           placeholder="Enter customer GUID" disabled="@isLoadingByCustomer">
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Page:</label>
+                        <input type="number" class="form-control" @bind="customerPage" min="1" disabled="@isLoadingByCustomer">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Page Size:</label>
+                        <input type="number" class="form-control" @bind="customerPageSize" min="1" max="100" disabled="@isLoadingByCustomer">
+                    </div>
+                </div>
+
+                <button class="btn btn-warning" @onclick="GetProductsByCustomerV2" 
+                        disabled="@(isLoadingByCustomer || string.IsNullOrWhiteSpace(customerIdToGet))">
+                    @if (isLoadingByCustomer)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-search me-1"></i>Get Customer Products
+                </button>
+
+                @if (!string.IsNullOrEmpty(getByCustomerError))
+                {
+                    <div class="alert alert-danger mt-3">@getByCustomerError</div>
+                }
+
+                @if (customerProductsResponse != null)
+                {
+                    <div class="mt-3">
+                        <div class="alert alert-warning">
+                            <strong>API v2.0 Response</strong><br>
+                            Total Items: @customerProductsResponse.Pagination.TotalItems<br>
+                            Page @customerProductsResponse.Pagination.Page of @customerProductsResponse.Pagination.TotalPages<br>
+                            <small>Timestamp: @customerProductsResponse.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                        </div>
+                        
+                        @if (customerProductsResponse.Data?.Any() == true)
+                        {
+                            <div style="max-height: 150px; overflow-y: auto;">
+                                @foreach (var product in customerProductsResponse.Data)
+                                {
+                                    <div class="border rounded p-2 mb-2 bg-light">
+                                        <strong>@product.Name</strong> - $@product.Price.ToString("F2")
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Statistics (V2 Only) -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Product Statistics (V2 Only)
+                </h5>
+                <small>GET /api/v2/products/statistics</small>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Get product statistics - exclusive to API v2</p>
+
+                <button class="btn btn-dark" @onclick="GetProductStatistics" disabled="@isLoadingStats">
+                    @if (isLoadingStats)
+                    {
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    }
+                    <i class="fas fa-chart-bar me-1"></i>Get Statistics
+                </button>
+
+                @if (!string.IsNullOrEmpty(getStatsError))
+                {
+                    <div class="alert alert-danger mt-3">@getStatsError</div>
+                }
+
+                @if (statsResponse != null)
+                {
+                    <div class="mt-3">
+                        <div class="alert alert-dark">
+                            <strong>@statsResponse.Message</strong><br>
+                            <small>API v@statsResponse.ApiVersion - @statsResponse.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                        </div>
+                        
+                        @if (statsResponse.Data != null)
+                        {
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="card bg-primary text-white">
+                                        <div class="card-body text-center">
+                                            <h4>@statsResponse.Data.TotalProducts</h4>
+                                            <small>Total Products</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body text-center">
+                                            <h4>@statsResponse.Data.AvailableProducts</h4>
+                                            <small>Available</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mt-2">
+                                    <div class="card bg-danger text-white">
+                                        <div class="card-body text-center">
+                                            <h4>@statsResponse.Data.UnavailableProducts</h4>
+                                            <small>Unavailable</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mt-2">
+                                    <div class="card bg-info text-white">
+                                        <div class="card-body text-center">
+                                            <h4>$@statsResponse.Data.AveragePrice.ToString("F2")</h4>
+                                            <small>Avg Price</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    // State variables
+    private bool isLoadingAll = false;
+    private bool isLoadingById = false;
+    private bool isLoadingByCustomer = false;
+    private bool isLoadingStats = false;
+
+    // Pagination
+    private int page = 1;
+    private int pageSize = 5;
+    private int customerPage = 1;
+    private int customerPageSize = 5;
+
+    // Form inputs
+    private string productIdToGet = "b6cc1306-75ea-45f0-902e-6cdf34260651";
+    private string customerIdToGet = "11111111-1111-1111-1111-111111111111";
+
+    // V2 API Responses (shared DTOs from ProductApiV2Dtos.cs)
+    private V2ProductListResponse? allProductsResponse;
+    private V2ProductResponse? foundProductResponse;
+    private V2ProductListResponse? customerProductsResponse;
+    private V2StatsResponse? statsResponse;
+
+    // Error messages
+    private string getAllError = string.Empty;
+    private string getByIdError = string.Empty;
+    private string getByCustomerError = string.Empty;
+    private string getStatsError = string.Empty;
+
+    private async Task GetAllProductsV2()
+    {
+        isLoadingAll = true;
+        getAllError = string.Empty;
+        allProductsResponse = null;
+        StateHasChanged();
+
+        try
+        {
+            allProductsResponse = await ProductApi.GetAllProductsV2Async(page, pageSize);
+            if (allProductsResponse == null || allProductsResponse.Data == null)
+                getAllError = "API Error: null products";
+        }
+        catch (Exception ex)
+        {
+            getAllError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingAll = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetProductByIdV2()
+    {
+        isLoadingById = true;
+        getByIdError = string.Empty;
+        foundProductResponse = null;
+        StateHasChanged();
+
+        try
+        {
+            var dto = await ProductApi.GetProductByIdV2Async(Guid.Parse(productIdToGet));
+            if (dto == null)
+            {
+                getByIdError = "Product not found or API error.";
+            }
+            else
+            {
+                foundProductResponse = new V2ProductResponse
+                {
+                    Data = dto,
+                    ApiVersion = "v2",
+                    Timestamp = DateTime.UtcNow
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            getByIdError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingById = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetProductsByCustomerV2()
+    {
+        isLoadingByCustomer = true;
+        getByCustomerError = string.Empty;
+        customerProductsResponse = null;
+        StateHasChanged();
+
+        try
+        {
+            customerProductsResponse = await ProductApi.GetProductsByCustomerV2Async(Guid.Parse(customerIdToGet), customerPage, customerPageSize);
+        }
+        catch (Exception ex)
+        {
+            getByCustomerError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingByCustomer = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetProductStatistics()
+    {
+        isLoadingStats = true;
+        getStatsError = string.Empty;
+        statsResponse = null;
+        StateHasChanged();
+
+        try
+        {
+            statsResponse = await ProductApi.GetProductStatisticsV2Async();
+        }
+        catch (Exception ex)
+        {
+            getStatsError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingStats = false;
+            StateHasChanged();
+        }
+    }
+}

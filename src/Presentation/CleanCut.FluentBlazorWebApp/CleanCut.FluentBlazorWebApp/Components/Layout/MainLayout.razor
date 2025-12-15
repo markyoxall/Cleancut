@@ -1,0 +1,64 @@
+@inherits LayoutComponentBase
+
+<FluentDesignTheme />
+<FluentMenuProvider />
+
+<FluentLayout>
+    <FluentHeader>
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Cut())" Color="Color.Accent" />
+                <FluentLabel Typo="Typography.H3" Color="Color.Accent">CleanCut</FluentLabel>
+            </FluentStack>
+            <FluentNavMenu>
+                <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())">
+                    Home
+                </FluentNavLink>
+                <FluentNavLink Href="/products" Icon="@(new Icons.Regular.Size20.Search())">
+                    Product Search
+                </FluentNavLink>
+                <FluentMenuButton Text="API Docs" Icon="@(new Icons.Regular.Size20.Code())">
+                    <FluentMenuItem OnClick="@(() => OpenInNewTab("https://localhost:7142/swagger"))">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.Book())" Slot="start" />
+                        Swagger UI
+                    </FluentMenuItem>
+                    <FluentMenuItem OnClick="@(() => OpenInNewTab("https://localhost:7142/versions.html"))">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.LayerDiagonal())" Slot="start" />
+                        API Versions
+                    </FluentMenuItem>
+                </FluentMenuButton>
+            </FluentNavMenu>
+        </FluentStack>
+    </FluentHeader>
+
+    <FluentMain>
+        <div style="padding: 20px;">
+            @Body
+        </div>
+    </FluentMain>
+
+    <FluentFooter>
+        <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" Style="padding: 20px;">
+            <FluentLabel Typo="Typography.Body">
+                <strong>CleanCut Fluent Blazor App</strong> - Built with Clean Architecture, DDD, and CQRS
+            </FluentLabel>
+            <FluentLabel Typo="Typography.Body" Color="Color.Neutral">
+                Powered by .NET 9, Blazor WebAssembly, Entity Framework Core, MediatR & AutoMapper
+            </FluentLabel>
+        </FluentStack>
+    </FluentFooter>
+</FluentLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private void OpenInNewTab(string url)
+    {
+        // This would require JSInterop to work properly
+        // For now, we'll just navigate normally
+    }
+}

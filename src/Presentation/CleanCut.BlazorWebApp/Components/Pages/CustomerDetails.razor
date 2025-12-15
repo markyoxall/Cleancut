@@ -1,0 +1,282 @@
+@page "/customers/details/{id:guid}"
+@using CleanCut.Application.DTOs
+@using CleanCut.BlazorWebApp.Services
+@inject ILogger<CustomerDetails> Logger
+@inject ICustomerApiService CustomerApi
+@inject IProductApiService ProductApi
+@inject NavigationManager Navigation
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Customer Details - CleanCut</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user text-info"></i> Customer Details
+        </h2>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" @onclick="BackToCustomers">
+                <i class="fas fa-arrow-left"></i> Back to Customers
+            </button>
+            @if (Customer != null)
+            {
+                <button type="button" class="btn btn-outline-primary" @onclick="() => EditCustomer(Customer.Id)">
+                    <i class="fas fa-edit"></i> Edit Customer
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border spinner-border-lg" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading customer details...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+    else if (Customer != null)
+    {
+        <div class="row">
+            <div class="col-lg-4">
+                <!-- User Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user me-2"></i>Customer Information
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="avatar-xl mx-auto mb-3">
+                            @Customer.FirstName.Substring(0, 1).ToUpper()
+                        </div>
+                        <h4 class="fw-bold">@Customer.FirstName @Customer.LastName</h4>
+                        <p class="text-muted mb-3">@Customer.Email</p>
+                        
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <span class="d-block fw-bold text-primary fs-4">@CustomerProducts.Count</span>
+                                    <small class="text-muted">Products</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block fw-bold fs-5">
+                                    @if (Customer.IsActive)
+                                    {
+                                        <span class="badge bg-success fs-6">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary fs-6">Inactive</span>
+                                    }
+                                </span>
+                                <small class="text-muted">Status</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="row text-start">
+                            <div class="col-6">
+                                <small class="text-muted">Member Since</small>
+                                <p class="fw-semibold mb-0">@Customer.CreatedAt.ToString("MMM dd, yyyy")</p>
+                            </div>
+                            @if (Customer.UpdatedAt.HasValue)
+                            {
+                                <div class="col-6">
+                                    <small class="text-muted">Last Updated</small>
+                                    <p class="fw-semibold mb-0">@Customer.UpdatedAt.Value.ToString("MMM dd, yyyy")</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" @onclick="() => EditCustomer(Customer.Id)">
+                                <i class="fas fa-edit me-2"></i>Edit Customer
+                            </button>
+                            <button type="button" class="btn btn-outline-success" @onclick="() => ViewAllProducts(Customer.Id)">
+                                <i class="fas fa-box me-2"></i>View Products (@CustomerProducts.Count)
+                            </button>
+                            <hr class="my-2">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="BackToCustomers">
+                                <i class="fas fa-list me-2"></i>Back to Customers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <!-- User Products Card -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>Customer Products (@CustomerProducts.Count)
+                        </h5>
+                        @if (CustomerProducts.Any())
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-success" @onclick="() => ViewAllProducts(Customer.Id)">
+                                <i class="fas fa-external-link-alt me-1"></i> Manage Products
+                            </button>
+                        }
+                    </div>
+                    <div class="card-body">
+                        @if (CustomerProducts.Any())
+                        {
+                            <div class="row">
+                                @foreach (var product in CustomerProducts)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card border">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0">@product.Name</h6>
+                                                    @if (product.IsAvailable)
+                                                    {
+                                                        <span class="badge bg-success">Available</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning">Unavailable</span>
+                                                    }
+                                                </div>
+                                                <p class="card-text text-muted small">@product.Description</p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-success fw-bold">@product.Price.ToString("C")</span>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-outline-info" 
+                                                                @onclick="() => ViewProduct(product.Id)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-primary" 
+                                                                @onclick="() => EditProduct(product.Id)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-box fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted">No products yet</h6>
+                                <p class="text-muted small">This customer hasn't created any products.</p>
+                                <button type="button" class="btn btn-success" @onclick="CreateProduct">
+                                    <i class="fas fa-plus me-1"></i> Create First Product
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+ 
+@code {
+    [Parameter] public Guid Id { get; set; }
+    
+    private CustomerInfo? Customer { get; set; }
+    private List<ProductInfo> CustomerProducts { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    private string? Message { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Customer Details page loading for ID: {CustomerId}", Id);
+        await LoadCustomerAsync();
+    }
+
+    private async Task LoadCustomerAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Customer = await CustomerApi.GetCustomerByIdAsync(Id);
+            
+            if (Customer == null)
+            {
+                Message = "Customer not found.";
+                Logger.LogWarning("Customer with ID {CustomerId} not found", Id);
+                return;
+            }
+
+            // Load customer's products
+            CustomerProducts = (await ProductApi.GetProductsByCustomerAsync(Customer.Id)).ToList();
+
+            Logger.LogInformation("Loaded customer details: {Name} with {ProductCount} products", 
+                Customer.FirstName + " " + Customer.LastName, CustomerProducts.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading customer {CustomerId}", Id);
+            Message = "An error occurred while loading the customer details.";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BackToCustomers()
+    {
+        Logger.LogInformation("Navigating back to customer management");
+        Navigation.NavigateTo("/customers/management");
+    }
+
+    private void EditCustomer(Guid customerId)
+    {
+        Logger.LogInformation("Navigating to edit customer: {CustomerId}", customerId);
+        Navigation.NavigateTo($"/customers/edit/{customerId}");
+    }
+
+    private void ViewAllProducts(Guid customerId)
+    {
+        Logger.LogInformation("Navigating to products for customer: {CustomerId}", customerId);
+        Navigation.NavigateTo($"/products/management?customerid={customerId}");
+    }
+
+    private void ViewProduct(Guid productId)
+    {
+        Logger.LogInformation("Navigating to product details: {ProductId}", productId);
+        Navigation.NavigateTo($"/products/details/{productId}");
+    }
+
+    private void EditProduct(Guid productId)
+    {
+        Logger.LogInformation("Navigating to edit product: {ProductId}", productId);
+        Navigation.NavigateTo($"/products/edit/{productId}");
+    }
+
+    private void CreateProduct()
+    {
+        Logger.LogInformation("Navigating to create product page");
+        Navigation.NavigateTo("/products/create");
+    }
+}

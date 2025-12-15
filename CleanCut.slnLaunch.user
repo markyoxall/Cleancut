@@ -1,0 +1,36 @@
+[
+  {
+    "Name": "Blazor Web App",
+    "Projects": [
+      {
+        "Path": "src\\Infrastructure\\CleanCut.Infrastructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Applications\\CleanCut.ProductExportHost\\CleanCut.ProductExportHost.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation\\CleanCut.BlazorWebApp\\CleanCut.BlazorWebApp.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Identity plus API only",
+    "Projects": [
+      {
+        "Path": "src\\Infrastructure\\CleanCut.Infrastructure.Identity\\CleanCut.Infrastructure.Identity.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation\\CleanCut.API\\CleanCut.API.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
