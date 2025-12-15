@@ -47,8 +47,10 @@ public static class DependencyInjection
                     options.Configuration = redisConnectionString;
                     options.InstanceName = "CleanCut";
                 });
-
                 services.AddScoped<ICacheService, RedisCacheService>();
+
+                // Adapter: expose application-level ICacheService by wrapping the infrastructure abstraction
+                services.AddScoped<CleanCut.Application.Common.Interfaces.ICacheService, CleanCut.Infrastructure.Caching.Adapters.CacheServiceAdapter>();
                 
                 Console.WriteLine("? Redis caching configured successfully");
             }
@@ -72,5 +74,8 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddDistributedMemoryCache();
         services.AddScoped<ICacheService, MemoryCacheService>();
+
+        // Adapter: expose application-level ICacheService by wrapping the infrastructure abstraction
+        services.AddScoped<CleanCut.Application.Common.Interfaces.ICacheService, CleanCut.Infrastructure.Caching.Adapters.CacheServiceAdapter>();
     }
 }

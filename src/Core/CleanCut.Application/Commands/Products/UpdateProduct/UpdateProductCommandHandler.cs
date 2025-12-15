@@ -44,20 +44,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
 
         _logger.LogInformation("Product {ProductId} updated and cache invalidation via pipeline should occur", request.Id);
 
-        // Defensive: explicitly remove product cache entries to avoid stale reads
-        try
-        {
-            if (_cacheService != null)
-            {
-                await _cacheService.RemoveAsync("products:all", cancellationToken);
-                await _cacheService.RemoveAsync($"products:{product.Id}", cancellationToken);
-                _logger.LogInformation("Explicit cache removal executed for product {ProductId}", product.Id);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to explicitly remove cached keys for product {ProductId}. Pipeline invalidation may still occur.", product.Id);
-        }
+        // Cache invalidation is handled by the domain-event-driven integration pipeline
 
         // Return mapped DTO
         return _mapper.Map<ProductInfo>(product);

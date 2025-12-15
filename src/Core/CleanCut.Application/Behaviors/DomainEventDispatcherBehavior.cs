@@ -71,6 +71,13 @@ public class DomainEventDispatcherBehavior<TRequest, TResponse> : IPipelineBehav
         {
             CustomerCreatedEvent created => new CustomerCreatedNotification(created),
             CustomerUpdatedEvent updated => new CustomerUpdatedNotification(updated),
+            OrderCreatedEvent oc => new OrderCreatedNotification(oc),
+            OrderUpdatedEvent ou => new OrderUpdatedNotification(ou),
+            OrderStatusChangedEvent os => new OrderStatusChangedNotification(os),
+            ProductCreatedEvent pc => new CleanCut.Application.Events.ProductCreatedNotification(pc),
+            ProductUpdatedEvent pu => new CleanCut.Application.Events.ProductUpdatedNotification(pu),
+            CountryCreatedEvent cc => new CleanCut.Application.Events.CountryCreatedNotification(cc),
+            CountryUpdatedEvent cu => new CleanCut.Application.Events.CountryUpdatedNotification(cu),
             _ => null
         };
     }

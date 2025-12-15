@@ -42,18 +42,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         await _unitOfWork.Products.AddAsync(product, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Defensive: invalidate product list cache to show new item
-        try
-        {
-            if (_cacheService != null)
-            {
-                await _cacheService.RemoveAsync("products:all", cancellationToken);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Failed to remove products:all cache after create");
-        }
+        // Cache invalidation is handled by the domain-event-driven integration pipeline
 
         // Return mapped DTO
         return _mapper.Map<ProductInfo>(product);

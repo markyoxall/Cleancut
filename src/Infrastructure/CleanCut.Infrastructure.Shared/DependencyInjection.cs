@@ -44,6 +44,8 @@ public static class DependencyInjection
         // Messaging services
         services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
         services.AddSingleton<IRabbitMqRetryQueue, RabbitMqRetryQueue>();
+        // Integration event publisher (generic)
+        services.AddSingleton<CleanCut.Application.Common.Interfaces.IIntegrationEventPublisher, IntegrationEventPublisher>();
         // Note: exchange initialization removed to keep startup simple; create exchange via management UI or a separate initializer if needed
 
         // Email sender

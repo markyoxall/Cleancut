@@ -1,24 +1,25 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using CleanCut.Application.DTOs;
 using CleanCut.BlazorWebApp.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace CleanCut.BlazorWebApp.State;
 
-/// <summary>
-/// UI state container for customers used by Blazor components.
-/// Provides caching, loading state, and CRUD helpers that call the Customer API service.
-/// </summary>
-public class CustomersState : ICustomersState
+public class CustomersState : ICustomersState, IAsyncDisposable
 {
     private readonly ICustomerApiService _customerApi;
     private readonly ILogger<CustomersState> _logger;
+    // SignalR connection removed - notifications are handled by centralized domain-event pipeline
 
     private List<CustomerInfo> _users = new();
     private DateTime _lastLoaded = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
-    // UI state / messages
     private bool _isLoading;
     public bool IsLoading => _isLoading;
     public event Action<string, bool>? MessageChanged;
@@ -69,7 +70,6 @@ public class CustomersState : ICustomersState
         {
             _logger.LogError(ex, "CustomersState: error loading customers");
             MessageChanged?.Invoke("Failed to load customers", false);
-            // swallow to keep UI stable; callers can react to MessageChanged
         }
         finally
         {
@@ -125,7 +125,7 @@ public class CustomersState : ICustomersState
         {
             var updated = await _customerApi.UpdateCustomerAsync(id, request, cancellationToken);
             var idx = _users.FindIndex(u => u.Id == id);
-            if (idx >=0) _users[idx] = updated;
+            if (idx >= 0) _users[idx] = updated;
 
             var usersCopy = _users.ToList();
             CustomersChanged?.Invoke(usersCopy);
@@ -193,5 +193,15 @@ public class CustomersState : ICustomersState
     {
         _lastLoaded = DateTime.MinValue;
         StateChanged?.Invoke();
+    }
+
+    private void InitializeSignalR()
+    {
+        // Intentionally left empty. SignalR client logic removed in favor of server-driven cache invalidation and DI-driven state updates.
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // No resources to dispose
     }
 }

@@ -13,6 +13,7 @@ public record CreateCustomerCommand(
     string Email
 ) : IRequest<CustomerInfo>, ICacheInvalidator
 {
-    public IEnumerable<string> CacheKeysToInvalidate => 
-        ["customer:all", $"customer:email:{Email.ToLowerInvariant()}"];
+    // Invalidate the shared customers list and any email-based lookup cache entries
+    public IEnumerable<string> CacheKeysToInvalidate =>
+        new[] { "customers:all", $"customers:email:{Email.ToLowerInvariant()}" };
 }

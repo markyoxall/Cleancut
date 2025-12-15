@@ -7,6 +7,8 @@ using CleanCut.Application.Queries.Customers.GetCustomer;
 using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using CleanCut.API.Hubs;
 
 namespace CleanCut.API.Controllers;
 
@@ -18,8 +20,11 @@ namespace CleanCut.API.Controllers;
 [Authorize] // ? CRITICAL FIX: Require authentication for all endpoints
 public class CustomersController : ApiControllerBase
 {
-    public CustomersController(IMediator mediator) : base(mediator)
+    private readonly CleanCut.Application.Common.Interfaces.ICacheService _appCache;
+
+    public CustomersController(IMediator mediator, CleanCut.Application.Common.Interfaces.ICacheService appCache) : base(mediator)
     {
+        _appCache = appCache;
     }
 
     /// <summary>
@@ -34,6 +39,27 @@ public class CustomersController : ApiControllerBase
    var query = new GetAllCustomersQuery();
    var customers = await Send(query, cancellationToken);
         return Ok(customers);
+    }
+
+    /// <summary>
+    /// Force refresh of customers cache on the server. Useful when data was changed outside the API
+    /// (e.g., direct DB edits) and you need to invalidate cached query results.
+    /// </summary>
+    [HttpPost("refresh")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> RefreshCache(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Remove the cache entry used by GetAllCustomersQuery
+            await _appCache.RemoveAsync("customers:all", cancellationToken);
+        }
+        catch
+        {
+            // Best-effort: do not fail the call if cache provider has issues
+        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -96,6 +122,9 @@ public class CustomersController : ApiControllerBase
     try
         {
  var customer = await Send(command, cancellationToken);
+
+            // Notifications (SignalR, cache invalidation, integration publish) are handled by the domain event pipeline
+
       return Ok(customer);
         }
         catch (InvalidOperationException ex)

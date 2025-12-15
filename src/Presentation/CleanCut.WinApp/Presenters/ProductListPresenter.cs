@@ -18,17 +18,20 @@ public class ProductListPresenter : BasePresenter<IProductListView>
 {
     private readonly IMediator _mediator;
     private readonly ILogger<ProductListPresenter> _logger;
+    private readonly CleanCut.WinApp.Services.INotificationMediator? _notificationMediator;
     private List<ProductInfo> _cachedProducts = new(); // ?? Cache products locally
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
 
     public ProductListPresenter(
         IProductListView view, 
         IMediator mediator, 
-        ILogger<ProductListPresenter> logger) 
+        ILogger<ProductListPresenter> logger,
+        CleanCut.WinApp.Services.INotificationMediator? notificationMediator = null) 
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _notificationMediator = notificationMediator;
     }
 
     public override void Initialize()
@@ -44,6 +47,12 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         
         // Load initial data
         _ = LoadInitialDataAsync();
+
+        if (_notificationMediator != null)
+        {
+            _notificationMediator.ProductCreated += OnProductNotification;
+            _notificationMediator.ProductUpdated += OnProductNotification;
+        }
     }
 
     public override void Cleanup()
@@ -56,6 +65,12 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         View.ViewProductsByCustomerRequested -= OnViewProductsByCustomerRequested;
         
         base.Cleanup();
+
+        if (_notificationMediator != null)
+        {
+            _notificationMediator.ProductCreated -= OnProductNotification;
+            _notificationMediator.ProductUpdated -= OnProductNotification;
+        }
     }
 
     private async Task LoadInitialDataAsync()
@@ -253,5 +268,18 @@ View.ShowError("Product not found.");
             
             _logger.LogInformation("Loaded {ProductCount} products for user {CustomerId}", products.Count(), userId);
         });
+    }
+
+    private async Task OnProductNotification(ProductInfo dto)
+    {
+        try
+        {
+            await LoadInitialDataAsync();
+            if (View is Control control)
+            {
+                control.Invoke(() => View.ShowSuccess("Products refreshed due to external update."));
+            }
+        }
+        catch { }
     }
 }

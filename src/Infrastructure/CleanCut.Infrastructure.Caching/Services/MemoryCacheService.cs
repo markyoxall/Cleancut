@@ -13,6 +13,8 @@ public class MemoryCacheService : ICacheService
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<MemoryCacheService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
+    // Track keys set in the in-memory cache so we can support pattern removal.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _keys = new();
 
     public MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryCacheService> logger)
     {
@@ -54,6 +56,8 @@ public class MemoryCacheService : ICacheService
             }
 
             _memoryCache.Set(key, value, options);
+            // Track the key so pattern-based removals can work
+            _keys.TryAdd(key, 0);
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -68,6 +72,7 @@ public class MemoryCacheService : ICacheService
         try
         {
             _memoryCache.Remove(key);
+            _keys.TryRemove(key, out _);
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -79,7 +84,30 @@ public class MemoryCacheService : ICacheService
 
     public Task RemoveByPatternAsync(string pattern, CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning("Pattern-based cache removal is not supported with in-memory cache");
+        // Support simple glob-style patterns where '*' matches any sequence of characters.
+        try
+        {
+            if (string.IsNullOrEmpty(pattern)) return Task.CompletedTask;
+
+            // Convert glob to regex: escape regex special chars except '*', then replace '*' with '.*'
+            var escaped = System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", "__AST__");
+            var regexPattern = "^" + escaped.Replace("__AST__", ".*") + "$";
+            var regex = new System.Text.RegularExpressions.Regex(regexPattern, System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            var keysToRemove = _keys.Keys.Where(k => regex.IsMatch(k)).ToList();
+            foreach (var k in keysToRemove)
+            {
+                _memoryCache.Remove(k);
+                _keys.TryRemove(k, out _);
+            }
+
+            _logger.LogInformation("Removed {Count} in-memory cache entries by pattern {Pattern}", keysToRemove.Count, pattern);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error removing cache entries by pattern {Pattern}", pattern);
+        }
+
         return Task.CompletedTask;
     }
 

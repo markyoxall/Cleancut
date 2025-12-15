@@ -11,4 +11,13 @@ public record UpdateCustomerCommand(
     string FirstName,
     string LastName,
     string Email
-) : IRequest<CustomerInfo>;
+) : IRequest<CustomerInfo>, CleanCut.Application.Common.Interfaces.ICacheInvalidator
+{
+    // When a customer is updated, invalidate the customers list and the individual customer cache
+    public IEnumerable<string> CacheKeysToInvalidate => new[]
+    {
+        "customers:all",
+        $"customer:id:{Id}",
+        $"customers:email:{Email.ToLowerInvariant()}"
+    };
+}

@@ -162,6 +162,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using MediatR;
+using CleanCut.WinApp.Services;
+using CleanCut.WinApp.Services;
 
 namespace CleanCut.WinApp.Infrastructure;
 
@@ -207,6 +209,15 @@ public static class ServiceConfiguration
         
         // Main form factory
         services.AddScoped<MainForm>();
+
+        // SignalR notifications client for WinForms (singleton)
+        var hubUrl = configuration["ApiSettings:NotificationsHubUrl"] ?? "https://localhost:5001/hubs/notifications";
+        services.AddSingleton<INotificationsClient>(sp => new SignalRNotificationsClient(hubUrl, sp.GetRequiredService<ILogger<SignalRNotificationsClient>>()));
+        // Local mediator to forward notifications to presenters
+        services.AddSingleton<INotificationMediator, NotificationMediator>();
+
+        // Note: wiring of SignalR client events to the mediator and starting the client
+        // is performed at application startup (Program.Main) to avoid network calls during DI build.
         
         return services.BuildServiceProvider();
     }

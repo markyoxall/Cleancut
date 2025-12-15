@@ -81,6 +81,10 @@
 using CleanCut.Application;
 using CleanCut.Infrastructure.Data;
 using CleanCut.Infrastructure.Caching;
+using MediatR;
+using CleanCut.API.Services;
+using CleanCut.API.EventHandlers;
+using CleanCut.Application.Events;
 using CleanCut.Infrastructure.Data.Seeding;
 using CleanCut.API.Middleware;
 using CleanCut.API.Constants;
@@ -90,6 +94,8 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading.RateLimiting;
 using CleanCut.Infrastructure.Shared;
 using CleanCut.Infrastructure.BackgroundServices.Workers;
+using Microsoft.AspNetCore.SignalR;
+using CleanCut.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -215,6 +221,7 @@ builder.Services.AddDataInfrastructure(builder.Configuration);
 // Add Application layer (MediatR handlers depend on IUnitOfWork and repositories)
 builder.Services.AddApplication();
 
+
 // Register HttpContextAccessor and a distributed cache provider for the API host
 builder.Services.AddHttpContextAccessor();
 try
@@ -232,6 +239,23 @@ catch
 builder.Services.AddSharedInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<EmailAndRabbitWorker>();
 builder.Services.AddHostedService<RabbitMqRetryWorker>();
+
+// SignalR for real-time notifications to clients
+builder.Services.AddSignalR();
+
+// Integration event processor used by notification handlers
+builder.Services.AddScoped<IIntegrationEventProcessor, IntegrationEventProcessor>();
+
+// Register API notification handlers explicitly (ensures discovery)
+builder.Services.AddScoped(typeof(INotificationHandler<ProductCreatedNotification>), typeof(ProductCreatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<ProductUpdatedNotification>), typeof(ProductUpdatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<CountryCreatedNotification>), typeof(CountryCreatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<CountryUpdatedNotification>), typeof(CountryUpdatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<OrderCreatedNotification>), typeof(OrderCreatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<OrderUpdatedNotification>), typeof(OrderUpdatedNotificationHandler));
+builder.Services.AddScoped(typeof(INotificationHandler<OrderStatusChangedNotification>), typeof(OrderStatusChangedNotificationHandler));
+// Integration handler for customer updates (depends on ICacheService)
+builder.Services.AddScoped(typeof(INotificationHandler<CleanCut.Application.Events.CustomerUpdatedNotification>), typeof(CleanCut.API.EventHandlers.IntegrationEventNotificationHandler));
 
 // Provide a delegate for idempotency behavior to read the Idempotency-Key header from the current HttpContext
 builder.Services.AddScoped<Func<object?>>(sp =>
@@ -343,6 +367,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+// SignalR hub endpoint for client notifications
+app.MapHub<CleanCut.API.Hubs.NotificationsHub>("/hubs/notifications");
 
 // Seed the database with initial data
 using (var scope = app.Services.CreateScope())

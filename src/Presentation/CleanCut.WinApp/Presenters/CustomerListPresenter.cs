@@ -19,18 +19,21 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<CustomerListPresenter> _logger;
+    private readonly CleanCut.WinApp.Services.INotificationMediator? _notificationMediator;
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
 
     public CustomerListPresenter(
         ICustomerListView view, 
         IMediator mediator, 
         IServiceProvider serviceProvider,
-        ILogger<CustomerListPresenter> logger) 
+        ILogger<CustomerListPresenter> logger,
+        CleanCut.WinApp.Services.INotificationMediator? notificationMediator = null) 
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _notificationMediator = notificationMediator;
     }
 
     public override void Initialize()
@@ -45,6 +48,12 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         
         // Load initial data
         _ = LoadCustomersAsync();
+
+        // Subscribe to notifications
+        if (_notificationMediator != null)
+        {
+            _notificationMediator.CustomerUpdated += OnCustomerUpdatedNotification;
+        }
     }
 
     public override void Cleanup()
@@ -56,6 +65,24 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         View.RefreshRequested -= OnRefreshRequested;
         
         base.Cleanup();
+
+        if (_notificationMediator != null)
+        {
+            _notificationMediator.CustomerUpdated -= OnCustomerUpdatedNotification;
+        }
+    }
+
+    private async Task OnCustomerUpdatedNotification(CustomerInfo dto)
+    {
+        try
+        {
+            await LoadCustomersAsync();
+            if (View is Control control)
+            {
+                control.Invoke(() => View.ShowSuccess("Customers refreshed due to external update."));
+            }
+        }
+        catch { }
     }
 
     private async void OnAddCustomerRequested(object? sender, EventArgs e)

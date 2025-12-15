@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
@@ -152,6 +152,41 @@
 	<script src="~/lib/jquery/dist/jquery.min.js"></script>
 	<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@10.0.1/dist/browser/signalr.min.js"></script>
+
+    <script>
+        (function () {
+            try {
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl('/hubs/notifications')
+                    .withAutomaticReconnect()
+                    .build();
+
+                const reloadIfRelevant = () => {
+                    try {
+                        const path = window.location.pathname.toLowerCase();
+                        if (path.startsWith('/customers') || path.startsWith('/products') || path.startsWith('/countries') || path.startsWith('/orders')) {
+                            // Soft reload so server-rendered pages show fresh data
+                            window.location.reload();
+                        }
+                    } catch { }
+                };
+
+                connection.on('CustomerUpdated', dto => reloadIfRelevant());
+                connection.on('ProductCreated', dto => reloadIfRelevant());
+                connection.on('ProductUpdated', dto => reloadIfRelevant());
+                connection.on('CountryCreated', dto => reloadIfRelevant());
+                connection.on('CountryUpdated', dto => reloadIfRelevant());
+                connection.on('OrderCreated', dto => reloadIfRelevant());
+                connection.on('OrderUpdated', dto => reloadIfRelevant());
+                connection.on('OrderStatusChanged', dto => reloadIfRelevant());
+
+                connection.start().catch(err => console.warn('SignalR connect failed', err));
+            } catch (ex) {
+                console && console.warn && console.warn('SignalR client init failed', ex);
+            }
+        })();
+    </script>
 	@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
