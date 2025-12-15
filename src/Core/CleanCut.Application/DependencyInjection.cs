@@ -30,13 +30,11 @@ public static class DependencyInjection
             }
         });
 
-        // Configure AutoMapper manually without relying on the deprecated extensions
+        // Configure AutoMapper via the Microsoft DI extensions
         var assemblies = new[] { Assembly.GetExecutingAssembly() };
-        var mapperConfig = new MapperConfiguration(cfg => cfg.AddMaps(assemblies));
-        var mapper = mapperConfig.CreateMapper();
-
-        services.AddSingleton<IMapper>(mapper);
-        services.AddSingleton(mapperConfig);
+        // Use the AddAutoMapper overload that accepts a configuration action so we can
+        // call AddMaps with the assemblies containing profiles.
+        services.AddAutoMapper(cfg => cfg.AddMaps(assemblies));
 
         // Add FluentValidation
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

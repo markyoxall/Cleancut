@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazorise.Bootstrap" Version="1.8.7" />
-    <PackageReference Include="Blazorise.Bootstrap5" Version="1.8.7" />
-    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.7" />
+    <PackageReference Include="Blazorise.Bootstrap" Version="1.8.8" />
+    <PackageReference Include="Blazorise.Bootstrap5" Version="1.8.8" />
+    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.8" />
     <PackageReference Include="bootstrap" Version="5.3.8" />
     <PackageReference Include="FontAwesome" Version="4.7.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="2.2.0" />
   </ItemGroup>

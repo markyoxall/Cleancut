@@ -158,11 +158,8 @@ builder.Services.AddProblemDetails();
 // Instead, register AutoMapper and FluentValidation from the Application assembly.
 {
     var appAssembly = typeof(CleanCut.Application.DependencyInjection).Assembly;
-    // Configure AutoMapper (same approach used in the Application layer)
-    var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddMaps(new[] { appAssembly }));
-    var mapper = mapperConfig.CreateMapper();
-    builder.Services.AddSingleton<AutoMapper.IMapper>(mapper);
-    builder.Services.AddSingleton(mapperConfig);
+    // Register AutoMapper profiles from the Application assembly via DI
+    builder.Services.AddAutoMapper(cfg => cfg.AddMaps(new[] { appAssembly }));
 
     // Register FluentValidation validators from Application assembly
     builder.Services.AddValidatorsFromAssembly(appAssembly);

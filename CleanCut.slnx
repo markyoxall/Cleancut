@@ -8,6 +8,7 @@
     <File Path="docs/SECURITY_IMPLEMENTATION.md" />
     <File Path="docs/SECURITY_IMPLEMENTATION_COMPLETE.md" />
     <File Path="docs/TOKEN_DEBUGGING_GUIDE.md" />
+    <File Path="reset_git_history.ps1" />
   </Folder>
   <Folder Name="/solution_items/">
     <File Path="README-containers.md" />
@@ -34,5 +35,11 @@
     <Project Path="src/Presentation/CleanCut.API/CleanCut.API.csproj" />
     <Project Path="src/Presentation/CleanCut.BlazorWebApp/CleanCut.BlazorWebApp.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/ArchitectureTests/CleanCut.ArchitectureTests/CleanCut.ArchitectureTests.csproj" />
+    <Project Path="tests/IntegrationTests/CleanCut.API.IntegrationTests/CleanCut.API.IntegrationTests.csproj" />
+    <Project Path="tests/UnitTests/CleanCut.Application.Tests/CleanCut.Application.Tests.csproj" />
+    <Project Path="tests/UnitTests/CleanCut.Domain.Tests/CleanCut.Domain.Tests.csproj" />
+    <Project Path="tests/UnitTests/CleanCut.Infrastructure.Tests/CleanCut.Infrastructure.Tests.csproj" />
+  </Folder>
 </Solution>
