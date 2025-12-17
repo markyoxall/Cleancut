@@ -78,6 +78,7 @@ public partial class CustomerEdit : ComponentBase, IDisposable
                     {
                         _editContext?.Validate();
                         StateHasChanged();
+                        // Debounced validation completed
                     });
                 }
             }
@@ -88,27 +89,32 @@ public partial class CustomerEdit : ComponentBase, IDisposable
         }, token);
     }
 
-    protected string GetFieldCss(string fieldName)
-    {
-        if (_editContext is null)
-            return string.Empty;
+  
 
-        var fi = new FieldIdentifier(Model!, fieldName);
-        var hasErrors = _editContext.GetValidationMessages(fi).Any();
-        return hasErrors ? "is-invalid" : string.Empty;
-    }
-
-    // Helper for tags CSV binding
-    protected string TagsCsv
+    protected async Task OnValidSubmitAsync()
     {
-        get => Model.Tags is null ? string.Empty : string.Join(",", Model.Tags);
-        set
+        if (IsEditMode)
         {
-            Model.Tags = string.IsNullOrWhiteSpace(value)
-                ? new List<string>()
-                : value.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
+            await CustomerState.UpdateAsync(Model);
         }
+        else
+        {
+            await CustomerState.CreateAsync(Model);
+        }
+
+        NavigationManager.NavigateTo("/customerslist");
     }
+
+    protected async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        Model.UploadedFileName = file?.Name;
+        Model.UploadedFileSize = file?.Size;
+        await Task.CompletedTask;
+        // Persist file selection to draft as well (no-op until draft storage is wired)
+    }
+
+
 
     // Helper to bind website as string
     protected string? WebsiteString
@@ -150,27 +156,28 @@ public partial class CustomerEdit : ComponentBase, IDisposable
         }
     }
 
-    protected async Task OnValidSubmitAsync()
+    protected string GetFieldCss(string fieldName)
     {
-        if (IsEditMode)
-        {
-            await CustomerState.UpdateAsync(Model);
-        }
-        else
-        {
-            await CustomerState.CreateAsync(Model);
-        }
+        if (_editContext is null)
+            return string.Empty;
 
-        NavigationManager.NavigateTo("/customerslist");
+        var fi = new FieldIdentifier(Model!, fieldName);
+        var hasErrors = _editContext.GetValidationMessages(fi).Any();
+        return hasErrors ? "is-invalid" : string.Empty;
     }
 
-    protected async Task OnInputFileChange(InputFileChangeEventArgs e)
+    // Helper for tags CSV binding
+    protected string TagsCsv
     {
-        var file = e.File;
-        Model.UploadedFileName = file?.Name;
-        Model.UploadedFileSize = file?.Size;
-        await Task.CompletedTask;
+        get => Model.Tags is null ? string.Empty : string.Join(",", Model.Tags);
+        set
+        {
+            Model.Tags = string.IsNullOrWhiteSpace(value)
+                ? new List<string>()
+                : value.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
+        }
     }
+
 
     public void Dispose()
     {

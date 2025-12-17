@@ -61,5 +61,14 @@
         "Action": "Start"
       }
     ]
+  },
+  {
+    "Name": "WINFORMS",
+    "Projects": [
+      {
+        "Path": "src\\Presentation\\CleanCut.WinApp\\CleanCut.WinApp.csproj",
+        "Action": "Start"
+      }
+    ]
   }
 ]

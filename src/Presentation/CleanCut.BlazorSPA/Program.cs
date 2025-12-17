@@ -1,7 +1,7 @@
 using CleanCut.BlazorSPA;
 using CleanCut.BlazorSPA.Pages.Services;
 using CleanCut.BlazorSPA.Pages.State;
-using CleanCut.BlazorSPA.Pages.State;
+using CleanCut.BlazorSPA.Pages.Weather.State;
 using CleanCut.BlazorSPA.Pages.Validation;
 using FluentValidation;
 using Fluxor;
@@ -43,6 +43,9 @@ builder.Services.AddFluxor(options =>
 {
     options.ScanAssemblies(typeof(Program).Assembly);
 });
+
+// Register selector service for weather
+builder.Services.AddScoped<IWeatherSelectors, WeatherSelectorService>();
 
 var host = builder.Build();
 

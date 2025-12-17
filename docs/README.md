@@ -627,3 +627,21 @@ This project demonstrates my ability to:
 - Design **resilient systems** that gracefully handle external dependency failures
 - Create **comprehensive documentation** and **well-tested code**
 - Build **production-ready applications** with CI/CD pipelines
+ 
+ ## CI/CD — GitHub Actions example
+ 
+ This repository includes an example GitHub Actions workflow you can use as a starting point for continuous integration and basic CI/CD tasks. The workflow file is at `.github/workflows/ci.yml`.
+ 
+ What it does
+ - Restores NuGet packages
+ - Builds the solution targeting .NET 10
+ - Runs unit and integration tests
+ - Caches NuGet packages for speed
+ - Publishes a simple artifact when running on `main` (adjust for your release pipeline)
+ 
+ Using the example
+ 1. The workflow file has been added to `.github/workflows/ci.yml` in this repository.
+ 2. Edit project paths if your solution layout differs.
+ 3. Add secrets if you include deployment steps (e.g. `AZURE_CREDENTIALS`).
+ 
+ For production use add protected environments, deployment workflows, release tagging, and required reviewers.

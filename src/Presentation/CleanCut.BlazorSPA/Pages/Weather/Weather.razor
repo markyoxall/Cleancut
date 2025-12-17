@@ -26,6 +26,14 @@ else
             <li>@f.Date.ToShortDateString(): @f.Summary (@f.TemperatureC &deg;C)</li>
         }
     </ul>
+
+    <h4>Warm forecasts (>10°C)</h4>
+    <ul>
+        @foreach (var f in WeatherSelectors.GetWarmForecasts(WeatherState.Value))
+        {
+            <li>@f.Date.ToShortDateString(): @f.Summary (@f.TemperatureC &deg;C)</li>
+        }
+    </ul>
 }
 
 @code {
