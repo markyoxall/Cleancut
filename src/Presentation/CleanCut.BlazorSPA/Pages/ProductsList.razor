@@ -1,0 +1,25 @@
+@page "/productslist"
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.Components
+
+<ListWrapper TItem="SimpleProduct" Title="Products" Items="Products">
+    <HeaderTemplate>
+        <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Available</th>
+            <th>Actions</th>
+        </tr>
+    </HeaderTemplate>
+
+    <RowTemplate Context="p">
+        <ProductRow Product="p"
+                    EditRequested="EventCallback.Factory.Create<Guid>(this, EditProduct)"
+                    DeleteRequested="EventCallback.Factory.Create<Guid>(this, DeleteProduct)" />
+    </RowTemplate>
+
+    <Toolbar>
+        <button class="btn btn-sm btn-outline-primary" @onclick="CreateProduct">Add new</button>
+    </Toolbar>
+</ListWrapper>

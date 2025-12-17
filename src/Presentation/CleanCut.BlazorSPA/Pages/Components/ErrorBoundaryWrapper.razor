@@ -1,0 +1,13 @@
+@inherits ErrorBoundary
+
+@if (CurrentException != null)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Error:</strong> An error occurred while rendering: @CurrentException.Message
+    </div>
+}
+
+
+@ChildContent
+
+<!-- logic moved to code-behind -->

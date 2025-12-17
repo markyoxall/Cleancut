@@ -1,0 +1,52 @@
+@using CleanCut.BlazorSPA.Pages.Models
+@typeparam TItem
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">@Title (@Items?.Count() ?? 0)</h5>
+        <div>
+            @if (Toolbar != null)
+            {
+                @Toolbar
+            }
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    @if (HeaderTemplate != null)
+                    {
+                        @HeaderTemplate
+                    }
+                </thead>
+                <tbody>
+                    @if (RowTemplate != null && Items != null)
+                    {
+                        foreach (var item in Items)
+                        {
+                            @RowTemplate(item)
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public IEnumerable<TItem>? Items { get; set; }
+
+    [Parameter]
+    public RenderFragment? Toolbar { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem>? RowTemplate { get; set; }
+}

@@ -1,0 +1,19 @@
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.Components
+
+<tr @key="Customer.Id">
+    <td>@Customer.Id.ToString()[..8]</td>
+    <td>@Customer.FirstName</td>
+    <td>@Customer.LastName</td>
+    <td>@Customer.Email</td>
+    <td>@(Customer.IsActive ? "Yes" : "No")</td>
+    <td>
+        <button class="btn btn-sm btn-outline-primary me-2" @onclick="OnEditClicked">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="ShowDeleteConfirm">Delete</button>
+    </td>
+</tr>
+
+<ConfirmModal Visible="ShowConfirm" Title="Delete Customer" Message="@($"Delete customer {Customer.FirstName} {Customer.LastName}?")" OnClose="OnConfirmClose">
+</ConfirmModal>
+
+<!-- logic moved to code-behind -->

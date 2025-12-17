@@ -1,0 +1,42 @@
+@page "/customerslist"
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.Components
+
+<h3>Customers</h3>
+
+<p>This is the Customers page with links to control demos.</p>
+
+<div class="mb-3">
+    <a class="btn btn-primary me-2" href="/customers/grid">Grid demo</a>
+    <a class="btn btn-secondary me-2" href="/customers/edit">Create customer (full page)</a>
+    <a class="btn btn-outline-info me-2" href="/customers/search">Query demo</a>
+    <button class="btn btn-outline-danger ms-2" @onclick="ShowErrorDemo">Show ErrorBoundary demo</button>
+</div>
+
+@if (showErrorDemo)
+{
+    <ErrorBoundaryWrapper>
+        <ErrorBoundaryDemo />
+    </ErrorBoundaryWrapper>
+}
+
+<ListWrapper TItem="SimpleCustomer" Title="Customers" Items="Customers">
+    <HeaderTemplate>
+        <tr>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </HeaderTemplate>
+
+    <RowTemplate Context="customer">
+        <CustomerRow Customer="customer" EditRequested="EventCallback.Factory.Create<Guid>(this, EditCustomer)" DeleteRequested="EventCallback.Factory.Create<Guid>(this, DeleteCustomer)" />
+    </RowTemplate>
+
+    <Toolbar>
+        <button class="btn btn-sm btn-outline-primary" @onclick="CreateCustomer">Add new</button>
+    </Toolbar>
+</ListWrapper>
+
+

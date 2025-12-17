@@ -1,0 +1,86 @@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">CleanCut Customers</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+
+
+	<nav class="nav flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+				<span aria-hidden="true"></span> Home
+			</NavLink>
+		</div>
+
+	</nav>
+
+	<nav class="nav flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="/weather" Match="NavLinkMatch.All">
+				<span aria-hidden="true"></span> Weather
+			</NavLink>
+		</div>
+
+	</nav>
+	<nav class="nav flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="/counter" Match="NavLinkMatch.All">
+				<span aria-hidden="true"></span> Counter
+			</NavLink>
+		</div>
+
+	</nav>
+
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/customerslist" Match="NavLinkMatch.All">
+                <span aria-hidden="true"></span> Customers
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/customers/grid">
+                <span aria-hidden="true"></span> Customer Grid demo
+            </NavLink>
+        </div>
+    </nav>
+
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/productslist" Match="NavLinkMatch.All">
+                <span aria-hidden="true"></span> Products
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/products/grid">
+                <span aria-hidden="true"></span> Product Grid demo
+            </NavLink>
+        </div>
+    </nav>
+  <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/countrieslist" Match="NavLinkMatch.All">
+                <span aria-hidden="true"></span> Countries
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/countries/grid">
+                <span aria-hidden="true"></span> Country Grid demo
+            </NavLink>
+        </div>
+    </nav>
+	<nav class="nav flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="/debug/toggle-errorboundary" Match="NavLinkMatch.All">
+				<span aria-hidden="true"></span> Debug- Error Boundary Toggle
+			</NavLink>
+		</div>
+
+	</nav>
+</div>

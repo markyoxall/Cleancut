@@ -1,0 +1,102 @@
+@page "/products/edit/{Id:guid?}"
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.Validation
+@using Microsoft.AspNetCore.Components.Forms
+@using Blazored.FluentValidation
+
+<PageTitle>Product edit</PageTitle>
+
+<h3>@(IsEditMode ? "Edit Product" : "Create product")</h3>
+
+<EditForm EditContext="_editContext" OnValidSubmit="OnValidSubmitAsync">
+    <FluentValidationValidator />
+    <ValidationSummary />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="@($"form-control {GetFieldCss(nameof(Model.Name))}")" @bind-Value="Model.Name" />
+                <ValidationMessage For="() => Model.Name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">SKU</label>
+                <InputText class="@($"form-control {GetFieldCss(nameof(Model.Sku))}")" @bind-Value="Model.Sku" />
+                <ValidationMessage For="() => Model.Sku" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <InputTextArea class="@($"form-control {GetFieldCss(nameof(Model.Description))}")" @bind-Value="Model.Description" />
+                <ValidationMessage For="() => Model.Description" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Category</label>
+                <InputSelect class="form-select" @bind-Value="Model.Category">
+                    <option value="ProductCategory.Unknown">-- choose --</option>
+                    <option value="ProductCategory.Electronics">Electronics</option>
+                    <option value="ProductCategory.Apparel">Apparel</option>
+                    <option value="ProductCategory.Grocery">Grocery</option>
+                    <option value="ProductCategory.Home">Home</option>
+                    <option value="ProductCategory.Tools">Tools</option>
+                    <option value="ProductCategory.Toys">Toys</option>
+                    <option value="ProductCategory.Books">Books</option>
+                    <option value="ProductCategory.Sports">Sports</option>
+                    <option value="ProductCategory.Health">Health</option>
+                    <option value="ProductCategory.Other">Other</option>
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Quantity in stock</label>
+                <InputNumber class="@($"form-control {GetFieldCss(nameof(Model.QuantityInStock))}")" @bind-Value="Model.QuantityInStock" />
+                <ValidationMessage For="() => Model.QuantityInStock" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="Model.IsAvailable" />
+                <label class="form-check-label">Is available</label>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="Model.IsTaxable" />
+                <label class="form-check-label">Is taxable</label>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Weight (kg)</label>
+                <InputNumber step="0.01" class="form-control" @bind-Value="Model.WeightKg" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Release date</label>
+                <InputDate class="form-control" @bind-Value="Model.ReleaseDate" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Discontinued date</label>
+                <InputDate class="form-control" @bind-Value="Model.DiscontinuedDate" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Tags (comma separated)</label>
+                <InputText class="@($"form-control {GetFieldCss(nameof(TagsCsv))}")" @bind-Value="TagsCsv" />
+                <ValidationMessage For="() => TagsCsv" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <InputTextArea class="form-control" @bind-Value="Model.Notes" />
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary" href="/productslist">Cancel</a>
+    </div>
+</EditForm>

@@ -1,0 +1,41 @@
+@page "/counter"
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.State
+@using Fluxor
+@implements IDisposable
+
+@inject IState<CounterState> CounterState
+@inject IDispatcher Dispatcher
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p>Current count: @CounterState.Value.Count</p>
+
+<button class="btn btn-primary" @onclick="Increment">
+	Click me
+</button>
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        CounterState.StateChanged += OnCounterStateChanged;
+    }
+
+    private void OnCounterStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Increment()
+    {
+        Dispatcher.Dispatch(new IncrementCounterAction());
+    }
+
+    public void Dispose()
+    {
+        CounterState.StateChanged -= OnCounterStateChanged;
+    }
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "date": "2025-01-01T00:00:00Z",
+    "temperatureC": 1,
+    "summary": "Freezing"
+  },
+  {
+    "date": "2025-01-02T00:00:00Z",
+    "temperatureC": 14,
+    "summary": "Bracing"
+  },
+  {
+    "date": "2025-01-03T00:00:00Z",
+    "temperatureC": 18,
+    "summary": "Chilly"
+  }
+]

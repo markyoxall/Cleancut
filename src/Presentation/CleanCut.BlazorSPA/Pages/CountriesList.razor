@@ -1,0 +1,22 @@
+@page "/countrieslist"
+@using CleanCut.BlazorSPA.Pages.Models
+@using CleanCut.BlazorSPA.Pages.Components
+
+<ListWrapper TItem="SimpleCountry" Title="Countries" Items="Countries">
+    <HeaderTemplate>
+        <tr>
+            <th>Id</th>
+            <th>Country Name</th>
+        </tr>
+    </HeaderTemplate>
+
+    <RowTemplate Context="p">
+        <CountryRow Country="p"
+                    EditRequested="EventCallback.Factory.Create<Guid>(this, EditCountry)"
+                    DeleteRequested="EventCallback.Factory.Create<Guid>(this, DeleteCountry)" />
+    </RowTemplate>
+
+    <Toolbar>
+        <button class="btn btn-sm btn-outline-primary" @onclick="CreateCountry">Add new</button>
+    </Toolbar>
+</ListWrapper>

@@ -1,0 +1,47 @@
+@page "/countries/edit/{Id:guid?}"
+
+<PageTitle>Product edit</PageTitle>
+
+<div class="mb-3">
+    <label class="form-check-label me-2">
+        <input class="form-check-input me-1" type="checkbox" @bind="UseDebounce" /> Enable debounce (500ms)
+    </label>
+    <div>Validation runs: @ValidationRuns</div>
+    <div>Last validation: @(LastValidationTime?.ToString("HH:mm:ss.fff") ?? "never")</div>
+    <div>Pending keystrokes: @PendingKeystrokes</div>
+    <div>
+        Waiting for debounce: 
+        @if (IsWaitingForDebounce)
+        {
+            <span class="badge bg-warning text-dark">Waiting...</span>
+        }
+        else
+        {
+            <span class="badge bg-success">Idle</span>
+        }
+    </div>
+    <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="ValidateNow">Run validation now (bypass debounce)</button>
+    <button class="btn btn-sm btn-outline-info mt-2 ms-2" @onclick="SimulateTypingAsync">Simulate typing</button>
+ </div>
+<div class="mb-3">
+    <div>API calls simulated: @ApiCallCount</div>
+    <button class="btn btn-sm btn-outline-danger mt-2" @onclick="() => { ApiCallMessages.Clear(); ApiCallTracker?.Clear(); }">Clear messages</button>
+    <ul class="mt-2">
+        @foreach (var m in ApiCallMessages)
+        {
+            <li>@m</li>
+        }
+    </ul>
+</div>
+<h3>@(IsEditMode ? "Edit Country" : "Create Country")</h3>
+<EditForm EditContext="_editContext" OnValidSubmit="OnValidSubmitAsync"> 
+	<ValidationSummary />
+	<div class="mb-3">
+		<label class="form-label">Country Name</label>
+        <InputText class="@($"form-control {GetFieldCss(nameof(Model.CountryName))}")" @bind-Value="Model.CountryName" @bind-Value:event="oninput" />
+		<ValidationMessage For="() => Model.CountryName" />
+	</div>
+	<button type="submit" class="btn btn-primary">Save</button>
+	<button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+
+</EditForm>

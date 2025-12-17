@@ -1,0 +1,108 @@
+@page "/customers/grid"
+@using CleanCut.BlazorSPA.Pages.Models
+
+<h3>Customers (Grid Example)</h3>
+
+<p>This page demonstrates a simple table grid and inline editing of cells.</p>
+
+<button class="btn btn-primary mb-2" @onclick="AddInline">Add inline</button>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>First</th>
+            <th>Last</th>
+            <th>Email</th>
+            <th>Age</th>
+            <th>Birth</th>
+            <th>Active</th>
+            <th>Notes</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in CustomersForGridLocal)
+        {
+            <tr @key="c.Id">
+                <td><InputText @bind-Value="c.FirstName" class="form-control" /></td>
+                <td><InputText @bind-Value="c.LastName" class="form-control" /></td>
+                <td><InputText @bind-Value="c.Email" class="form-control" /></td>
+                <td><InputNumber @bind-Value="c.Age" class="form-control" /></td>
+                <td><InputDate @bind-Value="c.BirthDate" class="form-control" /></td>
+                <td class="text-center"><InputCheckbox @bind-Value="c.IsActive" /></td>
+                <td><InputTextArea @bind-Value="c.Notes" class="form-control" /></td>
+                <td>
+                    <button class="btn btn-sm btn-danger" @onclick="() => Delete(c.Id)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    // Optional parameter: parent can pass a list. If null, component will load its own sample data.
+    [Parameter]
+    public IEnumerable<CleanCut.BlazorSPA.Pages.Models.SimpleCustomer>? CustomersForGrid { get; set; }
+
+    // Optional callbacks the parent can provide
+    [Parameter]
+    public EventCallback AddRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> DeleteRequested { get; set; }
+
+    private List<CleanCut.BlazorSPA.Pages.Models.SimpleCustomer> CustomersForGridLocal { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        // If no parent list provided, seed local demo data
+        if (CustomersForGrid is null)
+        {
+            CustomersForGridLocal = new List<CleanCut.BlazorSPA.Pages.Models.SimpleCustomer>
+            {
+                new CleanCut.BlazorSPA.Pages.Models.SimpleCustomer { Id = System.Guid.NewGuid(), FirstName = "Demo", LastName = "One", Email = "demo1@example.com", IsActive = true, Age = 30 },
+                new CleanCut.BlazorSPA.Pages.Models.SimpleCustomer { Id = System.Guid.NewGuid(), FirstName = "Demo", LastName = "Two", Email = "demo2@example.com", IsActive = false, Age = 25 }
+            };
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (CustomersForGrid != null)
+            CustomersForGridLocal = CustomersForGrid.ToList();
+    }
+
+    private async Task AddInline()
+    {
+        if (AddRequested.HasDelegate)
+        {
+            await AddRequested.InvokeAsync(null);
+            // If parent provided data, it will update and re-render; otherwise add locally
+            if (CustomersForGrid != null)
+                CustomersForGridLocal = CustomersForGrid.ToList();
+        }
+        else
+        {
+            var next = new CleanCut.BlazorSPA.Pages.Models.SimpleCustomer { Id = System.Guid.NewGuid(), FirstName = "", LastName = "", Email = "", IsActive = true };
+            CustomersForGridLocal.Insert(0, next);
+        }
+    }
+
+    private async Task Delete(Guid id)
+    {
+        if (DeleteRequested.HasDelegate)
+        {
+            await DeleteRequested.InvokeAsync(id);
+            if (CustomersForGrid != null)
+                CustomersForGridLocal = CustomersForGrid.ToList();
+        }
+        else
+        {
+            CustomersForGridLocal.RemoveAll(c => c.Id == id);
+        }
+    }
+}

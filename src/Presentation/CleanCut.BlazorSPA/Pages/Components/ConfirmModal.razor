@@ -1,0 +1,107 @@
+@namespace CleanCut.BlazorSPA.Pages.Components
+
+@if (Visible)
+{
+    <div class="modal-backdrop" @onclick="OnBackdropClick"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" @onkeydown="OnKeyDown">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalTitle">@Title</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => Close(false)"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@Message</p>
+                    @if (ChildContent != null)
+                    {
+                        @ChildContent
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => Close(false)" @ref="_cancelButton" @onfocus="() => _lastFocused = FocusTarget.Cancel">Cancel</button>
+                    <button class="btn btn-danger" @onclick="() => Close(true)" @ref="_confirmButton" @onfocus="() => _lastFocused = FocusTarget.Confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Confirm";
+
+    [Parameter]
+    public string Message { get; set; } = "Are you sure?";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
+
+    private ElementReference _cancelButton;
+    private ElementReference _confirmButton;
+    private bool _hadVisible;
+
+    private enum FocusTarget { None, Cancel, Confirm }
+    private FocusTarget _lastFocused = FocusTarget.None;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // When modal becomes visible, set focus to the cancel button
+        if (Visible && !_hadVisible)
+        {
+            // allow render to complete
+            await Task.Yield();
+            try
+            {
+                await _cancelButton.FocusAsync();
+                _lastFocused = FocusTarget.Cancel;
+            }
+            catch
+            {
+                // ignore if focus fails in some browsers/environments
+            }
+        }
+
+        _hadVisible = Visible;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Close(false);
+            return;
+        }
+
+        if (e.Key == "Tab")
+        {
+            // simple focus cycle between the two footer buttons
+            if (_lastFocused == FocusTarget.Cancel || _lastFocused == FocusTarget.None)
+            {
+                await _confirmButton.FocusAsync();
+                _lastFocused = FocusTarget.Confirm;
+            }
+            else
+            {
+                await _cancelButton.FocusAsync();
+                _lastFocused = FocusTarget.Cancel;
+            }
+        }
+    }
+
+    private async Task Close(bool confirmed)
+    {
+        Visible = false;
+        await OnClose.InvokeAsync(confirmed);
+    }
+
+    private async Task OnBackdropClick()
+    {
+        await Close(false);
+    }
+}

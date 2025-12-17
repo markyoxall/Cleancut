@@ -1,0 +1,52 @@
+@page "/weather"
+@using CleanCut.BlazorSPA.Pages.Weather
+@using CleanCut.BlazorSPA.Pages.Weather.State
+@using Fluxor
+@implements IDisposable
+@inject IState<WeatherState> WeatherState
+@inject IDispatcher Dispatcher
+
+<h3>Weather forecast</h3>
+
+<button class="btn btn-primary" @onclick="Load">Load Forecasts</button>
+
+@if (WeatherState.Value.IsLoading)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(WeatherState.Value.ErrorMessage))
+{
+    <p class="text-danger">@WeatherState.Value.ErrorMessage</p>
+}
+else
+{
+    <ul>
+        @foreach (var f in WeatherState.Value.Forecasts)
+        {
+            <li>@f.Date.ToShortDateString(): @f.Summary (@f.TemperatureC &deg;C)</li>
+        }
+    </ul>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        WeatherState.StateChanged += OnWeatherStateChanged;
+    }
+
+    private void OnWeatherStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Load()
+    {
+        Dispatcher.Dispatch(new FetchWeatherAction());
+    }
+
+    public void Dispose()
+    {
+        WeatherState.StateChanged -= OnWeatherStateChanged;
+    }
+}

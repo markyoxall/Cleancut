@@ -7,7 +7,6 @@
 @inject IProductApiService ProductApi
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
-@inject CleanCut.BlazorWebApp.State.ICustomersState CustomersState
 @rendermode @(new InteractiveServerRenderMode(prerender: true))
 
 <PageTitle>Edit Customer - CleanCut</PageTitle>
@@ -400,17 +399,6 @@
             
             // Update the original user data
             OriginalCustomer = updatedCustomer;
-
-            // Refresh the feature state so other components (dashboard/home) see the updated customer
-            try
-            {
-                // Force reload customers in the shared state (will fetch fresh data from API)
-                await CustomersState.LoadAsync(force: true);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to refresh CustomersState after updating customer {CustomerId}", updatedCustomer.Id);
-            }
 
             // Auto-hide toast and navigate after delay
             _ = Task.Run(async () =>

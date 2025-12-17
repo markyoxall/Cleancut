@@ -20,11 +20,8 @@ namespace CleanCut.API.Controllers;
 [Authorize] // ? CRITICAL FIX: Require authentication for all endpoints
 public class CustomersController : ApiControllerBase
 {
-    private readonly CleanCut.Application.Common.Interfaces.ICacheService _appCache;
-
-    public CustomersController(IMediator mediator, CleanCut.Application.Common.Interfaces.ICacheService appCache) : base(mediator)
+    public CustomersController(IMediator mediator) : base(mediator)
     {
-        _appCache = appCache;
     }
 
     /// <summary>
@@ -39,27 +36,6 @@ public class CustomersController : ApiControllerBase
    var query = new GetAllCustomersQuery();
    var customers = await Send(query, cancellationToken);
         return Ok(customers);
-    }
-
-    /// <summary>
-    /// Force refresh of customers cache on the server. Useful when data was changed outside the API
-    /// (e.g., direct DB edits) and you need to invalidate cached query results.
-    /// </summary>
-    [HttpPost("refresh")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RefreshCache(CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Remove the cache entry used by GetAllCustomersQuery
-            await _appCache.RemoveAsync("customers:all", cancellationToken);
-        }
-        catch
-        {
-            // Best-effort: do not fail the call if cache provider has issues
-        }
-
-        return NoContent();
     }
 
     /// <summary>
