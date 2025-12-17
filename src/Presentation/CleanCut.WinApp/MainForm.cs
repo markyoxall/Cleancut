@@ -15,6 +15,13 @@ public partial class MainForm : BaseForm
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainForm> _logger;
     private CustomerListPresenter? _userListPresenter;
+    private MenuStrip menuStrip;
+    private ToolStripMenuItem fileMenu;
+    private ToolStripMenuItem exitMenuItem;
+    private ToolStripMenuItem managementMenu;
+    private ToolStripMenuItem userManagementMenuItem;
+    private ToolStripMenuItem productManagementMenuItem;
+    private ToolStripMenuItem countryManagementToolStripMenuItem;
     private ProductListPresenter? _productListPresenter;
 
     public MainForm(IServiceProvider serviceProvider, ILogger<MainForm> logger)
@@ -132,15 +139,15 @@ public partial class MainForm : BaseForm
 
     private void InitializeComponent()
     {
-        var menuStrip = new MenuStrip();
-        var managementMenu = new ToolStripMenuItem();
-        var userManagementMenuItem = new ToolStripMenuItem();
-        var productManagementMenuItem = new ToolStripMenuItem();
-        var fileMenu = new ToolStripMenuItem();
-        var exitMenuItem = new ToolStripMenuItem();
-        
+        menuStrip = new MenuStrip();
+        fileMenu = new ToolStripMenuItem();
+        exitMenuItem = new ToolStripMenuItem();
+        managementMenu = new ToolStripMenuItem();
+        userManagementMenuItem = new ToolStripMenuItem();
+        productManagementMenuItem = new ToolStripMenuItem();
+        countryManagementToolStripMenuItem = new ToolStripMenuItem();
+        menuStrip.SuspendLayout();
         SuspendLayout();
- 
         // 
         // menuStrip
         // 
@@ -150,15 +157,13 @@ public partial class MainForm : BaseForm
         menuStrip.Size = new Size(1024, 24);
         menuStrip.TabIndex = 0;
         menuStrip.Text = "menuStrip";
-      
-      // 
+        // 
         // fileMenu
         // 
-        fileMenu.DropDownItems.Add(exitMenuItem);
+        fileMenu.DropDownItems.AddRange(new ToolStripItem[] { exitMenuItem });
         fileMenu.Name = "fileMenu";
         fileMenu.Size = new Size(37, 20);
         fileMenu.Text = "File";
-    
         // 
         // exitMenuItem
         // 
@@ -166,41 +171,46 @@ public partial class MainForm : BaseForm
         exitMenuItem.Size = new Size(93, 22);
         exitMenuItem.Text = "Exit";
         exitMenuItem.Click += OnExitClicked;
-    
-     // 
+        // 
         // managementMenu
         // 
-        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem });
-      managementMenu.Name = "managementMenu";
-  managementMenu.Size = new Size(90, 20);
-   managementMenu.Text = "Management";
-  
+        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem });
+        managementMenu.Name = "managementMenu";
+        managementMenu.Size = new Size(90, 20);
+        managementMenu.Text = "Management";
         // 
         // userManagementMenuItem
-   // 
+        // 
         userManagementMenuItem.Name = "userManagementMenuItem";
-   userManagementMenuItem.Size = new Size(170, 22);
- userManagementMenuItem.Text = "Customer Management";
-      userManagementMenuItem.Click += OnCustomerManagementClicked;
-        
-      // 
+        userManagementMenuItem.Size = new Size(200, 22);
+        userManagementMenuItem.Text = "Customer Management";
+        userManagementMenuItem.Click += OnCustomerManagementClicked;
+        // 
         // productManagementMenuItem
         // 
-    productManagementMenuItem.Name = "productManagementMenuItem";
-   productManagementMenuItem.Size = new Size(170, 22);
+        productManagementMenuItem.Name = "productManagementMenuItem";
+        productManagementMenuItem.Size = new Size(200, 22);
         productManagementMenuItem.Text = "Product Management";
-     productManagementMenuItem.Click += OnProductManagementClicked;
-  
-  // 
-    // MainForm
+        productManagementMenuItem.Click += OnProductManagementClicked;
         // 
-     ClientSize = new Size(1024, 768);
-    Controls.Add(menuStrip);
-  IsMdiContainer = true;
-  MainMenuStrip = menuStrip;
-   Text = "CleanCut Desktop Application";
+        // countryManagementToolStripMenuItem
+        // 
+        countryManagementToolStripMenuItem.Name = "countryManagementToolStripMenuItem";
+        countryManagementToolStripMenuItem.Size = new Size(200, 22);
+        countryManagementToolStripMenuItem.Text = "Country Management";
+        // 
+        // MainForm
+        // 
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        ClientSize = new Size(1024, 768);
+        Controls.Add(menuStrip);
+        IsMdiContainer = true;
+        MainMenuStrip = menuStrip;
+        Name = "MainForm";
+        Text = "CleanCut Desktop Application";
         WindowState = FormWindowState.Maximized;
-     
+        menuStrip.ResumeLayout(false);
+        menuStrip.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
