@@ -4,7 +4,7 @@ namespace CleanCut.WinApp.MVP;
 /// Base class for all presenters in MVP pattern
 /// </summary>
 /// <typeparam name="TView">The view interface</typeparam>
-public abstract class BasePresenter<TView> where TView : IView
+public abstract class BasePresenter<TView> : IDisposable where TView : IView
 {
     protected TView View { get; }
 
@@ -34,18 +34,14 @@ public abstract class BasePresenter<TView> where TView : IView
     /// </summary>
     protected virtual void HandleError(Exception ex)
     {
-        // Log the error (you can inject ILogger here)
- Console.WriteLine($"Error: {ex.Message}");
-        
-      // ?? Show error message on UI thread
+        // Show error message on UI thread
         if (View is Control control && control.InvokeRequired)
         {
-      control.Invoke(() => View.ShowError($"An error occurred: {ex.Message}"));
+            control.Invoke(() => View.ShowError($"An error occurred: {ex.Message}"));
+            return;
         }
-        else
-        {
+
         View.ShowError($"An error occurred: {ex.Message}");
-        }
     }
 
     /// <summary>
@@ -56,16 +52,16 @@ public abstract class BasePresenter<TView> where TView : IView
         try
         {
             // ?? Set loading state on UI thread
-if (View is Control control && control.InvokeRequired)
-  {
+            if (View is Control control && control.InvokeRequired)
+            {
                 control.Invoke(() => View.SetLoading(true));
-   }
+            }
             else
             {
-      View.SetLoading(true);
-     }
-            
-   await operation();
+                View.SetLoading(true);
+            }
+
+            await operation();
         }
         catch (Exception ex)
         {
@@ -74,13 +70,13 @@ if (View is Control control && control.InvokeRequired)
         finally
         {
             // ?? Clear loading state on UI thread
-      if (View is Control control && control.InvokeRequired)
+            if (View is Control control && control.InvokeRequired)
             {
-   control.Invoke(() => View.SetLoading(false));
-    }
+                control.Invoke(() => View.SetLoading(false));
+            }
             else
             {
-         View.SetLoading(false);
+                View.SetLoading(false);
             }
         }
     }
@@ -93,16 +89,16 @@ if (View is Control control && control.InvokeRequired)
         try
         {
             // ?? Set loading state on UI thread
-     if (View is Control control && control.InvokeRequired)
-  {
-      control.Invoke(() => View.SetLoading(true));
+            if (View is Control control && control.InvokeRequired)
+            {
+                control.Invoke(() => View.SetLoading(true));
             }
             else
             {
-    View.SetLoading(true);
+                View.SetLoading(true);
             }
-            
- return await operation();
+
+            return await operation();
   }
   catch (Exception ex)
         {
@@ -112,14 +108,14 @@ if (View is Control control && control.InvokeRequired)
    finally
         {
             // ?? Clear loading state on UI thread
-     if (View is Control control && control.InvokeRequired)
+            if (View is Control control && control.InvokeRequired)
             {
-       control.Invoke(() => View.SetLoading(false));
-         }
+                control.Invoke(() => View.SetLoading(false));
+            }
             else
-      {
-        View.SetLoading(false);
-        }
+            {
+                View.SetLoading(false);
+            }
         }
     }
 
@@ -135,6 +131,18 @@ if (View is Control control && control.InvokeRequired)
         catch (Exception ex)
     {
        HandleError(ex);
+        }
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            Cleanup();
+        }
+        catch
+        {
+            // swallow exceptions during dispose
         }
     }
 }

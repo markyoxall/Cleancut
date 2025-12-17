@@ -18,29 +18,32 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
 {
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
+    private readonly Services.Factories.IViewFactory<ICustomerEditView> _customerEditViewFactory;
     private readonly ILogger<CustomerListPresenter> _logger;
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
 
     public CustomerListPresenter(
-        ICustomerListView view, 
-        IMediator mediator, 
+        ICustomerListView view,
+        IMediator mediator,
         IServiceProvider serviceProvider,
-        ILogger<CustomerListPresenter> logger) 
+        Services.Factories.IViewFactory<ICustomerEditView> customerEditViewFactory,
+        ILogger<CustomerListPresenter> logger)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _customerEditViewFactory = customerEditViewFactory ?? throw new ArgumentNullException(nameof(customerEditViewFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public override void Initialize()
     {
         base.Initialize();
-        // Subscribe to view events
-        View.AddCustomerRequested += OnAddCustomerRequested;
-        View.EditCustomerRequested += OnEditCustomerRequested;
-        View.DeleteCustomerRequested += OnDeleteCustomerRequested;
-        View.RefreshRequested += OnRefreshRequested;
+        // Subscribe to view events (use named handlers so we can unsubscribe)
+        View.AddCustomerRequested += OnAddCustomerRequestedHandler;
+        View.EditCustomerRequested += OnEditCustomerRequestedHandler;
+        View.DeleteCustomerRequested += OnDeleteCustomerRequestedHandler;
+        View.RefreshRequested += OnRefreshRequestedHandler;
         // Load initial data
         _ = LoadCustomersAsync();
     }
@@ -48,36 +51,36 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     public override void Cleanup()
     {
         // Unsubscribe from view events
-        View.AddCustomerRequested -= OnAddCustomerRequested;
-        View.EditCustomerRequested -= OnEditCustomerRequested;
-        View.DeleteCustomerRequested -= OnDeleteCustomerRequested;
-        View.RefreshRequested -= OnRefreshRequested;
+        View.AddCustomerRequested -= OnAddCustomerRequestedHandler;
+        View.EditCustomerRequested -= OnEditCustomerRequestedHandler;
+        View.DeleteCustomerRequested -= OnDeleteCustomerRequestedHandler;
+        View.RefreshRequested -= OnRefreshRequestedHandler;
         base.Cleanup();
     }
 
+    // Named handlers
+    private void OnAddCustomerRequestedHandler(object? sender, EventArgs e) => _ = OnAddCustomerRequested(sender, e);
+    private void OnEditCustomerRequestedHandler(object? sender, Guid id) => _ = OnEditCustomerRequested(sender, id);
+    private void OnDeleteCustomerRequestedHandler(object? sender, Guid id) => _ = OnDeleteCustomerRequestedAsync(sender, id);
+    private void OnRefreshRequestedHandler(object? sender, EventArgs e) => _ = OnRefreshRequestedAsync(sender, e);
 
-
-    private async void OnAddCustomerRequested(object? sender, EventArgs e)
+    private async Task OnAddCustomerRequested(object? sender, EventArgs e)
     {
         await ExecuteAsync(async () =>
         {
             _logger.LogInformation("Add user requested");
 
-            // Resolve form and presenter from DI
-            var editForm = _serviceProvider.GetRequiredService<ICustomerEditView>();
+            var editForm = _customerEditViewFactory.Create();
             if (editForm is Form form)
             {
                 form.Text = "Add New Customer";
             }
+
             editForm.ClearForm();
 
-
-            var mediator = _serviceProvider.GetRequiredService<IMediator>();
-            var logger = _serviceProvider.GetRequiredService<ILogger<CustomerEditPresenter>>();
-            var presenter = new CustomerEditPresenter(editForm, mediator, logger);
+            var presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
             presenter.Initialize();
 
-            // Show dialog on UI thread
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
@@ -86,16 +89,16 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             }
 
             presenter.Cleanup();
+            (presenter as IDisposable)?.Dispose();
         });
     }
 
-    private async void OnEditCustomerRequested(object? sender, Guid userId)
+    private async Task OnEditCustomerRequested(object? sender, Guid userId)
     {
         try
         {
             _logger.LogInformation("Edit user requested for user {CustomerId}", userId);
 
-            // OPTIMIZATION: Get user from cache instead of database
             var user = _cachedCustomers.FirstOrDefault(u => u.Id == userId);
             if (user == null)
             {
@@ -109,32 +112,24 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
                 }
             }
 
-            // Resolve form and presenter from DI
-            var editForm = _serviceProvider.GetRequiredService<ICustomerEditView>();
+            var editForm = _customerEditViewFactory.Create();
             if (editForm is Form form)
             {
                 form.Text = "Edit Customer";
             }
 
-
-            var mediator = _serviceProvider.GetRequiredService<IMediator>();
-            var logger = _serviceProvider.GetRequiredService<ILogger<CustomerEditPresenter>>();
-            var presenter = new CustomerEditPresenter(editForm, mediator, logger);
+            var presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
             presenter.SetEditMode(user);
             presenter.Initialize();
 
-            // Show dialog immediately (no await blocking)
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
-                // Only refresh users in background, don't block UI
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         await LoadCustomersAsync();
-
-                        // Show success message on UI thread
                         if (View is Control control)
                         {
                             control.Invoke(() => View.ShowSuccess("Customer updated successfully."));
@@ -148,6 +143,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             }
 
             presenter.Cleanup();
+            (presenter as IDisposable)?.Dispose();
         }
         catch (Exception ex)
         {
@@ -156,31 +152,29 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         }
     }
 
-    private async void OnDeleteCustomerRequested(object? sender, Guid userId)
+    private async Task OnDeleteCustomerRequestedAsync(object? sender, Guid userId)
     {
         try
         {
             _logger.LogInformation("Delete user requested for user {CustomerId}", userId);
-            
-            // ?? Get user from cache instead of database
+
             var user = _cachedCustomers.FirstOrDefault(u => u.Id == userId);
             if (user == null)
             {
                 View.ShowError("Customer not found.");
                 return;
             }
-            
+
             var confirmMessage = $"Are you sure you want to delete user '{user.FirstName} {user.LastName}'?";
             if (!View.ShowConfirmation(confirmMessage))
                 return;
-            
+
             await ExecuteAsync(async () =>
             {
                 try
                 {
-                    // Note: You'd need to implement a DeleteCustomerCommand in your application layer
                     View.ShowInfo($"Delete functionality for user '{user.FirstName} {user.LastName}' would be implemented here.");
-                    
+
                     await LoadCustomersAsync();
                     View.ShowSuccess("Customer deleted successfully.");
                 }
@@ -198,7 +192,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         }
     }
 
-    private async void OnRefreshRequested(object? sender, EventArgs e)
+    private async Task OnRefreshRequestedAsync(object? sender, EventArgs e)
     {
         await LoadCustomersAsync();
     }
@@ -208,14 +202,13 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         await ExecuteAsync(async () =>
         {
             _logger.LogInformation("Loading users");
-            
+
             var users = await _mediator.Send(new GetAllCustomersQuery());
-            
-            // ?? Cache users locally for fast access
+
             _cachedCustomers = users.ToList();
-            
+
             View.DisplayCustomers(users);
-            
+
             _logger.LogInformation("Loaded {CustomerCount} users", users.Count());
         });
     }

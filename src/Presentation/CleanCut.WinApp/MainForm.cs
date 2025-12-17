@@ -172,7 +172,7 @@ public partial class MainForm : BaseForm
         // exitMenuItem
         // 
         exitMenuItem.Name = "exitMenuItem";
-        exitMenuItem.Size = new Size(93, 22);
+        exitMenuItem.Size = new Size(92, 22);
         exitMenuItem.Text = "Exit";
         exitMenuItem.Click += OnExitClicked;
         // 
@@ -180,8 +180,8 @@ public partial class MainForm : BaseForm
         // 
         managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem });
         managementMenu.Name = "managementMenu";
-        managementMenu.Size = new Size(90, 20);
-        managementMenu.Text = "Management";
+        managementMenu.Size = new Size(43, 20);
+        managementMenu.Text = "man";
         // 
         // userManagementMenuItem
         // 

@@ -28,16 +28,26 @@ public class ProductListPresenter : BasePresenter<IProductListView>
 
     private List<ProductInfo> _cachedProducts = new(); // ?? Cache products locally
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
+    private readonly Services.Factories.IViewFactory<IProductEditView> _productEditViewFactory;
+
+    // Named handlers to subscribe/unsubscribe safely (invoke async implementations)
+    private void OnAddProductRequestedHandler(object? sender, EventArgs e) => _ = OnAddProductRequested(sender, e);
+    private void OnEditProductRequestedHandler(object? sender, Guid id) => _ = OnEditProductRequestedAsync(sender, id);
+    private void OnDeleteProductRequestedHandler(object? sender, Guid id) => _ = OnDeleteProductRequestedAsync(sender, id);
+    private void OnRefreshRequestedHandler(object? sender, EventArgs e) => _ = OnRefreshRequestedAsync(sender, e);
+    private void OnViewProductsByCustomerRequestedHandler(object? sender, Guid id) => _ = OnViewProductsByCustomerRequestedAsync(sender, id);
 
     public ProductListPresenter(
         IProductListView view,
         IMediator mediator,
         IServiceProvider serviceProvider,
+        Services.Factories.IViewFactory<IProductEditView> productEditViewFactory,
         ILogger<ProductListPresenter> logger)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _productEditViewFactory = productEditViewFactory ?? throw new ArgumentNullException(nameof(productEditViewFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -45,11 +55,11 @@ public class ProductListPresenter : BasePresenter<IProductListView>
     {
         base.Initialize();
         // Subscribe to view events
-        View.AddProductRequested += OnAddProductRequested;
-        View.EditProductRequested += OnEditProductRequested;
-        View.DeleteProductRequested += OnDeleteProductRequested;
-        View.RefreshRequested += OnRefreshRequested;
-        View.ViewProductsByCustomerRequested += OnViewProductsByCustomerRequested;
+        View.AddProductRequested += OnAddProductRequestedHandler;
+        View.EditProductRequested += OnEditProductRequestedHandler;
+        View.DeleteProductRequested += OnDeleteProductRequestedHandler;
+        View.RefreshRequested += OnRefreshRequestedHandler;
+        View.ViewProductsByCustomerRequested += OnViewProductsByCustomerRequestedHandler;
         // Load initial data
         _ = LoadInitialDataAsync();
     }
@@ -57,11 +67,11 @@ public class ProductListPresenter : BasePresenter<IProductListView>
     public override void Cleanup()
     {
         // Unsubscribe from view events
-        View.AddProductRequested -= OnAddProductRequested;
-        View.EditProductRequested -= OnEditProductRequested;
-        View.DeleteProductRequested -= OnDeleteProductRequested;
-        View.RefreshRequested -= OnRefreshRequested;
-        View.ViewProductsByCustomerRequested -= OnViewProductsByCustomerRequested;
+        View.AddProductRequested -= OnAddProductRequestedHandler;
+        View.EditProductRequested -= OnEditProductRequestedHandler;
+        View.DeleteProductRequested -= OnDeleteProductRequestedHandler;
+        View.RefreshRequested -= OnRefreshRequestedHandler;
+        View.ViewProductsByCustomerRequested -= OnViewProductsByCustomerRequestedHandler;
         base.Cleanup();
     }
 
@@ -87,14 +97,14 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         });
     }
 
-    private async void OnAddProductRequested(object? sender, EventArgs e)
+    private async Task OnAddProductRequested(object? sender, EventArgs e)
     {
         try
         {
             _logger.LogInformation("Add product requested");
 
-            // Resolve form and presenter from DI
-            var editForm = (_serviceProvider.GetRequiredService<IProductEditView>()) ?? throw new InvalidOperationException("ServiceProvider did not provide IProductEditView");
+            // Resolve form using factory and create presenter via DI
+            var editForm = _productEditViewFactory.Create();
             if (editForm is Form form)
             {
                 form.Text = "Add New Product";
@@ -103,9 +113,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             editForm.ClearForm();
             editForm.SetAvailableCustomers(_cachedCustomers);
 
-            var mediator = _serviceProvider.GetRequiredService<IMediator>();
-            var logger = _serviceProvider.GetRequiredService<ILogger<ProductEditPresenter>>();
-            var presenter = new ProductEditPresenter(editForm, mediator, logger);
+            var presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
             presenter.Initialize();
 
             // Show dialog immediately
@@ -139,7 +147,9 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         }
     }
 
-    private async void OnEditProductRequested(object? sender, Guid productId)
+    
+
+    private async Task OnEditProductRequestedAsync(object? sender, Guid productId)
     {
         try
         {
@@ -153,8 +163,8 @@ public class ProductListPresenter : BasePresenter<IProductListView>
                 return;
             }
 
-            // Resolve form and presenter from DI
-            var editForm = (_serviceProvider.GetRequiredService<IProductEditView>()) ?? throw new InvalidOperationException("ServiceProvider did not provide IProductEditView");
+            // Resolve form using factory and create presenter via DI
+            var editForm = _productEditViewFactory.Create();
             if (editForm is Form form)
             {
                 form.Text = "Edit Product";
@@ -162,9 +172,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
 
             editForm.SetAvailableCustomers(_cachedCustomers);
 
-            var mediator = _serviceProvider.GetRequiredService<IMediator>();
-            var logger = _serviceProvider.GetRequiredService<ILogger<ProductEditPresenter>>();
-            var presenter = new ProductEditPresenter(editForm, mediator, logger);
+            var presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
             presenter.SetEditMode(product);
             presenter.Initialize();
 
@@ -191,6 +199,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             }
 
             presenter.Cleanup();
+            (presenter as IDisposable)?.Dispose();
         }
         catch (Exception ex)
         {
@@ -199,7 +208,9 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         }
     }
 
-    private async void OnDeleteProductRequested(object? sender, Guid productId)
+    
+
+    private async Task OnDeleteProductRequestedAsync(object? sender, Guid productId)
     {
         try
         {
@@ -241,12 +252,16 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         }
     }
 
-    private async void OnRefreshRequested(object? sender, EventArgs e)
+    
+
+    private async Task OnRefreshRequestedAsync(object? sender, EventArgs e)
     {
         await LoadInitialDataAsync();
     }
 
-    private async void OnViewProductsByCustomerRequested(object? sender, Guid userId)
+    
+
+    private async Task OnViewProductsByCustomerRequestedAsync(object? sender, Guid userId)
     {
         await LoadProductsByCustomerAsync(userId);
     }

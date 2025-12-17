@@ -47,8 +47,8 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
     {
         base.Initialize();
         
-        // Subscribe to view events
-        View.SaveRequested += OnSaveRequested;
+        // Subscribe to view events (use wrapper to avoid async void)
+        View.SaveRequested += OnSaveRequestedHandler;
         View.CancelRequested += OnCancelRequested;
         
         if (!_isEditMode)
@@ -60,13 +60,14 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
     public override void Cleanup()
     {
         // Unsubscribe from view events
-        View.SaveRequested -= OnSaveRequested;
+        View.SaveRequested -= OnSaveRequestedHandler;
         View.CancelRequested -= OnCancelRequested;
         
         base.Cleanup();
     }
+    private void OnSaveRequestedHandler(object? sender, EventArgs e) => _ = OnSaveRequested(sender, e);
 
-    private async void OnSaveRequested(object? sender, EventArgs e)
+    private async Task OnSaveRequested(object? sender, EventArgs e)
     {
         await ExecuteAsync(async () =>
         {

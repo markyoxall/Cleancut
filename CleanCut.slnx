@@ -8,11 +8,10 @@
     <File Path="docs/SECURITY_IMPLEMENTATION.md" />
     <File Path="docs/SECURITY_IMPLEMENTATION_COMPLETE.md" />
     <File Path="docs/TOKEN_DEBUGGING_GUIDE.md" />
+    <File Path="README-containers.md" />
     <File Path="reset_git_history.ps1" />
   </Folder>
-  <Folder Name="/solution_items/">
-    <File Path="README-containers.md" />
-  </Folder>
+  <Folder Name="/solution_items/" />
   <Folder Name="/src/">
     <Project Path="src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj" />
   </Folder>

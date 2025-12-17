@@ -28,7 +28,7 @@ static class Program
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("CleanCut.WinApp.Program");
             logger.LogInformation("Starting CleanCut WinApp application");
-            
+            logger.LogInformation("Working directory: {cwd}", System.IO.Directory.GetCurrentDirectory());
 
             // Create and run main form
             var mainForm = serviceProvider.GetRequiredService<MainForm>();

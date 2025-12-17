@@ -48,14 +48,25 @@ public static class ServiceConfiguration
         services.AddTransient<CustomerListPresenter>();
         services.AddTransient<CustomerEditPresenter>();
 
+        // View factories
+        services.AddTransient(typeof(Services.Factories.IViewFactory<>), typeof(Services.Factories.ViewFactory<>));
+
         // Product Management MVP components
         services.AddTransient<IProductListView, ProductListForm>();
         services.AddTransient<IProductEditView, ProductEditForm>();
         services.AddTransient<ProductListPresenter>();
         services.AddTransient<ProductEditPresenter>();
 
+        // Register product edit view factory
+        services.AddTransient<Services.Factories.IViewFactory<IProductEditView>, Services.Factories.ViewFactory<IProductEditView>>();
+
         // Main form factory
         services.AddTransient<MainForm>();
+
+        // Navigation service
+        services.AddTransient<Services.Navigation.INavigationService, Services.Navigation.NavigationService>();
+
+        // Presenter factories will be resolved via ActivatorUtilities; view factories registered above
 
         // SignalR and notification services removed
 
@@ -76,18 +87,38 @@ public static class ServiceConfiguration
 
     private static void ConfigureLogging(IServiceCollection services)
     {
-        // Ensure logs directory exists
-        var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+        // Determine the project directory (look for the .csproj file) so logs are created under
+        // the project folder (e.g. src/Presentation/CleanCut.WinApp) rather than the runtime
+        // working directory (bin/...)
+        var startDir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
+        DirectoryInfo? projectDir = startDir;
+        while (projectDir is not null &&
+               !File.Exists(Path.Combine(projectDir.FullName, "CleanCut.WinApp.csproj")))
+        {
+            projectDir = projectDir.Parent;
+        }
+
+        var basePath = projectDir?.FullName ?? AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
+
+        // Ensure logs directory exists (use absolute path under the project folder)
+        var logDirectory = Path.Combine(basePath, "logs");
         if (!Directory.Exists(logDirectory))
         {
             Directory.CreateDirectory(logDirectory);
         }
 
+        // Use an absolute path for the Serilog file sink so it's deterministic
+        var logFilePath = Path.Combine(logDirectory, "cleancut-winapp-.txt");
+
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File("logs/cleancut-winapp-.txt", rollingInterval: RollingInterval.Day)
+            .WriteTo.File(path: logFilePath, rollingInterval: RollingInterval.Day)
             .CreateLogger();
+
+        // Emit startup information to help locate the files
+        Log.Information("Serilog configured. Logs folder: {LogDirectory}", logDirectory);
+        Console.WriteLine($"Serilog configured. Logs folder: {logDirectory}");
 
         services.AddLogging(builder =>
         {
