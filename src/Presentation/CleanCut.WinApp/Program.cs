@@ -3,7 +3,7 @@ using CleanCut.WinApp.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using CleanCut.WinApp.Services;
+
 
 namespace CleanCut.WinApp;
 
@@ -28,18 +28,6 @@ static class Program
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("CleanCut.WinApp.Program");
             logger.LogInformation("Starting CleanCut WinApp application");
-            
-            // Seed database in development
-            try
-            {
-                using var scope = serviceProvider.CreateScope();
-                await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
-                logger.LogInformation("Database seeding completed");
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Database seeding failed, but application will continue");
-            }
             
 
             // Create and run main form

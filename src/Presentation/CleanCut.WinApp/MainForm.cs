@@ -28,7 +28,7 @@ public partial class MainForm : BaseForm
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
+
         InitializeComponent();
         InitializeNavigation();
     }
@@ -44,28 +44,30 @@ public partial class MainForm : BaseForm
         try
         {
             _logger.LogInformation("Loading customer management");
-            
+
             // Clean up existing presenters
-     CleanupPresenters();
+            CleanupPresenters();
 
             // Create new view and presenter
             var userListView = _serviceProvider.GetRequiredService<ICustomerListView>();
-            _userListPresenter = _serviceProvider.GetRequiredService<CustomerListPresenter>();
-      
-      // Initialize presenter
+            // Ensure the presenter receives the same view instance that will be shown
+            _userListPresenter = Microsoft.Extensions.DependencyInjection.ActivatorUtilities
+                .CreateInstance<CustomerListPresenter>(_serviceProvider, userListView);
+
+            // Initialize presenter (will populate the same view instance that will be shown)
             _userListPresenter.Initialize();
-          
-     // Show the form
+
+            // Show the form
             if (userListView is Form form)
             {
-       form.MdiParent = this;
-             form.Show();
+                form.MdiParent = this;
+                form.Show();
             }
- }
+        }
         catch (Exception ex)
         {
-         _logger.LogError(ex, "Error loading customer management");
-     ShowError($"Failed to load customer management: {ex.Message}");
+            _logger.LogError(ex, "Error loading customer management");
+            ShowError($"Failed to load customer management: {ex.Message}");
         }
     }
 
@@ -73,52 +75,54 @@ public partial class MainForm : BaseForm
     {
         try
         {
- _logger.LogInformation("Loading product management");
-   
- // Clean up existing presenters
+            _logger.LogInformation("Loading product management");
+
+            // Clean up existing presenters
             CleanupPresenters();
-        
+
             // Create new view and presenter
             var productListView = _serviceProvider.GetRequiredService<IProductListView>();
-        _productListPresenter = _serviceProvider.GetRequiredService<ProductListPresenter>();
-            
-            // Initialize presenter
-       _productListPresenter.Initialize();
+            // Ensure the presenter receives the same view instance that will be shown
+            _productListPresenter = Microsoft.Extensions.DependencyInjection.ActivatorUtilities
+                .CreateInstance<ProductListPresenter>(_serviceProvider, productListView);
 
-      // Show the form
-   if (productListView is Form form)
-         {
-      form.MdiParent = this;
+            // Initialize presenter (will populate the same view instance that will be shown)
+            _productListPresenter.Initialize();
+
+            // Show the form
+            if (productListView is Form form)
+            {
+                form.MdiParent = this;
                 form.Show();
             }
- }
+        }
         catch (Exception ex)
-  {
-   _logger.LogError(ex, "Error loading product management");
- ShowError($"Failed to load product management: {ex.Message}");
+        {
+            _logger.LogError(ex, "Error loading product management");
+            ShowError($"Failed to load product management: {ex.Message}");
         }
     }
 
     private void CleanupPresenters()
     {
         // ? Close and dispose any existing MDI child windows
-   foreach (Form childForm in MdiChildren)
+        foreach (Form childForm in MdiChildren)
         {
-    childForm.Close();
-      childForm.Dispose(); // Explicitly dispose
-    }
+            childForm.Close();
+            childForm.Dispose(); // Explicitly dispose
+        }
 
         // ? Clean up presenters
         _userListPresenter?.Cleanup();
         _userListPresenter = null;
-        
+
         _productListPresenter?.Cleanup();
- _productListPresenter = null;
+        _productListPresenter = null;
     }
 
     private void OnCustomerManagementClicked(object? sender, EventArgs e)
     {
- LoadCustomerManagement();
+        LoadCustomerManagement();
     }
 
     private void OnProductManagementClicked(object? sender, EventArgs e)
@@ -127,14 +131,14 @@ public partial class MainForm : BaseForm
     }
 
     private void OnExitClicked(object? sender, EventArgs e)
-  {
+    {
         Close();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         CleanupPresenters();
-   base.OnFormClosed(e);
+        base.OnFormClosed(e);
     }
 
     private void InitializeComponent()

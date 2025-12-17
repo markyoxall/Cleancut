@@ -19,41 +19,30 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<CustomerListPresenter> _logger;
-    private readonly CleanCut.WinApp.Services.INotificationMediator? _notificationMediator;
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
 
     public CustomerListPresenter(
         ICustomerListView view, 
         IMediator mediator, 
         IServiceProvider serviceProvider,
-        ILogger<CustomerListPresenter> logger,
-        CleanCut.WinApp.Services.INotificationMediator? notificationMediator = null) 
+        ILogger<CustomerListPresenter> logger) 
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _notificationMediator = notificationMediator;
     }
 
     public override void Initialize()
     {
         base.Initialize();
-        
         // Subscribe to view events
         View.AddCustomerRequested += OnAddCustomerRequested;
         View.EditCustomerRequested += OnEditCustomerRequested;
         View.DeleteCustomerRequested += OnDeleteCustomerRequested;
         View.RefreshRequested += OnRefreshRequested;
-        
         // Load initial data
         _ = LoadCustomersAsync();
-
-        // Subscribe to notifications
-        if (_notificationMediator != null)
-        {
-            _notificationMediator.CustomerUpdated += OnCustomerUpdatedNotification;
-        }
     }
 
     public override void Cleanup()
@@ -63,50 +52,39 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         View.EditCustomerRequested -= OnEditCustomerRequested;
         View.DeleteCustomerRequested -= OnDeleteCustomerRequested;
         View.RefreshRequested -= OnRefreshRequested;
-        
         base.Cleanup();
-
-        if (_notificationMediator != null)
-        {
-            _notificationMediator.CustomerUpdated -= OnCustomerUpdatedNotification;
-        }
     }
 
-    private async Task OnCustomerUpdatedNotification(CustomerInfo dto)
-    {
-        try
-        {
-            await LoadCustomersAsync();
-            if (View is Control control)
-            {
-                control.Invoke(() => View.ShowSuccess("Customers refreshed due to external update."));
-            }
-        }
-        catch { }
-    }
+
 
     private async void OnAddCustomerRequested(object? sender, EventArgs e)
     {
         await ExecuteAsync(async () =>
         {
             _logger.LogInformation("Add user requested");
-            
-            // ?? Create form and presenter outside of async context
-            var editForm = new CustomerEditForm();
-            editForm.Text = "Add New Customer";
+
+            // Resolve form and presenter from DI
+            var editForm = _serviceProvider.GetRequiredService<ICustomerEditView>();
+            if (editForm is Form form)
+            {
+                form.Text = "Add New Customer";
+            }
             editForm.ClearForm();
-            
-            var presenter = new CustomerEditPresenter(editForm, _mediator, _logger);
+
+
+            var mediator = _serviceProvider.GetRequiredService<IMediator>();
+            var logger = _serviceProvider.GetRequiredService<ILogger<CustomerEditPresenter>>();
+            var presenter = new CustomerEditPresenter(editForm, mediator, logger);
             presenter.Initialize();
-            
-            // ?? Show dialog on UI thread
-            var result = editForm.ShowDialog();
+
+            // Show dialog on UI thread
+            var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
                 await LoadCustomersAsync();
                 View.ShowSuccess("Customer created successfully.");
             }
-            
+
             presenter.Cleanup();
         });
     }
@@ -116,41 +94,47 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         try
         {
             _logger.LogInformation("Edit user requested for user {CustomerId}", userId);
-            
-            // ?? OPTIMIZATION: Get user from cache instead of database
+
+            // OPTIMIZATION: Get user from cache instead of database
             var user = _cachedCustomers.FirstOrDefault(u => u.Id == userId);
             if (user == null)
             {
                 _logger.LogWarning("Customer {CustomerId} not found in cache, fetching from database", userId);
                 user = await _mediator.Send(new GetCustomerQuery(userId));
-                
+
                 if (user == null)
                 {
                     View.ShowError("Customer not found.");
                     return;
                 }
             }
-            
-            // ?? Create form and presenter on UI thread (fast)
-            var editForm = new CustomerEditForm();
-            editForm.Text = "Edit Customer";
-            
-            var presenter = new CustomerEditPresenter(editForm, _mediator, _logger);
+
+            // Resolve form and presenter from DI
+            var editForm = _serviceProvider.GetRequiredService<ICustomerEditView>();
+            if (editForm is Form form)
+            {
+                form.Text = "Edit Customer";
+            }
+
+
+            var mediator = _serviceProvider.GetRequiredService<IMediator>();
+            var logger = _serviceProvider.GetRequiredService<ILogger<CustomerEditPresenter>>();
+            var presenter = new CustomerEditPresenter(editForm, mediator, logger);
             presenter.SetEditMode(user);
             presenter.Initialize();
-            
-            // ?? Show dialog immediately (no await blocking)
-            var result = editForm.ShowDialog();
+
+            // Show dialog immediately (no await blocking)
+            var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
-                // ?? Only refresh users in background, don't block UI
+                // Only refresh users in background, don't block UI
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         await LoadCustomersAsync();
-                        
-                        // ?? Show success message on UI thread
+
+                        // Show success message on UI thread
                         if (View is Control control)
                         {
                             control.Invoke(() => View.ShowSuccess("Customer updated successfully."));
@@ -162,7 +146,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
                     }
                 });
             }
-            
+
             presenter.Cleanup();
         }
         catch (Exception ex)

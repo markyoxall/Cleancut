@@ -14,7 +14,6 @@
     <File Path="README-containers.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Presentation/CleanCut.WebApp/CleanCut.WebApp.csproj" />
     <Project Path="src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj" />
   </Folder>
   <Folder Name="/src/Applications/">
@@ -43,5 +42,4 @@
     <Project Path="tests/UnitTests/CleanCut.Domain.Tests/CleanCut.Domain.Tests.csproj" />
     <Project Path="tests/UnitTests/CleanCut.Infrastructure.Tests/CleanCut.Infrastructure.Tests.csproj" />
   </Folder>
-  <Project Path="CleanCut.BlazorSPA/CleanCut.BlazorSPA.csproj" Id="9698db76-bb77-4e3b-86cb-fb2dc57c97b2" />
 </Solution>

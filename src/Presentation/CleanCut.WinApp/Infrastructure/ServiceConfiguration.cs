@@ -9,9 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using MediatR;
-using CleanCut.WinApp.Services;
-using CleanCut.WinApp.Services;
+ 
 
 namespace CleanCut.WinApp.Infrastructure;
 
@@ -23,14 +21,14 @@ public static class ServiceConfiguration
     public static IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
-        
+
         // Configuration
         var configuration = BuildConfiguration();
         services.AddSingleton(configuration);
-        
+
         // Logging
         ConfigureLogging(services);
-        
+
         // Core infrastructure registration order matters:
         // - Data and shared infrastructure (repositories, RabbitMQ publisher, etc.) must be registered
         //   before the Application layer so MediatR pipeline behaviors that depend on those
@@ -42,31 +40,32 @@ public static class ServiceConfiguration
         // Register Application layer without integration behaviors so handlers that depend
         // on IUnitOfWork are available but RabbitMQ/Idempotency behaviors are not wired.
         services.AddApplication(includeIntegrationBehaviors: false);
-        
+
+
         // Customer Management MVP components
-        services.AddScoped<ICustomerListView, CustomerListForm>();
-        services.AddScoped<ICustomerEditView, CustomerEditForm>();
-        services.AddScoped<CustomerListPresenter>();
-        services.AddScoped<CustomerEditPresenter>();
-        
+        services.AddTransient<ICustomerListView, CustomerListForm>();
+        services.AddTransient<ICustomerEditView, CustomerEditForm>();
+        services.AddTransient<CustomerListPresenter>();
+        services.AddTransient<CustomerEditPresenter>();
+
         // Product Management MVP components
-        services.AddScoped<IProductListView, ProductListForm>();
-        services.AddScoped<IProductEditView, ProductEditForm>();
-        services.AddScoped<ProductListPresenter>();
-        services.AddScoped<ProductEditPresenter>();
-        
+        services.AddTransient<IProductListView, ProductListForm>();
+        services.AddTransient<IProductEditView, ProductEditForm>();
+        services.AddTransient<ProductListPresenter>();
+        services.AddTransient<ProductEditPresenter>();
+
         // Main form factory
-        services.AddScoped<MainForm>();
+        services.AddTransient<MainForm>();
 
         // SignalR and notification services removed
-        
+
         return services.BuildServiceProvider();
     }
-    
+
     private static IConfiguration BuildConfiguration()
     {
         var environment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "Development";
-        
+
         return new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -74,15 +73,22 @@ public static class ServiceConfiguration
             .AddEnvironmentVariables()
             .Build();
     }
-    
+
     private static void ConfigureLogging(IServiceCollection services)
     {
+        // Ensure logs directory exists
+        var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+        if (!Directory.Exists(logDirectory))
+        {
+            Directory.CreateDirectory(logDirectory);
+        }
+
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
             .WriteTo.File("logs/cleancut-winapp-.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
-        
+
         services.AddLogging(builder =>
         {
             builder.ClearProviders();
