@@ -20,12 +20,12 @@ public interface IProductEditView : MVP.IView
     /// <summary>
     /// Get the product data from the form
     /// </summary>
-    ProductEditModel GetProductData();
+    ProductEditViewModel GetProductData();
     
     /// <summary>
     /// Set the product data in the form
     /// </summary>
-    void SetProductData(ProductEditModel product);
+    void SetProductData(ProductEditViewModel product);
     
     /// <summary>
     /// Validate the form and return validation errors
@@ -51,12 +51,4 @@ public interface IProductEditView : MVP.IView
 /// <summary>
 /// Model for product edit form
 /// </summary>
-public class ProductEditModel
-{
-    public Guid? Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public bool IsAvailable { get; set; } = true;
-    public Guid UserId { get; set; }
-}
+// Model types have been moved to their own files (ProductEditViewModel in ProductEditViewModel.cs)

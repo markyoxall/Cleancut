@@ -12,7 +12,26 @@ public partial class BaseForm : Form, IView
 
     public virtual void ShowError(string message)
     {
-        MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        // Log the error so it appears in the Serilog file sink
+        try
+        {
+            Serilog.Log.Error("{ErrorMessage}", message);
+        }
+        catch
+        {
+            // ignore logging failures
+        }
+
+        // Display the custom error dialog; fall back to MessageBox on failure
+        try
+        {
+            using var dlg = new CleanCut.WinApp.Views.Shared.ErrorDialogForm(message);
+            dlg.ShowDialog(this);
+        }
+        catch
+        {
+            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     public virtual void ShowInfo(string message)
@@ -45,18 +64,4 @@ public partial class BaseForm : Form, IView
         }
     }
 
-    private void InitializeComponent()
-    {
-        SuspendLayout();
-        // 
-        // BaseForm
-        // 
-        AutoScaleDimensions = new SizeF(7F, 15F);
-        AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(800, 450);
-        Name = "BaseForm";
-        StartPosition = FormStartPosition.CenterScreen;
-        Text = "CleanCut Application";
-        ResumeLayout(false);
-    }
 }

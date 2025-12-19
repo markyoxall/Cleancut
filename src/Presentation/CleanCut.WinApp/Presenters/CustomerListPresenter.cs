@@ -20,7 +20,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     private readonly IServiceProvider _serviceProvider;
     private readonly Services.Factories.IViewFactory<ICustomerEditView> _customerEditViewFactory;
     private readonly ILogger<CustomerListPresenter> _logger;
-    private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
+    private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache customers locally
 
     public CustomerListPresenter(
         ICustomerListView view,
@@ -78,8 +78,18 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
 
             editForm.ClearForm();
 
-            var presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
-            presenter.Initialize();
+            CustomerEditPresenter? presenter = null;
+            try
+            {
+                presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
+                presenter.Initialize();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create CustomerEditPresenter");
+                View.ShowError($"Failed to open customer edit dialog: {ex.Message}");
+                return;
+            }
 
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
@@ -118,9 +128,19 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
                 form.Text = "Edit Customer";
             }
 
-            var presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
-            presenter.SetEditMode(user);
-            presenter.Initialize();
+            CustomerEditPresenter? presenter = null;
+            try
+            {
+                presenter = ActivatorUtilities.CreateInstance<CustomerEditPresenter>(_serviceProvider, editForm);
+                presenter.SetEditMode(user);
+                presenter.Initialize();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create CustomerEditPresenter for edit");
+                View.ShowError($"Failed to open customer edit dialog: {ex.Message}");
+                return;
+            }
 
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)

@@ -12,9 +12,7 @@
     <File Path="reset_git_history.ps1" />
   </Folder>
   <Folder Name="/solution_items/" />
-  <Folder Name="/src/">
-    <Project Path="src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj" />
-  </Folder>
+  <Folder Name="/src/" />
   <Folder Name="/src/Applications/">
     <Project Path="src/Applications/CleanCut.ProductExportHost/CleanCut.ProductExportHost.csproj" />
   </Folder>
@@ -33,6 +31,7 @@
     <Project Path="src/Presentation/CleanCut.API/CleanCut.API.csproj" />
     <Project Path="src/Presentation/CleanCut.BlazorSPA/CleanCut.BlazorSPA.csproj" />
     <Project Path="src/Presentation/CleanCut.BlazorWebApp/CleanCut.BlazorWebApp.csproj" />
+    <Project Path="src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ArchitectureTests/CleanCut.ArchitectureTests/CleanCut.ArchitectureTests.csproj" />

@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Diagnostics\**" />
+    <EmbeddedResource Remove="Diagnostics\**" />
+    <None Remove="Diagnostics\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
@@ -38,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Diagnostics\" />
+    <Folder Include="logs\" />
   </ItemGroup>
 
 </Project>

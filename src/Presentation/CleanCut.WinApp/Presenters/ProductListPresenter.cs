@@ -113,8 +113,18 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             editForm.ClearForm();
             editForm.SetAvailableCustomers(_cachedCustomers);
 
-            var presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
-            presenter.Initialize();
+            ProductEditPresenter? presenter = null;
+            try
+            {
+                presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
+                presenter.Initialize();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create ProductEditPresenter");
+                View.ShowError($"Failed to open product edit dialog: {ex.Message}");
+                return;
+            }
 
             // Show dialog immediately
             var result = (editForm as Form)?.ShowDialog();
@@ -172,9 +182,19 @@ public class ProductListPresenter : BasePresenter<IProductListView>
 
             editForm.SetAvailableCustomers(_cachedCustomers);
 
-            var presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
-            presenter.SetEditMode(product);
-            presenter.Initialize();
+            ProductEditPresenter? presenter = null;
+            try
+            {
+                presenter = ActivatorUtilities.CreateInstance<ProductEditPresenter>(_serviceProvider, editForm);
+                presenter.SetEditMode(product);
+                presenter.Initialize();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create ProductEditPresenter for edit");
+                View.ShowError($"Failed to open product edit dialog: {ex.Message}");
+                return;
+            }
 
             // Show dialog immediately
             var result = (editForm as Form)?.ShowDialog();

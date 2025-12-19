@@ -1,27 +1,24 @@
-using CleanCut.Application.Commands.Customers.CreateCustomer;
-using CleanCut.Application.Commands.Customers.UpdateCustomer;
+using AutoMapper;
+using AutoMapper;
 using CleanCut.Application.DTOs;
 using CleanCut.WinApp.MVP;
-using CleanCut.WinApp.Views.Customers;
+using CleanCut.WinApp.Views.Countries;
 using MediatR;
-using AutoMapper;
 using Microsoft.Extensions.Logging;
 
 namespace CleanCut.WinApp.Presenters;
 
-/// <summary>
-/// Presenter for Customer Edit View implementing MVP pattern
-/// </summary>
-public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
+public class CountryEditPresenter : BasePresenter<ICountryEditView>
 {
+
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
-    private readonly ILogger<CustomerEditPresenter> _logger;
+    private readonly ILogger<CountryEditPresenter> _logger;
     private readonly Services.ICommandFactory _commandFactory;
-    private CustomerInfo? _existingCustomer;
+    private CountryInfo? _existingCountry;
     private bool _isEditMode;
 
-    public CustomerEditPresenter(ICustomerEditView view, IMediator mediator, IMapper mapper, Services.ICommandFactory commandFactory, ILogger<CustomerEditPresenter> logger) 
+    public CountryEditPresenter(ICountryEditView view, IMediator mediator, IMapper mapper, Services.ICommandFactory commandFactory, ILogger<CountryEditPresenter> logger)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
@@ -30,23 +27,24 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public void SetEditMode(CustomerInfo user)
+    public void SetEditMode(CountryInfo country)
     {
-        _existingCustomer = user;
+        _existingCountry = country;
         _isEditMode = true;
-        
-        var editModel = _mapper.Map<CustomerEditViewModel>(user);
-        View.SetCustomerData(editModel);
+
+        var editModel = _mapper.Map<CountryEditViewModel>(country);
+        View.SetCountryData(editModel);
     }
+
 
     public override void Initialize()
     {
         base.Initialize();
-        
+
         // Subscribe to view events (use wrapper handlers to avoid async void)
         View.SaveRequested += OnSaveRequestedHandler;
         View.CancelRequested += OnCancelRequested;
-        
+
         if (!_isEditMode)
         {
             View.ClearForm();
@@ -58,7 +56,7 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
         // Unsubscribe from view events
         View.SaveRequested -= OnSaveRequestedHandler;
         View.CancelRequested -= OnCancelRequested;
-        
+
         base.Cleanup();
     }
     private void OnSaveRequestedHandler(object? sender, EventArgs e) => _ = OnSaveRequested(sender, e);
@@ -76,28 +74,28 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
                 return;
             }
 
-            var userData = View.GetCustomerData();
-            var dto = _mapper.Map<CustomerInfo>(userData);
+            var userData = View.GetCountryData();
+            var dto = _mapper.Map<CountryInfo>(userData);
 
             try
             {
-                if (_isEditMode && _existingCustomer != null)
+                if (_isEditMode && _existingCountry != null)
                 {
                     // Update existing user
-                    _logger.LogInformation("Updating user {CustomerId}", _existingCustomer.Id);
-                    var updateCommand = _commandFactory.UpdateCustomerCommand(_existingCustomer.Id, userData);
-                    
+                    _logger.LogInformation("Updating user {countryId}", _existingCountry.Id);
+                    var updateCommand = _commandFactory.UpdateCountryCommand(_existingCountry.Id, userData);
+
                     await _mediator.Send(updateCommand);
-                    _logger.LogInformation("Customer updated successfully");
+                    _logger.LogInformation("Country updated successfully");
                 }
                 else
                 {
                     // Create new user
                     _logger.LogInformation("Creating new user");
-                    var createCommand = _commandFactory.CreateCustomerCommand(userData);
-                    
+                    var createCommand = _commandFactory.CreateCountryCommand(userData);
+
                     await _mediator.Send(createCommand);
-                    _logger.LogInformation("Customer created successfully");
+                    _logger.LogInformation("Country created successfully");
                 }
 
                 // Close the dialog with OK result
@@ -117,12 +115,13 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
 
     private void OnCancelRequested(object? sender, EventArgs e)
     {
-        _logger.LogInformation("Customer edit cancelled");
-        
+        _logger.LogInformation("Country edit cancelled");
+
         if (View is Form form)
         {
             form.DialogResult = DialogResult.Cancel;
             form.Close();
         }
     }
+
 }

@@ -1,41 +1,38 @@
-using CleanCut.Application.DTOs;
+using CleanCut.WinApp.Views.Countries;
 
-namespace CleanCut.WinApp.Views.Customers;
+namespace CleanCut.WinApp.Views.Countries;
 
-/// <summary>
-/// Interface for Customer Edit/Create View
-/// </summary>
-public interface ICustomerEditView : MVP.IView
+public interface ICountryEditView : MVP.IView
 {
+
     /// <summary>
     /// Event raised when user wants to save
     /// </summary>
     event EventHandler? SaveRequested;
-    
+
     /// <summary>
     /// Event raised when user wants to cancel
     /// </summary>
     event EventHandler? CancelRequested;
-    
+
     /// <summary>
     /// Get the user data from the form
     /// </summary>
-    CustomerEditViewModel GetCustomerData();
-    
+    CountryEditViewModel GetCountryData();
+
     /// <summary>
     /// Set the user data in the form
     /// </summary>
-    void SetCustomerData(CustomerEditViewModel user);
-    
+    void SetCountryData(CountryEditViewModel user);
+
     /// <summary>
     /// Validate the form and return validation errors
     /// </summary>
     Dictionary<string, string> ValidateForm();
-    
+
     /// <summary>
     /// Clear all form fields
     /// </summary>
     void ClearForm();
-}
 
-// Model types have been moved to their own files (CustomerEditModel in CustomerEditModel.cs)
+}

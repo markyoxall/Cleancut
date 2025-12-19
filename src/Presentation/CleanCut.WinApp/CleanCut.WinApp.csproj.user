@@ -7,6 +7,12 @@
     <Compile Update="MVP\BaseForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Views\Countries\CountryEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Countries\CountryListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Views\Products\ProductEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -17,6 +23,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Views\Customers\CustomerListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Shared\ErrorDialogForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

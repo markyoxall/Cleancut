@@ -9,7 +9,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
- 
+using AutoMapper;
+using CleanCut.WinApp.Views.Countries;
+
 
 namespace CleanCut.WinApp.Infrastructure;
 
@@ -30,16 +32,17 @@ public static class ServiceConfiguration
         ConfigureLogging(services);
 
         // Core infrastructure registration order matters:
-        // - Data and shared infrastructure (repositories, RabbitMQ publisher, etc.) must be registered
+        // - Data and shared infrastructure (repositories, etc.) must be registered
         //   before the Application layer so MediatR pipeline behaviors that depend on those
         //   services can be resolved during DI validation.
         services.AddDataInfrastructure(configuration);
         services.AddCachingInfrastructure(configuration);
-
-        // WinApp does not publish to RabbitMQ nor require idempotency behavior.
-        // Register Application layer without integration behaviors so handlers that depend
-        // on IUnitOfWork are available but RabbitMQ/Idempotency behaviors are not wired.
         services.AddApplication(includeIntegrationBehaviors: false);
+
+
+        // AutoMapper profiles for WinApp viewmodel <-> application DTO mapping
+        // Configure AutoMapper via the AddAutoMapper action overload
+        services.AddAutoMapper(cfg => cfg.AddProfile(new CleanCut.WinApp.Infrastructure.Mapping.WinAppMappingProfile()));
 
 
         // Customer Management MVP components
@@ -48,17 +51,31 @@ public static class ServiceConfiguration
         services.AddTransient<CustomerListPresenter>();
         services.AddTransient<CustomerEditPresenter>();
 
-        // View factories
-        services.AddTransient(typeof(Services.Factories.IViewFactory<>), typeof(Services.Factories.ViewFactory<>));
-
+   
         // Product Management MVP components
         services.AddTransient<IProductListView, ProductListForm>();
         services.AddTransient<IProductEditView, ProductEditForm>();
         services.AddTransient<ProductListPresenter>();
         services.AddTransient<ProductEditPresenter>();
 
+        // Country Management MVP components
+        services.AddTransient<ICountryListView, CountryListForm>();
+        services.AddTransient<ICountryEditView, CountryEditForm>();
+        services.AddTransient<CountryListPresenter>();
+        services.AddTransient<CountryEditPresenter>();
+
+
+
+        services.AddTransient(typeof(Services.Factories.IViewFactory<>), typeof(Services.Factories.ViewFactory<>));
+
+
+        // Command factory (presentation layer helper to construct App commands from viewmodels)
+        services.AddTransient<Services.ICommandFactory, Services.CommandFactory>();
+
         // Register product edit view factory
         services.AddTransient<Services.Factories.IViewFactory<IProductEditView>, Services.Factories.ViewFactory<IProductEditView>>();
+
+        // IMapper is registered by AddAutoMapper; presenters can request IMapper directly
 
         // Main form factory
         services.AddTransient<MainForm>();
@@ -66,9 +83,11 @@ public static class ServiceConfiguration
         // Navigation service
         services.AddTransient<Services.Navigation.INavigationService, Services.Navigation.NavigationService>();
 
+        // Management loader (testable helper to create presenters/views in a scope)
+        services.AddSingleton<Services.Management.IManagementLoader, Services.Management.ManagementLoader>();
+
         // Presenter factories will be resolved via ActivatorUtilities; view factories registered above
 
-        // SignalR and notification services removed
 
         return services.BuildServiceProvider();
     }
@@ -124,6 +143,15 @@ public static class ServiceConfiguration
         {
             builder.ClearProviders();
             builder.AddSerilog();
+        });
+
+        // Register non-generic ILogger to help components that request ILogger (non-generic)
+        // Some presenters or factories may mistakenly request non-generic ILogger; provide
+        // a default logger instance created from the ILoggerFactory to avoid DI failures.
+        services.AddSingleton<Microsoft.Extensions.Logging.ILogger>(provider =>
+        {
+            var factory = provider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>();
+            return factory.CreateLogger("CleanCut.WinApp");
         });
     }
 }

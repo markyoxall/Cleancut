@@ -1,5 +1,6 @@
 using CleanCut.WinApp.MVP;
 using CleanCut.WinApp.Presenters;
+using CleanCut.WinApp.Views.Countries;
 using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Products;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,53 +13,46 @@ namespace CleanCut.WinApp;
 /// </summary>
 public partial class MainForm : BaseForm
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly Services.Management.IManagementLoader _managementLoader;
     private readonly ILogger<MainForm> _logger;
-    private CustomerListPresenter? _userListPresenter;
-    private MenuStrip menuStrip;
-    private ToolStripMenuItem fileMenu;
-    private ToolStripMenuItem exitMenuItem;
-    private ToolStripMenuItem managementMenu;
-    private ToolStripMenuItem userManagementMenuItem;
-    private ToolStripMenuItem productManagementMenuItem;
-    private ToolStripMenuItem countryManagementToolStripMenuItem;
-    private ProductListPresenter? _productListPresenter;
+    private Services.Management.ILoadedManagement? _activeManagement;
 
-    public MainForm(IServiceProvider serviceProvider, ILogger<MainForm> logger)
+    public MainForm(Services.Management.IManagementLoader managementLoader, ILogger<MainForm> logger)
     {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _managementLoader = managementLoader ?? throw new ArgumentNullException(nameof(managementLoader));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         InitializeComponent();
-        InitializeNavigation();
+        // Cannot call async method direct      ly in constructor, so use Load event
+        this.Load += MainForm_Load;
     }
 
-    private void InitializeNavigation()
+    private async void MainForm_Load(object? sender, EventArgs e)
+    {
+        await InitializeNavigationAsync();
+    }
+
+
+    private async Task InitializeNavigationAsync()
     {
         // Load the customer management by default
-        LoadCustomerManagement();
+        await LoadManagementAsync<ICustomerListView, CustomerListPresenter>("customer");
     }
 
-    private void LoadCustomerManagement()
+    private async Task LoadManagementAsync<TView, TPresenter>(string managementName)
+        where TView : class, CleanCut.WinApp.MVP.IView
+        where TPresenter : CleanCut.WinApp.MVP.BasePresenter<TView>
     {
         try
         {
-            _logger.LogInformation("Loading customer management");
+            // Dispose previous management (presenter + scope) before loading new
+            if (_activeManagement?.Presenter is IDisposable disposablePresenter)
+                disposablePresenter.Dispose();
+            _activeManagement?.Scope.Dispose();
 
-            // Clean up existing presenters
-            CleanupPresenters();
+            _activeManagement = await _managementLoader.LoadAsync<TView, TPresenter>();
 
-            // Create new view and presenter
-            var userListView = _serviceProvider.GetRequiredService<ICustomerListView>();
-            // Ensure the presenter receives the same view instance that will be shown
-            _userListPresenter = Microsoft.Extensions.DependencyInjection.ActivatorUtilities
-                .CreateInstance<CustomerListPresenter>(_serviceProvider, userListView);
-
-            // Initialize presenter (will populate the same view instance that will be shown)
-            _userListPresenter.Initialize();
-
-            // Show the form
-            if (userListView is Form form)
+            if (_activeManagement.View is Form form)
             {
                 form.MdiParent = this;
                 form.Show();
@@ -66,68 +60,61 @@ public partial class MainForm : BaseForm
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading customer management");
-            ShowError($"Failed to load customer management: {ex.Message}");
+            _logger.LogError(ex, $"Error loading {managementName} management");
+            ShowError($"Failed to load {managementName} management: {ex.Message}");
         }
     }
-
-    private void LoadProductManagement()
-    {
-        try
-        {
-            _logger.LogInformation("Loading product management");
-
-            // Clean up existing presenters
-            CleanupPresenters();
-
-            // Create new view and presenter
-            var productListView = _serviceProvider.GetRequiredService<IProductListView>();
-            // Ensure the presenter receives the same view instance that will be shown
-            _productListPresenter = Microsoft.Extensions.DependencyInjection.ActivatorUtilities
-                .CreateInstance<ProductListPresenter>(_serviceProvider, productListView);
-
-            // Initialize presenter (will populate the same view instance that will be shown)
-            _productListPresenter.Initialize();
-
-            // Show the form
-            if (productListView is Form form)
-            {
-                form.MdiParent = this;
-                form.Show();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading product management");
-            ShowError($"Failed to load product management: {ex.Message}");
-        }
-    }
-
+    
     private void CleanupPresenters()
     {
-        // ? Close and dispose any existing MDI child windows
+        // Close and dispose any existing MDI child windows
         foreach (Form childForm in MdiChildren)
         {
-            childForm.Close();
-            childForm.Dispose(); // Explicitly dispose
+            try
+            {
+                childForm.Close();
+                childForm.Dispose(); // Explicitly dispose
+            }
+            catch (Exception ex)
+            {
+                // Log non-fatal errors when closing MDI children to aid debugging
+                _logger.LogDebug(ex, "Non-fatal error closing MDI child during cleanup");
+                MessageBox.Show(this, $"Error closing MDI child form: {ex.Message}", "Cleanup Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
-        // ? Clean up presenters
-        _userListPresenter?.Cleanup();
-        _userListPresenter = null;
-
-        _productListPresenter?.Cleanup();
-        _productListPresenter = null;
+        // Clean up active management handle (presenter + scope)
+        if (_activeManagement != null)
+        {
+            try
+            {
+                _activeManagement.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error disposing active management handle");
+                MessageBox.Show(this, $"Error disposing active management: {ex.Message}", "Disposal Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                _activeManagement = null;
+            }
+        }
     }
 
-    private void OnCustomerManagementClicked(object? sender, EventArgs e)
+    private async void OnCustomerManagementClicked(object? sender, EventArgs e)
     {
-        LoadCustomerManagement();
+        await LoadManagementAsync<ICustomerListView, CustomerListPresenter>("customer");
     }
 
-    private void OnProductManagementClicked(object? sender, EventArgs e)
+    private async void OnProductManagementClicked(object? sender, EventArgs e)
     {
-        LoadProductManagement();
+        await LoadManagementAsync<IProductListView, ProductListPresenter>("product");
+    }
+
+    private async void OnCountryManagementClicked(object? sender, EventArgs e)
+    {
+        await LoadManagementAsync<ICountryListView, CountryListPresenter>("country");
     }
 
     private void OnExitClicked(object? sender, EventArgs e)
@@ -141,81 +128,7 @@ public partial class MainForm : BaseForm
         base.OnFormClosed(e);
     }
 
-    private void InitializeComponent()
-    {
-        menuStrip = new MenuStrip();
-        fileMenu = new ToolStripMenuItem();
-        exitMenuItem = new ToolStripMenuItem();
-        managementMenu = new ToolStripMenuItem();
-        userManagementMenuItem = new ToolStripMenuItem();
-        productManagementMenuItem = new ToolStripMenuItem();
-        countryManagementToolStripMenuItem = new ToolStripMenuItem();
-        menuStrip.SuspendLayout();
-        SuspendLayout();
-        // 
-        // menuStrip
-        // 
-        menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, managementMenu });
-        menuStrip.Location = new Point(0, 0);
-        menuStrip.Name = "menuStrip";
-        menuStrip.Size = new Size(1024, 24);
-        menuStrip.TabIndex = 0;
-        menuStrip.Text = "menuStrip";
-        // 
-        // fileMenu
-        // 
-        fileMenu.DropDownItems.AddRange(new ToolStripItem[] { exitMenuItem });
-        fileMenu.Name = "fileMenu";
-        fileMenu.Size = new Size(37, 20);
-        fileMenu.Text = "File";
-        // 
-        // exitMenuItem
-        // 
-        exitMenuItem.Name = "exitMenuItem";
-        exitMenuItem.Size = new Size(92, 22);
-        exitMenuItem.Text = "Exit";
-        exitMenuItem.Click += OnExitClicked;
-        // 
-        // managementMenu
-        // 
-        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem });
-        managementMenu.Name = "managementMenu";
-        managementMenu.Size = new Size(43, 20);
-        managementMenu.Text = "man";
-        // 
-        // userManagementMenuItem
-        // 
-        userManagementMenuItem.Name = "userManagementMenuItem";
-        userManagementMenuItem.Size = new Size(200, 22);
-        userManagementMenuItem.Text = "Customer Management";
-        userManagementMenuItem.Click += OnCustomerManagementClicked;
-        // 
-        // productManagementMenuItem
-        // 
-        productManagementMenuItem.Name = "productManagementMenuItem";
-        productManagementMenuItem.Size = new Size(200, 22);
-        productManagementMenuItem.Text = "Product Management";
-        productManagementMenuItem.Click += OnProductManagementClicked;
-        // 
-        // countryManagementToolStripMenuItem
-        // 
-        countryManagementToolStripMenuItem.Name = "countryManagementToolStripMenuItem";
-        countryManagementToolStripMenuItem.Size = new Size(200, 22);
-        countryManagementToolStripMenuItem.Text = "Country Management";
-        // 
-        // MainForm
-        // 
-        AutoScaleDimensions = new SizeF(7F, 15F);
-        ClientSize = new Size(1024, 768);
-        Controls.Add(menuStrip);
-        IsMdiContainer = true;
-        MainMenuStrip = menuStrip;
-        Name = "MainForm";
-        Text = "CleanCut Desktop Application";
-        WindowState = FormWindowState.Maximized;
-        menuStrip.ResumeLayout(false);
-        menuStrip.PerformLayout();
-        ResumeLayout(false);
-        PerformLayout();
-    }
+
+
+
 }

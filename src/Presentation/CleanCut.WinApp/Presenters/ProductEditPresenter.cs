@@ -4,6 +4,7 @@ using CleanCut.Application.DTOs;
 using CleanCut.WinApp.MVP;
 using CleanCut.WinApp.Views.Products;
 using MediatR;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 
 namespace CleanCut.WinApp.Presenters;
@@ -14,14 +15,18 @@ namespace CleanCut.WinApp.Presenters;
 public class ProductEditPresenter : BasePresenter<IProductEditView>
 {
     private readonly IMediator _mediator;
-    private readonly ILogger _logger;
+    private readonly IMapper _mapper;
+    private readonly ILogger<ProductEditPresenter> _logger;
+    private readonly Services.ICommandFactory _commandFactory;
     private ProductInfo? _existingProduct;
     private bool _isEditMode;
 
-    public ProductEditPresenter(IProductEditView view, IMediator mediator, ILogger logger) 
+    public ProductEditPresenter(IProductEditView view, IMediator mediator, IMapper mapper, Services.ICommandFactory commandFactory, ILogger<ProductEditPresenter> logger) 
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -30,16 +35,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
         _existingProduct = product;
         _isEditMode = true;
         
-        var editModel = new ProductEditModel
-        {
-            Id = product.Id,
-            Name = product.Name,
-            Description = product.Description,
-            Price = product.Price,
-            IsAvailable = product.IsAvailable,
-            UserId = product.CustomerId
-        };
-        
+        var editModel = _mapper.Map<ProductEditViewModel>(product);
         View.SetProductData(editModel);
     }
 
@@ -81,6 +77,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
             }
 
             var productData = View.GetProductData();
+            var dto = _mapper.Map<ProductInfo>(productData);
 
             try
             {
@@ -88,13 +85,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
                 {
                     // Update existing product
                     _logger.LogInformation("Updating product {ProductId}", _existingProduct.Id);
-                    
-                    var updateCommand = new UpdateProductCommand(
-                        _existingProduct.Id,
-                        productData.Name,
-                        productData.Description,
-                        productData.Price
-                    );
+                    var updateCommand = _commandFactory.UpdateProductCommand(_existingProduct.Id, productData);
                     
                     await _mediator.Send(updateCommand);
                     _logger.LogInformation("Product updated successfully");
@@ -103,13 +94,7 @@ public class ProductEditPresenter : BasePresenter<IProductEditView>
                 {
                     // Create new product
                     _logger.LogInformation("Creating new product");
-                    
-                    var createCommand = new CreateProductCommand(
-                        productData.Name,
-                        productData.Description,
-                        productData.Price,
-                        productData.UserId
-                    );
+                    var createCommand = _commandFactory.CreateProductCommand(productData);
                     
                     await _mediator.Send(createCommand);
                     _logger.LogInformation("Product created successfully");
