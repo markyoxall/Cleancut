@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using CleanCut.Application;
 using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data;
@@ -26,7 +28,7 @@ public static class ServiceConfiguration
 
         // Configuration
         var configuration = BuildConfiguration();
-        services.AddSingleton(configuration);
+        services.AddSingleton<IConfiguration>(configuration);
 
         // Logging
         ConfigureLogging(services);
@@ -64,6 +66,13 @@ public static class ServiceConfiguration
         services.AddTransient<CountryListPresenter>();
         services.AddTransient<CountryEditPresenter>();
 
+        // Order Management MVP components
+        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderListView, CleanCut.WinApp.Views.Orders.OrderListForm>();
+        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderLineItemListView, CleanCut.WinApp.Views.Orders.OrderLineItemListForm>();
+        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderLineItemEditView, CleanCut.WinApp.Views.Orders.OrderLineItemEditForm>();
+        services.AddTransient<CleanCut.WinApp.Presenters.OrderListPresenter>();
+        services.AddTransient<CleanCut.WinApp.Presenters.OrderLineItemListPresenter>();
+
 
 
         services.AddTransient(typeof(Services.Factories.IViewFactory<>), typeof(Services.Factories.ViewFactory<>));
@@ -89,7 +98,15 @@ public static class ServiceConfiguration
         // Presenter factories will be resolved via ActivatorUtilities; view factories registered above
 
 
-        return services.BuildServiceProvider();
+        // Enable scope validation and validate-on-build in non-production environments to catch DI mistakes early.
+        var environmentName = configuration["ENVIRONMENT"] ?? Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "Development";
+        var validateOnBuild = !environmentName.Equals("Production", StringComparison.OrdinalIgnoreCase);
+
+        return services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = validateOnBuild
+        });
     }
 
     private static IConfiguration BuildConfiguration()
@@ -97,7 +114,7 @@ public static class ServiceConfiguration
         var environment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "Development";
 
         return new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
+            .SetBasePath(GetProjectBasePath())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables()
@@ -106,18 +123,7 @@ public static class ServiceConfiguration
 
     private static void ConfigureLogging(IServiceCollection services)
     {
-        // Determine the project directory (look for the .csproj file) so logs are created under
-        // the project folder (e.g. src/Presentation/CleanCut.WinApp) rather than the runtime
-        // working directory (bin/...)
-        var startDir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
-        DirectoryInfo? projectDir = startDir;
-        while (projectDir is not null &&
-               !File.Exists(Path.Combine(projectDir.FullName, "CleanCut.WinApp.csproj")))
-        {
-            projectDir = projectDir.Parent;
-        }
-
-        var basePath = projectDir?.FullName ?? AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
+        var basePath = GetProjectBasePath();
 
         // Ensure logs directory exists (use absolute path under the project folder)
         var logDirectory = Path.Combine(basePath, "logs");
@@ -153,5 +159,18 @@ public static class ServiceConfiguration
             var factory = provider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>();
             return factory.CreateLogger("CleanCut.WinApp");
         });
+    }
+
+    private static string GetProjectBasePath()
+    {
+        var startDir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
+        DirectoryInfo? projectDir = startDir;
+        while (projectDir is not null &&
+               !File.Exists(Path.Combine(projectDir.FullName, "CleanCut.WinApp.csproj")))
+        {
+            projectDir = projectDir.Parent;
+        }
+
+        return projectDir?.FullName ?? AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
     }
 }

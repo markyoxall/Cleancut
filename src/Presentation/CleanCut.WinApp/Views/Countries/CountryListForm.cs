@@ -11,10 +11,11 @@ public partial class CountryListForm : BaseForm, ICountryListView
     public event EventHandler<Guid>? DeleteCountryRequested;
     public event EventHandler? RefreshRequested;
 
+
     public CountryListForm()
     {
         InitializeComponent();
-       SetupEventHandlers();
+        SetupEventHandlers();
     }
 
     private void SetupEventHandlers()
@@ -26,18 +27,24 @@ public partial class CountryListForm : BaseForm, ICountryListView
                 EditCountryRequested?.Invoke(this, countryId.Value);
         };
         _deleteButton.Click += (s, e) => {
-            var userId = GetSelectedCountryId();
-            if (userId.HasValue)
-                DeleteCountryRequested?.Invoke(this, userId.Value);
+            var countryId = GetSelectedCountryId();
+            if (countryId.HasValue)
+                DeleteCountryRequested?.Invoke(this, countryId.Value);
         };
         _refreshButton.Click += (s, e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
 
-        _listView.SelectedIndexChanged += (s, e) => UpdateButtonStates();
+        // Use GridView selection event
+        _gridView.FocusedRowChanged += (s, e) => UpdateButtonStates();
     }
 
     public void ClearCountries()
     {
-        throw new NotImplementedException();
+        if (InvokeRequired)
+        {
+            Invoke((Action)ClearCountries);
+            return;
+        }
+        _gridControl.DataSource = null;
     }
 
     public void DisplayCountries(IEnumerable<CountryInfo> countries)
@@ -47,32 +54,22 @@ public partial class CountryListForm : BaseForm, ICountryListView
             Invoke(() => DisplayCountries(countries));
             return;
         }
-
-        _listView.Items.Clear();
-
-        foreach (var country in countries)
-        {
-            var item = new ListViewItem(country.Name)
-            {
-                Tag = country.Id
-            };
-            item.SubItems.Add(country.Name);
-          
-
-            _listView.Items.Add(item);
-        }
-
+        // Bind the list to the grid
+        _gridControl.DataSource = countries.ToList();
         UpdateButtonStates();
     }
 
     public Guid? GetSelectedCountryId()
     {
-        throw new NotImplementedException();
+        if (_gridView.FocusedRowHandle < 0)
+            return null;
+        var row = _gridView.GetRow(_gridView.FocusedRowHandle) as CountryInfo;
+        return row?.Id;
     }
 
     private void UpdateButtonStates()
     {
-        var hasSelection = _listView.SelectedItems.Count > 0;
+        var hasSelection = _gridView.FocusedRowHandle >= 0 && _gridView.GetRow(_gridView.FocusedRowHandle) is CountryInfo;
         _editButton.Enabled = hasSelection;
         _deleteButton.Enabled = hasSelection;
     }

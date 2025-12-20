@@ -1,12 +1,15 @@
 using System;
 using System.Windows.Forms;
 using System.Drawing;
+using DevExpress.XtraGrid;
+using DevExpress.XtraGrid.Views.Grid;
 
 namespace CleanCut.WinApp.Views.Countries;
 
 public partial class CountryListForm
 {
-    private ListView _listView = null!;
+    private GridControl _gridControl = null!;
+    private GridView _gridView = null!;
     private Button _addButton = null!;
     private Button _editButton = null!;
     private Button _deleteButton = null!;
@@ -14,7 +17,8 @@ public partial class CountryListForm
 
     private void InitializeComponent()
     {
-        _listView = new ListView();
+        _gridControl = new GridControl();
+        _gridView = new GridView();
         _addButton = new Button();
         _editButton = new Button();
         _deleteButton = new Button();
@@ -22,14 +26,18 @@ public partial class CountryListForm
 
         SuspendLayout();
 
-        _listView.View = View.Details;
-        _listView.FullRowSelect = true;
-        _listView.GridLines = true;
-        _listView.MultiSelect = false;
-        _listView.Location = new Point(12, 12);
-        _listView.Size = new Size(600, 350);
-        _listView.Columns.Add("Name", 200);
-        _listView.Columns.Add("Code", 100);
+        // GridControl and GridView setup
+        _gridControl.Location = new Point(12, 12);
+        _gridControl.Size = new Size(600, 350);
+        _gridControl.MainView = _gridView;
+        _gridControl.ViewCollection.Add(_gridView);
+
+        _gridView.OptionsBehavior.Editable = false;
+        _gridView.OptionsSelection.EnableAppearanceFocusedCell = false;
+        _gridView.OptionsView.ShowGroupPanel = false;
+        _gridView.OptionsView.ShowIndicator = false;
+        _gridView.Columns.AddVisible("Name", "Name");
+        _gridView.Columns.AddVisible("Code", "Code");
 
         _addButton.Location = new Point(12, 380);
         _addButton.Size = new Size(100, 30);
@@ -50,7 +58,7 @@ public partial class CountryListForm
         _refreshButton.Text = "Refresh";
 
         ClientSize = new Size(640, 450);
-        Controls.Add(_listView);
+        Controls.Add(_gridControl);
         Controls.Add(_addButton);
         Controls.Add(_editButton);
         Controls.Add(_deleteButton);

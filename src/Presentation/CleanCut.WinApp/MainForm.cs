@@ -3,7 +3,6 @@ using CleanCut.WinApp.Presenters;
 using CleanCut.WinApp.Views.Countries;
 using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Products;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CleanCut.WinApp;
@@ -23,25 +22,44 @@ public partial class MainForm : BaseForm
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         InitializeComponent();
-        // Cannot call async method direct      ly in constructor, so use Load event
+        // Cannot call async method directly in constructor, so use Load event
         this.Load += MainForm_Load;
     }
+
 
     private async void MainForm_Load(object? sender, EventArgs e)
     {
         await InitializeNavigationAsync();
     }
 
-
     private async Task InitializeNavigationAsync()
     {
         // Load the customer management by default
-        await LoadManagementAsync<ICustomerListView, CustomerListPresenter>("customer");
+        await LoadManagementAsync(ManagementArea.Customer);
     }
 
-    private async Task LoadManagementAsync<TView, TPresenter>(string managementName)
-        where TView : class, CleanCut.WinApp.MVP.IView
-        where TPresenter : CleanCut.WinApp.MVP.BasePresenter<TView>
+    private async void OnCustomerManagementClicked(object? sender, EventArgs e)
+    {
+        await LoadManagementAsync(ManagementArea.Customer);
+    }
+
+    private async void OnProductManagementClicked(object? sender, EventArgs e)
+    {
+        await LoadManagementAsync(ManagementArea.Product);
+    }
+
+    private async void OnCountryManagementClicked(object? sender, EventArgs e)
+    {
+        await LoadManagementAsync(ManagementArea.Country);
+    }
+
+    private async void OnOrderManagementClicked(object? sender, EventArgs e)
+    {
+        await LoadManagementAsync(ManagementArea.Order);
+    }
+
+
+    private async Task LoadManagementAsync(ManagementArea area)
     {
         try
         {
@@ -50,7 +68,25 @@ public partial class MainForm : BaseForm
                 disposablePresenter.Dispose();
             _activeManagement?.Scope.Dispose();
 
-            _activeManagement = await _managementLoader.LoadAsync<TView, TPresenter>();
+            string managementName = area.ToString().ToLowerInvariant();
+
+            switch (area)
+            {
+                case ManagementArea.Customer:
+                    _activeManagement = await _managementLoader.LoadAsync<ICustomerListView, CustomerListPresenter>();
+                    break;
+                case ManagementArea.Product:
+                    _activeManagement = await _managementLoader.LoadAsync<IProductListView, ProductListPresenter>();
+                    break;
+                case ManagementArea.Country:
+                    _activeManagement = await _managementLoader.LoadAsync<ICountryListView, CountryListPresenter>();
+                    break;
+                case ManagementArea.Order:
+                    _activeManagement = await _managementLoader.LoadAsync<CleanCut.WinApp.Views.Orders.IOrderListView, CleanCut.WinApp.Presenters.OrderListPresenter>();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(area), area, null);
+            }
 
             if (_activeManagement.View is Form form)
             {
@@ -60,11 +96,12 @@ public partial class MainForm : BaseForm
         }
         catch (Exception ex)
         {
+            string managementName = area.ToString().ToLowerInvariant();
             _logger.LogError(ex, $"Error loading {managementName} management");
             ShowError($"Failed to load {managementName} management: {ex.Message}");
         }
     }
-    
+
     private void CleanupPresenters()
     {
         // Close and dispose any existing MDI child windows
@@ -102,20 +139,6 @@ public partial class MainForm : BaseForm
         }
     }
 
-    private async void OnCustomerManagementClicked(object? sender, EventArgs e)
-    {
-        await LoadManagementAsync<ICustomerListView, CustomerListPresenter>("customer");
-    }
-
-    private async void OnProductManagementClicked(object? sender, EventArgs e)
-    {
-        await LoadManagementAsync<IProductListView, ProductListPresenter>("product");
-    }
-
-    private async void OnCountryManagementClicked(object? sender, EventArgs e)
-    {
-        await LoadManagementAsync<ICountryListView, CountryListPresenter>("country");
-    }
 
     private void OnExitClicked(object? sender, EventArgs e)
     {
@@ -128,7 +151,11 @@ public partial class MainForm : BaseForm
         base.OnFormClosed(e);
     }
 
-
-
-
+    private enum ManagementArea
+    {
+        Customer,
+        Product,
+        Country,
+        Order
+    }
 }

@@ -38,8 +38,7 @@ public partial class ProductListForm : BaseForm, IProductListView
             if (_userFilterComboBox.SelectedItem is CustomerInfo selectedUser)
                 ViewProductsByCustomerRequested?.Invoke(this, selectedUser.Id);
         };
-        
-        _listView.SelectedIndexChanged += (s, e) => UpdateButtonStates();
+        _gridView.FocusedRowChanged += (s, e) => UpdateButtonStates();
     }
 
     public void DisplayProducts(IEnumerable<ProductInfo> products)
@@ -50,23 +49,7 @@ public partial class ProductListForm : BaseForm, IProductListView
             return;
         }
 
-        _listView.Items.Clear();
-        
-        foreach (var product in products)
-        {
-            var item = new ListViewItem(product.Name)
-            {
-                Tag = product.Id
-            };
-            item.SubItems.Add(product.Description);
-            item.SubItems.Add(product.Price.ToString("C"));
-            item.SubItems.Add(product.IsAvailable ? "Available" : "Unavailable");
-            item.SubItems.Add(product.Customer?.GetFullName() ?? "Unknown User");
-            item.SubItems.Add(product.CreatedAt.ToString("yyyy-MM-dd"));
-            
-            _listView.Items.Add(item);
-        }
-        
+        _gridControl.DataSource = products.ToList();
         UpdateButtonStates();
     }
 
@@ -78,17 +61,16 @@ public partial class ProductListForm : BaseForm, IProductListView
             return;
         }
         
-        _listView.Items.Clear();
+        _gridControl.DataSource = null;
         UpdateButtonStates();
     }
 
     public Guid? GetSelectedProductId()
     {
-        if (_listView.SelectedItems.Count == 0)
+        if (_gridView.FocusedRowHandle < 0)
             return null;
-            
-        var tag = _listView.SelectedItems[0].Tag;
-        return tag as Guid?;
+        var row = _gridView.GetRow(_gridView.FocusedRowHandle) as ProductInfo;
+        return row?.Id;
     }
 
     public void SetAvailableUsers(IEnumerable<CustomerInfo> users)
@@ -120,10 +102,9 @@ public partial class ProductListForm : BaseForm, IProductListView
 
     private void UpdateButtonStates()
     {
-        var hasSelection = _listView.SelectedItems.Count > 0;
+        var hasSelection = _gridView.FocusedRowHandle >= 0 && _gridView.GetRow(_gridView.FocusedRowHandle) is ProductInfo;
         _editButton.Enabled = hasSelection;
         _deleteButton.Enabled = hasSelection;
-        
         var hasUserSelected = _userFilterComboBox.SelectedItem is CustomerInfo;
         _filterButton.Enabled = hasUserSelected;
     }

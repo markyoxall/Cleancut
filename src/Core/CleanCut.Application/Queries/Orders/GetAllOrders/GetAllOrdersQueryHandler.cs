@@ -29,26 +29,22 @@ public class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery, IRead
         var orders = await _orderRepository.GetAllAsync(cancellationToken);
         var orderInfos = _mapper.Map<List<OrderInfo>>(orders);
 
-        // Get customer information for each order
+        // Batch-fetch customer information to avoid N+1 queries
         var customerIds = orders.Select(o => o.CustomerId).Distinct().ToList();
-        var customers = new Dictionary<Guid, Domain.Entities.Customer>();
 
-        foreach (var customerId in customerIds)
+        if (customerIds.Any())
         {
-            var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
-            if (customer != null)
-            {
-                customers[customerId] = customer;
-            }
-        }
+            var customers = await _customerRepository.GetByIdsAsync(customerIds, cancellationToken);
+            var customerDict = customers.ToDictionary(c => c.Id);
 
-        // Populate customer information
-        foreach (var orderInfo in orderInfos)
-        {
-            if (customers.TryGetValue(orderInfo.CustomerId, out var customer))
+            // Populate customer information
+            foreach (var orderInfo in orderInfos)
             {
-                orderInfo.CustomerName = customer.GetFullName();
-                orderInfo.CustomerEmail = customer.Email;
+                if (customerDict.TryGetValue(orderInfo.CustomerId, out var customer))
+                {
+                    orderInfo.CustomerName = customer.GetFullName();
+                    orderInfo.CustomerEmail = customer.Email;
+                }
             }
         }
 

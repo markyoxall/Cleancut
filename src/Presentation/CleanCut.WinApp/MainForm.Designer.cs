@@ -13,6 +13,7 @@ public partial class MainForm
     private ToolStripMenuItem userManagementMenuItem = null!;
     private ToolStripMenuItem productManagementMenuItem = null!;
     private ToolStripMenuItem countryManagementToolStripMenuItem = null!;
+    private ToolStripMenuItem orderManagementMenuItem = null!;
 
     private void InitializeComponent()
     {
@@ -23,6 +24,7 @@ public partial class MainForm
         userManagementMenuItem = new ToolStripMenuItem();
         productManagementMenuItem = new ToolStripMenuItem();
         countryManagementToolStripMenuItem = new ToolStripMenuItem();
+        orderManagementMenuItem = new ToolStripMenuItem();
         menuStrip.SuspendLayout();
         SuspendLayout();
         // 
@@ -50,7 +52,7 @@ public partial class MainForm
         // 
         // managementMenu
         // 
-        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem });
+        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem, orderManagementMenuItem });
         managementMenu.Name = "managementMenu";
         managementMenu.Size = new Size(62, 20);
         managementMenu.Text = "Manage";
@@ -75,6 +77,13 @@ public partial class MainForm
         countryManagementToolStripMenuItem.Size = new Size(200, 22);
         countryManagementToolStripMenuItem.Text = "Country Management";
         countryManagementToolStripMenuItem.Click += OnCountryManagementClicked;
+        // 
+        // orderManagementMenuItem
+        // 
+        orderManagementMenuItem.Name = "orderManagementMenuItem";
+        orderManagementMenuItem.Size = new Size(200, 22);
+        orderManagementMenuItem.Text = "Order Management";
+        orderManagementMenuItem.Click += OnOrderManagementClicked;
         // 
         // MainForm
         // 

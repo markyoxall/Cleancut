@@ -17,20 +17,34 @@ public class CustomerRepository : BaseRepository<Customer>, ICustomerRepository
     public async Task<Customer?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         return await DbSet
-   .FirstOrDefaultAsync(x => x.Email == email.ToLowerInvariant(), cancellationToken);
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Email == email.ToLowerInvariant(), cancellationToken);
     }
 
-  public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
     {
         return await DbSet
-  .AnyAsync(x => x.Email == email.ToLowerInvariant(), cancellationToken);
+            .AsNoTracking()
+            .AnyAsync(x => x.Email == email.ToLowerInvariant(), cancellationToken);
     }
 
     public override async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbSet
-      .OrderBy(x => x.LastName)
+            .AsNoTracking()
+            .OrderBy(x => x.LastName)
             .ThenBy(x => x.FirstName)
             .ToListAsync(cancellationToken);
-  }
+    }
+
+    public async Task<IReadOnlyList<Customer>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids?.Distinct().ToList() ?? new List<Guid>();
+        if (!idList.Any()) return Array.Empty<Customer>();
+
+        return await DbSet
+            .AsNoTracking()
+            .Where(c => idList.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

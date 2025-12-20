@@ -31,6 +31,7 @@
     <Project Path="src/Presentation/CleanCut.API/CleanCut.API.csproj" />
     <Project Path="src/Presentation/CleanCut.BlazorSPA/CleanCut.BlazorSPA.csproj" />
     <Project Path="src/Presentation/CleanCut.BlazorWebApp/CleanCut.BlazorWebApp.csproj" />
+    <Project Path="src/Presentation/CleanCut.WebApp/CleanCut.WebApp.csproj" />
     <Project Path="src/Presentation/CleanCut.WinApp/CleanCut.WinApp.csproj" />
   </Folder>
   <Folder Name="/tests/">

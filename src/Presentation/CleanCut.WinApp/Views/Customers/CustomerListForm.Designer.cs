@@ -6,7 +6,8 @@ namespace CleanCut.WinApp.Views.Customers;
 
 public partial class CustomerListForm
 {
-    private ListView _listView = null!;
+    private DevExpress.XtraGrid.GridControl _gridControl = null!;
+    private DevExpress.XtraGrid.Views.Grid.GridView _gridView = null!;
     private Button _addButton = null!;
     private Button _editButton = null!;
     private Button _deleteButton = null!;
@@ -14,7 +15,8 @@ public partial class CustomerListForm
 
     private void InitializeComponent()
     {
-        _listView = new ListView();
+        _gridControl = new DevExpress.XtraGrid.GridControl();
+        _gridView = new DevExpress.XtraGrid.Views.Grid.GridView();
         _addButton = new Button();
         _editButton = new Button();
         _deleteButton = new Button();
@@ -23,19 +25,22 @@ public partial class CustomerListForm
         SuspendLayout();
         
         // 
-        // _listView
+        // _gridControl and _gridView
         // 
-        _listView.View = View.Details;
-        _listView.FullRowSelect = true;
-        _listView.GridLines = true;
-        _listView.MultiSelect = false;
-        _listView.Location = new Point(12, 12);
-        _listView.Size = new Size(776, 350);
-        _listView.Columns.Add("First Name", 150);
-        _listView.Columns.Add("Last Name", 150);
-        _listView.Columns.Add("Email", 250);
-        _listView.Columns.Add("Status", 100);
-        _listView.Columns.Add("Created", 100);
+        _gridControl.Location = new Point(12, 12);
+        _gridControl.Size = new Size(776, 350);
+        _gridControl.MainView = _gridView;
+        _gridControl.ViewCollection.Add(_gridView);
+
+        _gridView.OptionsBehavior.Editable = false;
+        _gridView.OptionsSelection.EnableAppearanceFocusedCell = false;
+        _gridView.OptionsView.ShowGroupPanel = false;
+        _gridView.OptionsView.ShowIndicator = false;
+        _gridView.Columns.AddVisible("FirstName", "First Name");
+        _gridView.Columns.AddVisible("LastName", "Last Name");
+        _gridView.Columns.AddVisible("Email", "Email");
+        _gridView.Columns.AddVisible("Status", "Status");
+        _gridView.Columns.AddVisible("Created", "Created");
         
         // 
         // _addButton
@@ -75,7 +80,7 @@ public partial class CustomerListForm
         // CustomerListForm
         // 
         ClientSize = new Size(800, 450);
-        Controls.Add(_listView);
+        Controls.Add(_gridControl);
         Controls.Add(_addButton);
         Controls.Add(_editButton);
         Controls.Add(_deleteButton);

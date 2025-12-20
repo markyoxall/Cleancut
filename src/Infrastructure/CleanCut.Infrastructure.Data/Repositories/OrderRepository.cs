@@ -89,7 +89,8 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
 
     async Task<bool> IOrderRepository.DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var order = await DbSet.FindAsync([id], cancellationToken);
+        // Use FindAsync with key values to locate the entity
+        var order = await DbSet.FindAsync(new object[] { id }, cancellationToken);
         if (order == null)
             return false;
 

@@ -16,7 +16,6 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
     public event EventHandler<Guid>? DeleteCustomerRequested;
     public event EventHandler? RefreshRequested;
 
-
     public CustomerListForm()
     {
         InitializeComponent();
@@ -37,8 +36,7 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
                 DeleteCustomerRequested?.Invoke(this, userId.Value);
         };
         _refreshButton.Click += (s, e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
-        
-        _listView.SelectedIndexChanged += (s, e) => UpdateButtonStates();
+        _gridView.FocusedRowChanged += (s, e) => UpdateButtonStates();
     }
 
     public void DisplayCustomers(IEnumerable<CustomerInfo> users)
@@ -48,23 +46,7 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
             Invoke(() => DisplayCustomers(users));
             return;
         }
-
-        _listView.Items.Clear();
-        
-        foreach (var user in users)
-        {
-            var item = new ListViewItem(user.FirstName)
-            {
-                Tag = user.Id
-            };
-            item.SubItems.Add(user.LastName);
-            item.SubItems.Add(user.Email);
-            item.SubItems.Add(user.IsActive ? "Active" : "Inactive");
-            item.SubItems.Add(user.CreatedAt.ToString("yyyy-MM-dd"));
-            
-            _listView.Items.Add(item);
-        }
-        
+        _gridControl.DataSource = users is List<CustomerInfo> list ? list : new List<CustomerInfo>(users);
         UpdateButtonStates();
     }
 
@@ -75,26 +57,22 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
             Invoke(ClearCustomers);
             return;
         }
-        
-        _listView.Items.Clear();
+        _gridControl.DataSource = null;
         UpdateButtonStates();
     }
 
     public Guid? GetSelectedCustomerId()
     {
-        if (_listView.SelectedItems.Count == 0)
+        if (_gridView.FocusedRowHandle < 0)
             return null;
-            
-        var tag = _listView.SelectedItems[0].Tag;
-        return tag as Guid?;
+        var row = _gridView.GetRow(_gridView.FocusedRowHandle) as CustomerInfo;
+        return row?.Id;
     }
 
     private void UpdateButtonStates()
     {
-        var hasSelection = _listView.SelectedItems.Count > 0;
+        var hasSelection = _gridView.FocusedRowHandle >= 0 && _gridView.GetRow(_gridView.FocusedRowHandle) is CustomerInfo;
         _editButton.Enabled = hasSelection;
         _deleteButton.Enabled = hasSelection;
     }
-
- 
 }

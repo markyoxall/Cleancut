@@ -6,7 +6,8 @@ namespace CleanCut.WinApp.Views.Products;
 
 public partial class ProductListForm
 {
-    private ListView _listView = null!;
+    private DevExpress.XtraGrid.GridControl _gridControl = null!;
+    private DevExpress.XtraGrid.Views.Grid.GridView _gridView = null!;
     private ComboBox _userFilterComboBox = null!;
     private Button _addButton = null!;
     private Button _editButton = null!;
@@ -17,7 +18,8 @@ public partial class ProductListForm
 
     private void InitializeComponent()
     {
-        _listView = new ListView();
+        _gridControl = new DevExpress.XtraGrid.GridControl();
+        _gridView = new DevExpress.XtraGrid.Views.Grid.GridView();
         _userFilterLabel = new Label();
         _userFilterComboBox = new ComboBox();
         _filterButton = new Button();
@@ -54,20 +56,23 @@ public partial class ProductListForm
         _filterButton.Enabled = false;
         
         // 
-        // _listView
+        // _gridControl and _gridView
         // 
-        _listView.View = View.Details;
-        _listView.FullRowSelect = true;
-        _listView.GridLines = true;
-        _listView.MultiSelect = false;
-        _listView.Location = new Point(12, 45);
-        _listView.Size = new Size(776, 320);
-        _listView.Columns.Add("Name", 150);
-        _listView.Columns.Add("Description", 200);
-        _listView.Columns.Add("Price", 100);
-        _listView.Columns.Add("Status", 100);
-        _listView.Columns.Add("Owner", 150);
-        _listView.Columns.Add("Created", 100);
+        _gridControl.Location = new Point(12, 45);
+        _gridControl.Size = new Size(776, 320);
+        _gridControl.MainView = _gridView;
+        _gridControl.ViewCollection.Add(_gridView);
+
+        _gridView.OptionsBehavior.Editable = false;
+        _gridView.OptionsSelection.EnableAppearanceFocusedCell = false;
+        _gridView.OptionsView.ShowGroupPanel = false;
+        _gridView.OptionsView.ShowIndicator = false;
+        _gridView.Columns.AddVisible("Name", "Name");
+        _gridView.Columns.AddVisible("Description", "Description");
+        _gridView.Columns.AddVisible("Price", "Price");
+        _gridView.Columns.AddVisible("Status", "Status");
+        _gridView.Columns.AddVisible("Owner", "Owner");
+        _gridView.Columns.AddVisible("Created", "Created");
         
         // 
         // _addButton
@@ -110,7 +115,7 @@ public partial class ProductListForm
         Controls.Add(_userFilterLabel);
         Controls.Add(_userFilterComboBox);
         Controls.Add(_filterButton);
-        Controls.Add(_listView);
+        Controls.Add(_gridControl);
         Controls.Add(_addButton);
         Controls.Add(_editButton);
         Controls.Add(_deleteButton);
