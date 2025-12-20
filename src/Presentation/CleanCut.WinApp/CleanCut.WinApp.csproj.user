@@ -4,6 +4,9 @@
     <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="ManageModulesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="MVP\BaseForm.cs">
       <SubType>Form</SubType>
     </Compile>

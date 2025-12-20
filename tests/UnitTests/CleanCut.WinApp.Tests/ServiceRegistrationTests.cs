@@ -12,11 +12,13 @@ public class ServiceRegistrationTests
         var sp = CleanCut.WinApp.Infrastructure.ServiceConfiguration.ConfigureServices();
 
         var mainForm = sp.GetService<CleanCut.WinApp.MainForm>();
-        var nav = sp.GetService<CleanCut.WinApp.Services.Navigation.INavigationService>();
+        var managementLoader = sp.GetService<CleanCut.WinApp.Services.Management.IManagementLoader>();
         var customerViewFactory = sp.GetService<CleanCut.WinApp.Services.Factories.IViewFactory<CleanCut.WinApp.Views.Customers.ICustomerListView>>();
+        var commandFactory = sp.GetService<CleanCut.WinApp.Services.ICommandFactory>();
 
         Assert.NotNull(mainForm);
-        Assert.NotNull(nav);
+        Assert.NotNull(managementLoader);
+        Assert.NotNull(commandFactory);
         // View factory for customer list may or may not be registered; ensure DI doesn't throw
     }
 }

@@ -14,7 +14,7 @@ namespace CleanCut.WinApp.Tests;
 
 public class ProductListPresenterTests
 {
-    [StaFact]
+    [Fact]
     public async Task Initialize_ShouldLoadProductsAndDisplay()
     {
         var services = new ServiceCollection();
@@ -96,9 +96,10 @@ public class ProductListPresenterTests
         public event EventHandler? CancelRequested;
         public void ClearForm() { }
         public void SetAvailableCustomers(IEnumerable<CustomerInfo> customers) { }
-        public ProductEditModel GetProductData() => new ProductEditModel();
-        public void SetProductData(ProductEditModel model) { }
-        public IDictionary<string, string> ValidateForm() => new Dictionary<string, string>();
+        public void SetAvailableUsers(IEnumerable<CustomerInfo> users) { SetAvailableCustomers(users); }
+        public ProductEditViewModel GetProductData() => new ProductEditViewModel();
+        public void SetProductData(ProductEditViewModel model) { }
+        public Dictionary<string, string> ValidateForm() => new Dictionary<string, string>();
         public void ShowError(string message) { }
         public void ShowInfo(string message) { }
         public void ShowSuccess(string message) { }

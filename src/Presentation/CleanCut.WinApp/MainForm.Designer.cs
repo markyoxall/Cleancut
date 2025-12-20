@@ -10,10 +10,8 @@ public partial class MainForm
     private ToolStripMenuItem fileMenu = null!;
     private ToolStripMenuItem exitMenuItem = null!;
     private ToolStripMenuItem managementMenu = null!;
-    private ToolStripMenuItem userManagementMenuItem = null!;
-    private ToolStripMenuItem productManagementMenuItem = null!;
-    private ToolStripMenuItem countryManagementToolStripMenuItem = null!;
-    private ToolStripMenuItem orderManagementMenuItem = null!;
+    private ToolStripMenuItem adminMenu = null!;
+    private ToolStripMenuItem manageModulesMenuItem = null!;
 
     private void InitializeComponent()
     {
@@ -21,16 +19,14 @@ public partial class MainForm
         fileMenu = new ToolStripMenuItem();
         exitMenuItem = new ToolStripMenuItem();
         managementMenu = new ToolStripMenuItem();
-        userManagementMenuItem = new ToolStripMenuItem();
-        productManagementMenuItem = new ToolStripMenuItem();
-        countryManagementToolStripMenuItem = new ToolStripMenuItem();
-        orderManagementMenuItem = new ToolStripMenuItem();
+        adminMenu = new ToolStripMenuItem();
+        manageModulesMenuItem = new ToolStripMenuItem();
         menuStrip.SuspendLayout();
         SuspendLayout();
         // 
         // menuStrip
         // 
-        menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, managementMenu });
+        menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, managementMenu, adminMenu });
         menuStrip.Location = new Point(0, 0);
         menuStrip.Name = "menuStrip";
         menuStrip.Size = new Size(1024, 24);
@@ -49,41 +45,28 @@ public partial class MainForm
         exitMenuItem.Name = "exitMenuItem";
         exitMenuItem.Size = new Size(92, 22);
         exitMenuItem.Text = "Exit";
+        exitMenuItem.Click += OnExitClicked;
         // 
         // managementMenu
         // 
-        managementMenu.DropDownItems.AddRange(new ToolStripItem[] { userManagementMenuItem, productManagementMenuItem, countryManagementToolStripMenuItem, orderManagementMenuItem });
+        // Placeholder - items added at runtime from configuration
         managementMenu.Name = "managementMenu";
         managementMenu.Size = new Size(62, 20);
         managementMenu.Text = "Manage";
         // 
-        // userManagementMenuItem
+        // adminMenu
         // 
-        userManagementMenuItem.Name = "userManagementMenuItem";
-        userManagementMenuItem.Size = new Size(200, 22);
-        userManagementMenuItem.Text = "Customer Management";
-        userManagementMenuItem.Click += OnCustomerManagementClicked;
+        adminMenu.DropDownItems.AddRange(new ToolStripItem[] { manageModulesMenuItem });
+        adminMenu.Name = "adminMenu";
+        adminMenu.Size = new Size(55, 20);
+        adminMenu.Text = "Admin";
         // 
-        // productManagementMenuItem
+        // manageModulesMenuItem
         // 
-        productManagementMenuItem.Name = "productManagementMenuItem";
-        productManagementMenuItem.Size = new Size(200, 22);
-        productManagementMenuItem.Text = "Product Management";
-        productManagementMenuItem.Click += OnProductManagementClicked;
-        // 
-        // countryManagementToolStripMenuItem
-        // 
-        countryManagementToolStripMenuItem.Name = "countryManagementToolStripMenuItem";
-        countryManagementToolStripMenuItem.Size = new Size(200, 22);
-        countryManagementToolStripMenuItem.Text = "Country Management";
-        countryManagementToolStripMenuItem.Click += OnCountryManagementClicked;
-        // 
-        // orderManagementMenuItem
-        // 
-        orderManagementMenuItem.Name = "orderManagementMenuItem";
-        orderManagementMenuItem.Size = new Size(200, 22);
-        orderManagementMenuItem.Text = "Order Management";
-        orderManagementMenuItem.Click += OnOrderManagementClicked;
+        manageModulesMenuItem.Name = "manageModulesMenuItem";
+        manageModulesMenuItem.Size = new Size(200, 22);
+        manageModulesMenuItem.Text = "Manage Modules...";
+        manageModulesMenuItem.Click += OnManageModulesClicked;
         // 
         // MainForm
         // 

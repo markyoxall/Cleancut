@@ -89,8 +89,6 @@ public static class ServiceConfiguration
         // Main form factory
         services.AddTransient<MainForm>();
 
-        // Navigation service
-        services.AddTransient<Services.Navigation.INavigationService, Services.Navigation.NavigationService>();
 
         // Management loader (testable helper to create presenters/views in a scope)
         services.AddSingleton<Services.Management.IManagementLoader, Services.Management.ManagementLoader>();

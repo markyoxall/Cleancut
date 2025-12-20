@@ -15,7 +15,7 @@ namespace CleanCut.WinApp.Tests;
 
 public class CustomerListPresenterTests
 {
-    [StaFact]
+    [Fact]
     public async Task Initialize_ShouldLoadCustomersAndDisplay()
     {
         var services = new ServiceCollection();

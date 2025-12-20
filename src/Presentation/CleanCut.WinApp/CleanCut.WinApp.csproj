@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.0.0" />
-    <PackageReference Include="DevExpress.Win.Design" Version="25.1.7" />
+    <PackageReference Include="DevExpress.Win.Design" Version="25.2.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
