@@ -5,50 +5,16 @@ using CleanCut.Application.DTOs;
 
 namespace CleanCut.WinApp.Views.Orders;
 
-public class OrderLineItemEditForm : DevExpress.XtraEditors.XtraForm, IOrderLineItemEditView
+public partial class OrderLineItemEditForm : DevExpress.XtraEditors.XtraForm, IOrderLineItemEditView
 {
     public event EventHandler? SaveRequested;
     public event EventHandler? CancelRequested;
 
-    private DevExpress.XtraEditors.TextEdit _productName;
-    private DevExpress.XtraEditors.TextEdit _unitPrice;
-    private DevExpress.XtraEditors.SpinEdit _quantity;
-    private DevExpress.XtraEditors.SimpleButton _saveButton;
-    private DevExpress.XtraEditors.SimpleButton _cancelButton;
-
     public OrderLineItemEditForm()
     {
-        _productName = new DevExpress.XtraEditors.TextEdit();
-        _unitPrice = new DevExpress.XtraEditors.TextEdit();
-        _quantity = new DevExpress.XtraEditors.SpinEdit();
-        _saveButton = new DevExpress.XtraEditors.SimpleButton();
-        _cancelButton = new DevExpress.XtraEditors.SimpleButton();
         InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
-        SuspendLayout();
-        _productName.Location = new System.Drawing.Point(12, 12);
-        _productName.Size = new System.Drawing.Size(400, 22);
-        _unitPrice.Location = new System.Drawing.Point(12, 50);
-        _unitPrice.Size = new System.Drawing.Size(200, 22);
-        _quantity.Location = new System.Drawing.Point(12, 88);
-        _quantity.Size = new System.Drawing.Size(100, 22);
-        _saveButton.Text = "Save";
-        _saveButton.Location = new System.Drawing.Point(12, 130);
-        _cancelButton.Text = "Cancel";
-        _cancelButton.Location = new System.Drawing.Point(100, 130);
         _saveButton.Click += (s, e) => { SaveRequested?.Invoke(this, EventArgs.Empty); DialogResult = DialogResult.OK; Close(); };
         _cancelButton.Click += (s, e) => { CancelRequested?.Invoke(this, EventArgs.Empty); DialogResult = DialogResult.Cancel; Close(); };
-        Controls.Add(_productName);
-        Controls.Add(_unitPrice);
-        Controls.Add(_quantity);
-        Controls.Add(_saveButton);
-        Controls.Add(_cancelButton);
-        Text = "Edit Line Item";
-        ClientSize = new System.Drawing.Size(430, 180);
-        ResumeLayout(false);
     }
 
     public OrderLineItemInfo GetLineItemData()
