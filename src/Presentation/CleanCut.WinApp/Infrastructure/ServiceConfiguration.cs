@@ -3,18 +3,18 @@ using System.IO;
 using CleanCut.Application;
 using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data;
-// shared infrastructure not required by WinApp (no RabbitMQ publishing)
+using CleanCut.WinApp;
 using CleanCut.WinApp.Presenters;
-using CleanCut.WinApp.Views.Customers;
-using CleanCut.WinApp.Views.Products;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Serilog;
-using CleanCut.WinApp.Views.Countries;
+using CleanCut.WinApp.Services;
 using CleanCut.WinApp.Services.Caching;
+using CleanCut.WinApp.Services.Factories;
 using CleanCut.WinApp.Services.Management;
-using CleanCut.Infrastructure.Data.Context;
+using CleanCut.WinApp.Views.Countries;
+using CleanCut.WinApp.Views.Customers;
+using CleanCut.WinApp.Views.Orders;
+using CleanCut.WinApp.Views.Products;
+using CleanCut.WinApp.Infrastructure.Mapping;
+using Serilog;
 
 
 namespace CleanCut.WinApp.Infrastructure;
@@ -36,17 +36,21 @@ public static class ServiceConfiguration
         ConfigureLogging(services);
 
         // Core infrastructure registration order matters:
+
         // - Data and shared infrastructure (repositories, etc.) must be registered
         //   before the Application layer so MediatR pipeline behaviors that depend on those
         //   services can be resolved during DI validation.
+        // Data layer 
         services.AddDataInfrastructure(configuration);
+        // Caching infrastructure depends on data infrastructure
         services.AddCachingInfrastructure(configuration);
+        // Application layer uses MediatR and pipeline behaviors that depend on infrastructure services
         services.AddApplication(includeIntegrationBehaviors: false);
 
 
         // AutoMapper profiles for WinApp viewmodel <-> application DTO mapping
         // Configure AutoMapper via the AddAutoMapper action overload
-        services.AddAutoMapper(cfg => cfg.AddProfile(new CleanCut.WinApp.Infrastructure.Mapping.WinAppMappingProfile()));
+        services.AddAutoMapper(cfg => cfg.AddProfile(new WinAppMappingProfile()));
 
 
         // Customer Management MVP components
@@ -69,22 +73,21 @@ public static class ServiceConfiguration
         services.AddTransient<CountryEditPresenter>();
 
         // Order Management MVP components
-        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderListView, CleanCut.WinApp.Views.Orders.OrderListForm>();
-        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderLineItemListView, CleanCut.WinApp.Views.Orders.OrderLineItemListForm>();
-        services.AddTransient<CleanCut.WinApp.Views.Orders.IOrderLineItemEditView, CleanCut.WinApp.Views.Orders.OrderLineItemEditForm>();
-        services.AddTransient<CleanCut.WinApp.Presenters.OrderListPresenter>();
-        services.AddTransient<CleanCut.WinApp.Presenters.OrderLineItemListPresenter>();
+        services.AddTransient<IOrderListView, OrderListForm>();
+        services.AddTransient<IOrderLineItemListView, OrderLineItemListForm>();
+        services.AddTransient<IOrderLineItemEditView, OrderLineItemEditForm>();
+        services.AddTransient<OrderListPresenter>();
+        services.AddTransient<OrderLineItemListPresenter>();
 
-
-
-        services.AddTransient(typeof(Services.Factories.IViewFactory<>), typeof(Services.Factories.ViewFactory<>));
+        // IViewFactory registrations for views used by presenters to create views dynamically at runtime 
+        services.AddTransient(typeof(IViewFactory<>), typeof(IViewFactory<>));
 
 
         // Command factory (presentation layer helper to construct App commands from viewmodels)
-        services.AddTransient<Services.ICommandFactory, Services.CommandFactory>();
+        services.AddTransient<ICommandFactory, CommandFactory>();
 
         // Register product edit view factory
-        services.AddTransient<Services.Factories.IViewFactory<IProductEditView>, Services.Factories.ViewFactory<IProductEditView>>();
+        services.AddTransient<IViewFactory<IProductEditView>, ViewFactory<IProductEditView>>();
 
         // IMapper is registered by AddAutoMapper; presenters can request IMapper directly
 
@@ -93,7 +96,7 @@ public static class ServiceConfiguration
 
 
         // Management loader (testable helper to create presenters/views in a scope)
-        services.AddSingleton<Services.Management.IManagementLoader, Services.Management.ManagementLoader>();
+        services.AddSingleton<IManagementLoader, ManagementLoader>();
 
         // Register preferences service choices — use configuration to decide
         var prefStore = configuration.GetValue<string>("Preferences:Store") ?? "file";
@@ -153,13 +156,13 @@ public static class ServiceConfiguration
         var logFilePath = Path.Combine(logDirectory, "cleancut-winapp-.txt");
 
         // Configure Serilog
-        Log.Logger = new LoggerConfiguration()
+        Serilog.Log.Logger = new Serilog.LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File(path: logFilePath, rollingInterval: RollingInterval.Day)
+            .WriteTo.File(path: logFilePath, rollingInterval: Serilog.RollingInterval.Day)
             .CreateLogger();
 
         // Emit startup information to help locate the files
-        Log.Information("Serilog configured. Logs folder: {LogDirectory}", logDirectory);
+        Serilog.Log.Information("Serilog configured. Logs folder: {LogDirectory}", logDirectory);
         Console.WriteLine($"Serilog configured. Logs folder: {logDirectory}");
 
         services.AddLogging(builder =>
@@ -183,7 +186,7 @@ public static class ServiceConfiguration
         var startDir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
         DirectoryInfo? projectDir = startDir;
         while (projectDir is not null &&
-               !File.Exists(Path.Combine(projectDir.FullName, "CleanCut.WinApp.csproj")))
+               !File.Exists(Path.Combine(projectDir.FullName, "csproj")))
         {
             projectDir = projectDir.Parent;
         }

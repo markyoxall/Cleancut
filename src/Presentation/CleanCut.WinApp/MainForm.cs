@@ -3,15 +3,7 @@ using CleanCut.WinApp.Presenters;
 using CleanCut.WinApp.Views.Countries;
 using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Products;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using System.Reflection;
-using System.Linq;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.Text.Json;
-using System.IO;
 
 namespace CleanCut.WinApp;
 
