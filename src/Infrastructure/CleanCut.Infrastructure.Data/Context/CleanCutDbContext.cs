@@ -23,6 +23,7 @@ public class CleanCutDbContext : DbContext
     public DbSet<Cart> Carts { get; set; } = null!;
     public DbSet<CartItem> CartItems { get; set; } = null!;
     public DbSet<ExportRecord> ExportRecords { get; set; } = null!;
+    public DbSet<UserPreferenceEntity> UserPreferences { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,6 +70,15 @@ public class CleanCutDbContext : DbContext
             b.Property(e => e.ExportType).HasMaxLength(100);
             b.HasIndex(e => e.OrderId);
             b.HasIndex(e => e.ExportedAt);
+        });
+        
+        // Configure user preferences table
+        modelBuilder.Entity<UserPreferenceEntity>(b =>
+        {
+            b.HasKey(e => e.ModuleName);
+            b.Property(e => e.PayloadJson).IsRequired();
+            b.Property(e => e.CreatedAt).IsRequired();
+            b.Property(e => e.UpdatedAt).IsRequired();
         });
         
         // Additional global configurations can be added here

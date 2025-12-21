@@ -24,6 +24,10 @@ Example 2 — cache invalidation facade
 - Responsibility: provide high-level invalidation methods (customers/products/countries/orders).
 - Why SRP: CacheManager orchestrates invalidation only — low-level cache storage is delegated to `ICacheService`.
 
+Example 3 — view factory
+- File: `src/Presentation/CleanCut.WinApp/Services/Factories/ViewFactory.cs`
+- Responsibility: resolve view instances from DI only.
+
 Practical note:
 - Designer-generated WinForms files are UI concerns and intentionally include UI wiring; they are allowed to be heavier than SRP for framework reasons. Keep domain/service classes focused.
 
@@ -33,19 +37,23 @@ Practical note:
 
 Definition: Software entities should be open for extension but closed for modification.
 
-Concrete example — cache invalidation and decorator
-- Abstraction: `src/Presentation/CleanCut.WinApp/Services/Caching/ICacheManager.cs`
-- Default impl: `src/Presentation/CleanCut.WinApp/Services/Caching/CacheManager.cs`
-- Decorator added: `src/Presentation/CleanCut.WinApp/Services/Caching/LoggingCacheManager.cs`
-- DI registration (decorator): `src/Presentation/CleanCut.WinApp/Infrastructure/ServiceConfiguration.cs` registers `CacheManager` and then provides `ICacheManager` as a `LoggingCacheManager` wrapping `CacheManager`.
+Concrete example — preferences storage and cache invalidation decorator
+- Abstraction: `src/Presentation/CleanCut.WinApp/Services/Management/IUserPreferencesService.cs`
+- File-backed impl: `src/Presentation/CleanCut.WinApp/Services/Management/UserPreferencesService.cs`
+- DB-backed impl (new): `src/Presentation/CleanCut.WinApp/Services/Management/DatabaseUserPreferencesService.cs`
+- Cache abstraction and decorator:
+  - `src/Presentation/CleanCut.WinApp/Services/Caching/ICacheManager.cs`
+  - `src/Presentation/CleanCut.WinApp/Services/Caching/CacheManager.cs`
+  - `src/Presentation/CleanCut.WinApp/Services/Caching/LoggingCacheManager.cs`
+  - DI registration in `src/Presentation/CleanCut.WinApp/Infrastructure/ServiceConfiguration.cs`
 
 Why this demonstrates OCP:
-- To add logging around invalidation we did not change presenters or CacheManager; we added a new class (`LoggingCacheManager`) and wired it in DI. Presenters still depend on `ICacheManager` and receive the decorated instance.
-- Similarly, to change invalidation strategy you can add a new implementation (e.g., `DatabaseCacheManager`) and register it in DI — no caller changes.
+- To add DB-backed preferences we added a new class and registered it in DI based on configuration (`Preferences:Store = "db"`). No callers had to change.
+- Added `LoggingCacheManager` decorator to add logging to invalidation without modifying `CacheManager` or presenters.
 
 How to extend safely:
 - Prefer small decorators that call an inner implementation and add behavior before/after delegating (logging, metrics, retry).
-- Register the concrete implementation with DI and then register the decorator as the service consumers receive.
+- Register the concrete implementation and then the decorator in DI so consumers get the decorated instance.
 
 ---
 
@@ -53,23 +61,18 @@ How to extend safely:
 
 Definition: Subtypes must be substitutable for their base types without altering program correctness.
 
-Focused example — `ICacheManager` / `CacheManager` / `LoggingCacheManager` / `Memory` vs `Redis` cache
+Focused example — `ICacheManager` / `CacheManager` / `LoggingCacheManager`
 - Interfaces and implementations:
   - `ICacheManager` (contract)
   - `CacheManager` (orchestrates invalidation via `ICacheService`)
   - `LoggingCacheManager` (decorator) — wraps an `ICacheManager` and delegates.
-  - `MemoryCacheService` and `RedisCacheService` (in `CleanCut.Infrastructure.Caching`) implement `ICacheService` used by `CacheManager`.
 
 Why LSP matters here:
 - Any `ICacheManager` implementation must perform the documented effect: e.g., `InvalidateCustomersAsync` removes customer-related cache entries. If one impl required callers to call an extra `Flush()` method first, substitution would break callers — a LSP violation.
 - The `LoggingCacheManager` preserves the contract by delegating to the inner `ICacheManager` and not changing preconditions or results.
 
-Practical enforcement (recommended):
-- Add a small contract test that every `ICacheManager` implementation must pass. Example outline:
-  1. Seed a cache key (e.g., `CacheKeys.AllCustomers()`).
-  2. Call `cacheManager.InvalidateCustomersAsync()`.
-  3. Assert the key no longer exists (`ICacheService.ExistsAsync(...) == false`).
-- Place contract tests in `tests/UnitTests/ContractTests` and run them against `CacheManager`, decorated instances, and any alternative implementations.
+Practical enforcement (implemented):
+- Contract tests added at `tests/UnitTests/CleanCut.WinApp.Tests/ContractTests/CacheManagerContractTests.cs` verify that both `CacheManager` and `LoggingCacheManager` remove seeded keys as expected.
 
 ---
 
@@ -78,9 +81,9 @@ Practical enforcement (recommended):
 Definition: Clients should not be forced to depend on interfaces they do not use. Prefer many small, focused interfaces over a fat one.
 
 Concrete examples from WinApp:
-- `IUserPreferencesService` (`src/Presentation/CleanCut.WinApp/Services/Management/IUserPreferencesService.cs`) — single method `LoadPreferencesAsync`.
-- `ICacheManager` (`src/Presentation/CleanCut.WinApp/Services/Caching/ICacheManager.cs`) — exposes only invalidation methods presenters need.
-- `IView` and view-specific interfaces (e.g., `ICustomerListView`, `IProductListView`) — presenters depend only on the view contract they interact with.
+- `IUserPreferencesService` — single method `LoadPreferencesAsync`.
+- `ICacheManager` — exposes only invalidation methods presenters need.
+- View interfaces (e.g., `ICustomerListView`) and factory `IViewFactory<TView>` allow presenters to depend only on required members.
 
 Why ISP helps here:
 - Presenters can be unit-tested by mocking the small interfaces they actually consume.
@@ -93,47 +96,49 @@ Why ISP helps here:
 Definition: High-level modules should not depend on low-level modules; both should depend on abstractions.
 
 Concrete example — loader and preferences
-- High-level: `ManagementLoader` (`src/Presentation/CleanCut.WinApp/Services/Management/ManagementLoader.cs`) needs preferences.
-- Abstraction: `IUserPreferencesService`.
-- Low-level: `UserPreferencesService` (file-based) implements the abstraction.
+- High-level: `ManagementLoader` depends on `IUserPreferencesService`.
+- Low-level: `UserPreferencesService` (file) and `DatabaseUserPreferencesService` (DB) implement the abstraction.
 
 Why DIP is satisfied:
-- `ManagementLoader` depends on `IUserPreferencesService` not `File` APIs. To change storage to DB, implement `IUserPreferencesService` and update DI registration — no change to `ManagementLoader`.
+- `ManagementLoader` depends on the abstraction; to change storage you register a different implementation in DI.
 
 Other DIP uses in WinApp:
-- Presenters depend on `ICacheManager` (abstraction) and `ICacheService` (application-level abstraction) rather than `MemoryCacheService` or Redis types.
-- `CommandFactory` exposes creation helpers for commands so presenters don't construct application command objects directly.
+- Presenters depend on `IMediator`, `ICacheService`, `ICacheManager`, and `IViewFactory<TView>` abstractions.
 
 ---
 
-## Practical checklist: where SOLID is used and where to pay attention
+## Updates to documentation and migration notes
 
-- Good:
-  - `UserPreferencesService` (SRP/DIP)
-  - `ICacheManager` + `CacheManager` (SRP/DIP/ISP)
-  - `LoggingCacheManager` decorator (OCP demonstrated)
-  - Presenters depend on small interfaces (ISP + testability)
+Because a DB-backed preferences store was added, update these docs if you will switch to DB in production:
+- Add EF Core migration to create the `UserPreferences` table. See `src/Infrastructure/CleanCut.Infrastructure.Data/Entities/UserPreferenceEntity.cs`.
+- Update deployment docs (README) to include running migrations and ensuring the connection string is configured.
 
-- Pay attention:
-  - WinForms designer files are framework-generated and inherently coupled — accept that they will not be pure SOLID. Keep logic out of designer files.
-  - Ensure any future `ICacheManager` implementations adhere to the contract; add contract tests to prevent LSP regressions.
+Example migration command:
+```bash
+cd src/Infrastructure/CleanCut.Infrastructure.Data
+dotnet ef migrations add CreateUserPreferences --project . --startup-project ../../Presentation/CleanCut.WinApp
+dotnet ef database update --project . --startup-project ../../Presentation/CleanCut.WinApp
+```
 
 ---
 
 ## Appendix: concrete code references (quick list)
-- `src/Presentation/CleanCut.WinApp/Services/Management/UserPreferencesService.cs` — SRP, DIP
-- `src/Presentation/CleanCut.WinApp/Services/Management/IUserPreferencesService.cs` — ISP, DIP
+- `src/Presentation/CleanCut.WinApp/Services/Management/UserPreferencesService.cs` — SRP, DIP (file-backed)
+- `src/Presentation/CleanCut.WinApp/Services/Management/DatabaseUserPreferencesService.cs` — OCP demonstration (DB-backed)
+- `src/Infrastructure/CleanCut.Infrastructure.Data/Entities/UserPreferenceEntity.cs` — DB entity
+- `src/Infrastructure/CleanCut.Infrastructure.Data/Context/CleanCutDbContext.cs` — DbSet<UserPreferences>
 - `src/Presentation/CleanCut.WinApp/Services/Caching/ICacheManager.cs` — ISP, DIP
 - `src/Presentation/CleanCut.WinApp/Services/Caching/CacheManager.cs` — SRP, DIP
 - `src/Presentation/CleanCut.WinApp/Services/Caching/LoggingCacheManager.cs` — OCP (decorator)
-- `src/Presentation/CleanCut.WinApp/Infrastructure/ServiceConfiguration.cs` — DI wiring for decorator
-- `src/Presentation/CleanCut.WinApp/MVP/BasePresenter.cs` — SRP/OCP (shared presenter concerns)
+- `src/Presentation/CleanCut.WinApp/Services/Factories/ViewFactory.cs` — SRP, DIP, ISP
+- `src/Presentation/CleanCut.WinApp/Presenters/CustomerListPresenter.cs` — DIP, ISP, SRP (presenter-specific concerns)
+- `tests/UnitTests/CleanCut.WinApp.Tests/ContractTests/CacheManagerContractTests.cs` — LSP contract tests
 
 ---
 
-If you want, I can take the next steps now:
-1. Add the LSP contract tests for `ICacheManager` and wire them into CI/test projects.
-2. Add XML documentation comments to more public classes (presenters, factories) to document contracts and expectations.
-3. Implement a small example `DatabaseUserPreferencesService` to show OCP with a real alternate implementation.
+If you'd like, I can:
+1. Add the EF Core migration file for `UserPreferences` and update the README migration instructions.
+2. Add persistence methods for saving preferences to DB (update `IUserPreferencesService` to include a `SavePreferencesAsync` method and implement it in both file and DB services).
+3. Expand contract tests to include products/countries/orders invalidation and cancellation token handling.
 
-Which of these shall I do next?
+Which should I do next?

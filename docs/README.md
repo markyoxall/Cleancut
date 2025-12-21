@@ -400,6 +400,73 @@ dotnet test tests/IntegrationTests/
 dotnet test tests/ArchitectureTests/
 ```
 
+---
+
+## WinApp: Additional configuration notes
+
+The WinForms WinApp supports two options for storing per-module user preferences (column ordering, widths, custom UI settings): file-based JSON (default) and database-backed storage. To switch to the DB-backed store, set the following configuration in the WinApp host's `appsettings.json`:
+
+```json
+{"Preferences": { "Store": "db" }}
+```
+
+If you enable the DB store you must run EF Core migrations to create the `UserPreferences` table in your application database. See `src/Infrastructure/CleanCut.Infrastructure.Data/Entities/UserPreferenceEntity.cs` for the entity used.
+
+Also note that the WinApp registers a `LoggingCacheManager` decorator around the concrete cache invalidation implementation — this demonstrates adding cross-cutting behavior (logging) using the Decorator pattern without modifying presenters.
+
+## 🐞 Troubleshooting Common Issues
+
+### **1. Missing or Incorrect JWT Tokens**
+- **Symptom**: API returns 401 Unauthorized, token-related errors in logs.
+- **Cause**: JWT tokens not being generated or validated correctly.
+- **Solution**:
+  - Ensure IdentityServer is running and accessible.
+  - Check API `Startup.cs` for correct JWT Bearer authentication configuration.
+  - Verify client applications request tokens using the correct scopes and audience.
+
+### **2. Redis Cache Not Working**
+- **Symptom**: No cache hits in logs, slow response times, frequent DB hits.
+- **Cause**: Redis server not running, incorrect connection strings, or network issues.
+- **Solution**:
+  - Ensure Redis is running (use `redis-cli ping` to test).
+  - Check connection strings in `appsettings.json` for all projects.
+  - Verify no firewall or network issues are blocking Redis access.
+
+### **3. Database Connection Issues**
+- **Symptom**: EF Core migrations fail, application can't connect to the database.
+- **Cause**: Incorrect connection string, SQL Server not running, or network issues.
+- **Solution**:
+  - Check the SQL Server service status.
+  - Verify the connection string in `appsettings.json` is correct.
+  - Ensure your user has access to the SQL Server instance and the specified database.
+
+### **4. CORS Issues**
+- **Symptom**: Blazor or MVC app can't access API, CORS errors in the browser console.
+- **Cause**: Incorrect CORS configuration in the API project.
+- **Solution**:
+  - Update the API `Startup.cs` to include the correct client origins in the CORS policy.
+  - Ensure CORS is properly configured to allow credentials if using cookie-based authentication.
+
+### **5. Authentication Failed / Redirect Loop**
+- **Symptom**: Login fails, or there is a redirect loop between the client and IdentityServer.
+- **Cause**: Misconfigured redirect URIs or cookie settings.
+- **Solution**:
+  - Ensure the redirect URIs in IdentityServer configuration match the client app URLs.
+  - Check cookie settings in `Startup.cs` for consistent domain and path settings.
+
+### **6. Missing Blazor Static Assets**
+- **Symptom**: Blazor app missing CSS/JS files or Font Awesome icons not displaying.
+- **Cause**: Blazor static assets not published or referenced correctly.
+- **Solution**:
+  - Run the vendor asset fetching script: `pwsh -NoProfile -ExecutionPolicy Bypass -File src/Presentation/CleanCut.BlazorWebApp/fetch-vendor-assets.ps1`
+  - Ensure the `_wwwroot` folder in the Blazor project has the correct structure and files.
+
+### **General Tips**
+- Always check the output and error logs of the individual services (IdentityServer, API, Blazor, MVC, Redis) for detailed error information.
+- Test each component independently (e.g., use `Postman` or `curl` to test API endpoints, Redis CLI for cache operations, SQL Server Management Studio for database access) to isolate issues.
+- Ensure your development environment matches the expected configurations (e.g., correct .NET SDK version, all services running, etc.).
+- For persistent issues, consider resetting the environment: stop all services, clear caches (both Redis and application), rebuild the solutions, and restart services.
+
 ## 📋 Redis Caching Architecture
 
 ### **Multi-Level Caching Strategy**

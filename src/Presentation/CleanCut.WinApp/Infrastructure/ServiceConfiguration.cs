@@ -14,6 +14,7 @@ using Serilog;
 using CleanCut.WinApp.Views.Countries;
 using CleanCut.WinApp.Services.Caching;
 using CleanCut.WinApp.Services.Management;
+using CleanCut.Infrastructure.Data.Context;
 
 
 namespace CleanCut.WinApp.Infrastructure;
@@ -94,8 +95,17 @@ public static class ServiceConfiguration
         // Management loader (testable helper to create presenters/views in a scope)
         services.AddSingleton<Services.Management.IManagementLoader, Services.Management.ManagementLoader>();
 
-        // Register preferences service used by ManagementLoader
-        services.AddSingleton<IUserPreferencesService, UserPreferencesService>();
+        // Register preferences service choices — use configuration to decide
+        var prefStore = configuration.GetValue<string>("Preferences:Store") ?? "file";
+
+        if (prefStore.Equals("db", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IUserPreferencesService, DatabaseUserPreferencesService>();
+        }
+        else
+        {
+            services.AddSingleton<IUserPreferencesService, UserPreferencesService>();
+        }
 
         // Register cache manager used by presenters to centralize invalidation logic
         services.AddTransient<CacheManager>();

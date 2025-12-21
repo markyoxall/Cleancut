@@ -10,15 +10,20 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using CleanCut.Infrastructure.Caching.Constants;
 using CleanCut.WinApp.Services.Caching;
+using CleanCut.WinApp.Services.Management;
 
 namespace CleanCut.WinApp.Presenters;
 
 /// <summary>
 /// Presenter for Customer List View implementing MVP pattern
+/// 
+/// SOLID notes:
+/// - SRP: coordinates view interactions and delegates data access to the mediator and cache services.
+/// - DIP: depends on abstractions (IMediator, ICacheService, ICacheManager, IViewFactory) rather than concrete implementations.
+/// - OCP: virtual/override methods in base class allow extension without modifying base behavior.
+/// - ISP: consumes small, focused interfaces (ICustomerListView, IViewFactory).
+/// - LSP: should be usable wherever a BasePresenter&lt;ICustomerListView&gt; is expected.
 /// </summary>
-using CleanCut.WinApp.Services.Management;
-using System.Threading.Tasks;
-
 public class CustomerListPresenter : BasePresenter<ICustomerListView>
 {
     private readonly IMediator _mediator;
@@ -53,7 +58,9 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         }
     }
 
-    // Save grid preferences (column order and widths)
+    /// <summary>
+    /// Save grid preferences for the current presenter.
+    /// </summary>
     public async Task SaveGridPreferencesAsync(List<string> columnOrder, Dictionary<string, int> columnWidths)
     {
         var newPrefs = new UserPreferences
@@ -62,23 +69,29 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             ColumnWidths = columnWidths,
             CustomSettings = Preferences?.CustomSettings
         };
+
         await UserPreferencesHelper.SavePreferencesAsync(
             nameof(CustomerListPresenter),
             newPrefs,
             AppUserContext.CurrentUserName);
     }
 
+    /// <summary>
+    /// Initialize the presenter and subscribe to view events.
+    /// </summary>
     public override void Initialize()
     {
         base.Initialize();
         // Apply user preferences if available
-        if (Preferences != null)
+        var prefs = this.Preferences;
+        if (prefs != null)
         {
-            if (Preferences.ColumnOrder != null || Preferences.ColumnWidths != null)
+            if (prefs.ColumnOrder != null || prefs.ColumnWidths != null)
             {
-                View.ApplyGridPreferences(Preferences.ColumnOrder, Preferences.ColumnWidths);
+                View.ApplyGridPreferences(prefs.ColumnOrder, prefs.ColumnWidths);
             }
         }
+
         // Subscribe to view events (use named handlers so we can unsubscribe)
         View.AddCustomerRequested += OnAddCustomerRequestedHandler;
         View.EditCustomerRequested += OnEditCustomerRequestedHandler;
@@ -88,6 +101,9 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         _ = LoadCustomersAsync();
     }
 
+    /// <summary>
+    /// Unsubscribe from events and perform cleanup.
+    /// </summary>
     public override void Cleanup()
     {
         // Unsubscribe from view events

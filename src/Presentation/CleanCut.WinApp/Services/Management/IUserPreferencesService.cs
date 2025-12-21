@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace CleanCut.WinApp.Services.Management
 {
     /// <summary>
-    /// Abstraction for loading user preferences for a given module.
+    /// Abstraction for loading and saving user preferences for a given module.
     /// 
     /// SOLID mapping:
     /// - SRP: single responsibility to load preferences from a chosen store.
@@ -19,5 +19,11 @@ namespace CleanCut.WinApp.Services.Management
         /// Returns <c>null</c> if no preferences are available.
         /// </summary>
         Task<UserPreferences?> LoadPreferencesAsync(string moduleName, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Persists the provided preferences for the given module and application user.
+        /// Implementations should either create or update the stored preferences.
+        /// </summary>
+        Task SavePreferencesAsync(string moduleName, UserPreferences preferences, string appUserName, CancellationToken cancellationToken = default);
     }
 }

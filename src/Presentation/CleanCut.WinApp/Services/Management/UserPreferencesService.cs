@@ -44,5 +44,27 @@ namespace CleanCut.WinApp.Services.Management
                 return null;
             }
         }
+
+        /// <inheritdoc />
+        public async Task SavePreferencesAsync(string moduleName, UserPreferences preferences, string appUserName, CancellationToken cancellationToken = default)
+        {
+            string prefsPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "CleanCut",
+                appUserName,
+                $"{moduleName}.prefs.json");
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(prefsPath)!);
+                var json = System.Text.Json.JsonSerializer.Serialize(preferences, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(prefsPath, json, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save preferences for {Module}", moduleName);
+                throw;
+            }
+        }
     }
 }
