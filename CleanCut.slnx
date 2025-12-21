@@ -42,4 +42,5 @@
     <Project Path="tests/UnitTests/CleanCut.Infrastructure.Tests/CleanCut.Infrastructure.Tests.csproj" />
     <Project Path="tests/UnitTests/CleanCut.WinApp.Tests/CleanCut.WinApp.Tests.csproj" />
   </Folder>
+  <Project Path="tools/DIValidator/DIValidator.csproj" />
 </Solution>

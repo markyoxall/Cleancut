@@ -7,13 +7,11 @@ public class ManagementLoader : IManagementLoader
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ManagementLoader> _logger;
-    private readonly IUserPreferencesService _preferencesService;
 
-    public ManagementLoader(IServiceScopeFactory scopeFactory, ILogger<ManagementLoader> logger, IUserPreferencesService preferencesService)
+    public ManagementLoader(IServiceScopeFactory scopeFactory, ILogger<ManagementLoader> logger)
     {
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _preferencesService = preferencesService ?? throw new ArgumentNullException(nameof(preferencesService));
     }
 
     public LoadedManagement<TView, TPresenter> Load<TView, TPresenter>()
@@ -52,7 +50,14 @@ public class ManagementLoader : IManagementLoader
         UserPreferences? preferences = null;
         try
         {
-            preferences = await _preferencesService.LoadPreferencesAsync(moduleName);
+            // Resolve the preferences service from the newly created scope so any DB-backed
+            // implementation (scoped) is resolved within the correct scope and does not become
+            // a captive dependency of this singleton loader.
+            var preferencesService = provider.GetService<IUserPreferencesService>();
+            if (preferencesService != null)
+            {
+                preferences = await preferencesService.LoadPreferencesAsync(moduleName);
+            }
         }
         catch (Exception ex)
         {

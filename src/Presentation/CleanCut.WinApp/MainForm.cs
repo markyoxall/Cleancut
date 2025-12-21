@@ -1,9 +1,6 @@
-using CleanCut.WinApp.MVP;
-using CleanCut.WinApp.Presenters;
-using CleanCut.WinApp.Views.Countries;
-using CleanCut.WinApp.Views.Customers;
-using CleanCut.WinApp.Views.Products;
 using System.Text.Json;
+using CleanCut.WinApp.MVP;
+using CleanCut.WinApp.Services.Management;
 
 namespace CleanCut.WinApp;
 
@@ -12,9 +9,8 @@ namespace CleanCut.WinApp;
 /// </summary>
 public partial class MainForm : BaseForm
 {
-    private readonly Services.Management.IManagementLoader _managementLoader;
+    private readonly IManagementLoader _managementLoader;
     private readonly ILogger<MainForm> _logger;
-    private readonly IConfiguration _configuration;
 
     // Registry: module id -> factory
     private readonly Dictionary<string, Func<Task<Services.Management.ILoadedManagement>>> _managementFactories = new();
@@ -27,7 +23,6 @@ public partial class MainForm : BaseForm
     {
         _managementLoader = managementLoader ?? throw new ArgumentNullException(nameof(managementLoader));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         InitializeComponent();
         // Cannot call async method directly in constructor, so use Load event

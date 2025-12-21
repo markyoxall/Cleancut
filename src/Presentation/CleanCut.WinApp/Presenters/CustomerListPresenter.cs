@@ -32,7 +32,6 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     private readonly ILogger<CustomerListPresenter> _logger;
     private readonly CleanCut.Application.Common.Interfaces.ICacheService _cacheService;
     private readonly ICacheManager _cacheManager;
-    private readonly IUserPreferencesService _preferencesService;
     private List<CustomerInfo> _cachedCustomers = new();
 
     public CustomerListPresenter(
@@ -42,8 +41,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         Services.Factories.IViewFactory<ICustomerEditView> customerEditViewFactory,
         ILogger<CustomerListPresenter> logger,
         CleanCut.Application.Common.Interfaces.ICacheService cacheService,
-        ICacheManager cacheManager,
-        IUserPreferencesService preferencesService)
+        ICacheManager cacheManager)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
@@ -52,7 +50,6 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
         _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
-        _preferencesService = preferencesService ?? throw new ArgumentNullException(nameof(preferencesService));
 
         // If the view supports SetPresenter, wire it up so the Save Preferences button works
         if (view is CustomerListForm form)
@@ -73,7 +70,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             CustomSettings = Preferences?.CustomSettings
         };
 
-        await _preferencesService.SavePreferencesAsync(
+        await UserPreferencesHelper.SavePreferencesAsync(
             nameof(CustomerListPresenter),
             newPrefs,
             AppUserContext.CurrentUserName);

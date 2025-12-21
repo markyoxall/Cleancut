@@ -2,8 +2,11 @@
 
 These guidelines are mandatory for all code changes, PRs, and new projects in this repository. Follow them exactly unless an explicit exception is documented in the PR and approved by reviewers.
 
-- Alwasy follow industry standard best practices for every single change you make. If you are unsure about anything, ask for clarification before proceeding.
+- Always follow industry standard best practices for every single change you make. If you are unsure about anything, ask for clarification before proceeding.
 - Never, ever, commit any changes to the repo yourself, not without asking for my permission first.
+- Never delete documentation, comments, or code without discussing it with me first.
+- 
+
 ## CDN Usage
 - Never, I repeat, Never automatically add CDN links for JavaScript libraries or CSS frameworks in any project.
 - All dependencies must be managed via NuGet packages or local static files to ensure version control, security, and offline availability.

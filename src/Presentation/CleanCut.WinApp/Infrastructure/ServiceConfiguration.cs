@@ -1,9 +1,7 @@
-using System;
-using System.IO;
 using CleanCut.Application;
 using CleanCut.Infrastructure.Caching;
 using CleanCut.Infrastructure.Data;
-using CleanCut.WinApp;
+using CleanCut.WinApp.Infrastructure.Mapping;
 using CleanCut.WinApp.Presenters;
 using CleanCut.WinApp.Services;
 using CleanCut.WinApp.Services.Caching;
@@ -13,7 +11,6 @@ using CleanCut.WinApp.Views.Countries;
 using CleanCut.WinApp.Views.Customers;
 using CleanCut.WinApp.Views.Orders;
 using CleanCut.WinApp.Views.Products;
-using CleanCut.WinApp.Infrastructure.Mapping;
 using Serilog;
 
 
@@ -40,7 +37,14 @@ public static class ServiceConfiguration
         // - Data and shared infrastructure (repositories, etc.) must be registered
         //   before the Application layer so MediatR pipeline behaviors that depend on those
         //   services can be resolved during DI validation.
-        // Data layer 
+        // Data layer
+        // Register data infrastructure (DbContext and repositories).
+        // NOTE: `AddDbContext<T>` registers the EF Core `DbContext` as scoped by default.
+        // Scoped lifetime means a new `CleanCutDbContext` instance is created per DI scope
+        // (for example per web request or per `IServiceScope` created manually).
+        // Do NOT register DbContext as a singleton — resolving it from a singleton will
+        // capture the same DbContext instance across scopes which can cause threading
+        // and stale-data issues.
         services.AddDataInfrastructure(configuration);
         // Caching infrastructure depends on data infrastructure
         services.AddCachingInfrastructure(configuration);
@@ -50,10 +54,18 @@ public static class ServiceConfiguration
 
         // AutoMapper profiles for WinApp viewmodel <-> application DTO mapping
         // Configure AutoMapper via the AddAutoMapper action overload
+        // AutoMapper registrations are typically singleton in nature (profiles are
+        // registered and the mapper instance is thread-safe). Consumers can request
+        // `IMapper` as a singleton or transient without causing issues.
         services.AddAutoMapper(cfg => cfg.AddProfile(new WinAppMappingProfile()));
 
 
         // Customer Management MVP components
+        // Views and presenters use the transient lifetime so a new instance is created
+        // each time a view or presenter is requested. This avoids sharing UI state
+        // across usages and works well when presenters are created inside an
+        // `IServiceScope` (see `ManagementLoader`) which provides scoped services
+        // like `CleanCutDbContext` to those presenters when required.
         services.AddTransient<ICustomerListView, CustomerListForm>();
         services.AddTransient<ICustomerEditView, CustomerEditForm>();
         services.AddTransient<CustomerListPresenter>();
@@ -80,7 +92,8 @@ public static class ServiceConfiguration
         services.AddTransient<OrderLineItemListPresenter>();
 
         // IViewFactory registrations for views used by presenters to create views dynamically at runtime 
-        services.AddTransient(typeof(IViewFactory<>), typeof(IViewFactory<>));
+        // Register the concrete generic factory type so the DI container can resolve IViewFactory<T>
+        services.AddTransient(typeof(IViewFactory<>), typeof(ViewFactory<>));
 
 
         // Command factory (presentation layer helper to construct App commands from viewmodels)
@@ -92,10 +105,17 @@ public static class ServiceConfiguration
         // IMapper is registered by AddAutoMapper; presenters can request IMapper directly
 
         // Main form factory
+        // The main form is transient so callers get a fresh instance each time.
         services.AddTransient<MainForm>();
 
 
         // Management loader (testable helper to create presenters/views in a scope)
+        // `ManagementLoader` is registered as a singleton because it is a lightweight
+        // factory that creates `IServiceScope`s for each management screen. It must
+        // NOT capture scoped services in its constructor. Any scoped dependencies
+        // (for example a DB-backed `IUserPreferencesService`) must be resolved from
+        // the scope created inside the loader methods so that `CleanCutDbContext`
+        // and other scoped services are created per scope and disposed correctly.
         services.AddSingleton<IManagementLoader, ManagementLoader>();
 
         // Register preferences service choices — use configuration to decide
@@ -103,14 +123,22 @@ public static class ServiceConfiguration
 
         if (prefStore.Equals("db", StringComparison.OrdinalIgnoreCase))
         {
+            // Database-backed preferences service depends on `CleanCutDbContext` and
+            // thus must be registered as scoped so it is created per DI scope along
+            // with the DbContext.
             services.AddScoped<IUserPreferencesService, DatabaseUserPreferencesService>();
         }
         else
         {
+            // File-based preferences service does not depend on scoped services and
+            // can be safely registered as a singleton for the lifetime of the app.
             services.AddSingleton<IUserPreferencesService, UserPreferencesService>();
         }
 
         // Register cache manager used by presenters to centralize invalidation logic
+        // Cache manager and its logging wrapper are transient so callers receive a
+        // fresh instance; they may internally resolve scoped services from the
+        // current scope as needed.
         services.AddTransient<CacheManager>();
         services.AddTransient<ICacheManager>(sp => new LoggingCacheManager(sp.GetRequiredService<CacheManager>(), sp.GetRequiredService<ILogger<LoggingCacheManager>>()));
 
@@ -174,6 +202,8 @@ public static class ServiceConfiguration
         // Register non-generic ILogger to help components that request ILogger (non-generic)
         // Some presenters or factories may mistakenly request non-generic ILogger; provide
         // a default logger instance created from the ILoggerFactory to avoid DI failures.
+        // This singleton logger is safe because ILogger instances are lightweight wrappers
+        // produced by the logger factory and are thread-safe.
         services.AddSingleton<Microsoft.Extensions.Logging.ILogger>(provider =>
         {
             var factory = provider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>();
