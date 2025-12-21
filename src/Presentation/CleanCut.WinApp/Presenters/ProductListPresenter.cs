@@ -14,6 +14,7 @@ using CleanCut.WinApp.Views.Products;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using CleanCut.Infrastructure.Caching.Constants;
 
 namespace CleanCut.WinApp.Presenters;
 
@@ -25,6 +26,7 @@ public class ProductListPresenter : BasePresenter<IProductListView>
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ProductListPresenter> _logger;
+    private readonly CleanCut.Application.Common.Interfaces.ICacheService _cacheService;
 
     private List<ProductInfo> _cachedProducts = new(); // ?? Cache products locally
     private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache users locally
@@ -42,13 +44,15 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         IMediator mediator,
         IServiceProvider serviceProvider,
         Services.Factories.IViewFactory<IProductEditView> productEditViewFactory,
-        ILogger<ProductListPresenter> logger)
+        ILogger<ProductListPresenter> logger,
+        CleanCut.Application.Common.Interfaces.ICacheService cacheService)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _productEditViewFactory = productEditViewFactory ?? throw new ArgumentNullException(nameof(productEditViewFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
     }
 
     public override void Initialize()
@@ -81,9 +85,21 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         {
             _logger.LogInformation("Loading initial product data");
 
-            // Load users for filtering
-            var users = await _mediator.Send(new GetAllCustomersQuery());
-            _cachedCustomers = users.ToList(); // ?? Cache users
+            // Load users for filtering - try cache first
+            var customerCacheKey = CacheKeys.AllCustomers();
+            var users = await _cacheService.GetAsync<List<CustomerInfo>>(customerCacheKey);
+            if (users == null)
+            {
+                users = (await _mediator.Send(new GetAllCustomersQuery())).ToList();
+                await _cacheService.SetAsync(customerCacheKey, users, CacheTimeouts.Customers);
+                _logger.LogInformation("Loaded users from database and cached");
+            }
+            else
+            {
+                _logger.LogInformation("Loaded users from cache");
+            }
+
+            _cachedCustomers = users.ToList();
             View.SetAvailableCustomers(users);
 
             // Load products for the first user (or all products if we have a GetAllProducts query)
@@ -130,6 +146,9 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate product caches so lists refresh
+                await _cacheService.RemoveByPatternAsync(CacheKeys.ProductPattern());
+
                 // Refresh in background
                 _ = Task.Run(async () =>
                 {
@@ -156,8 +175,6 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             View.ShowError($"Failed to open product add dialog: {ex.Message}");
         }
     }
-
-    
 
     private async Task OnEditProductRequestedAsync(object? sender, Guid productId)
     {
@@ -200,6 +217,9 @@ public class ProductListPresenter : BasePresenter<IProductListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate product caches so lists refresh
+                await _cacheService.RemoveByPatternAsync(CacheKeys.ProductPattern());
+
                 // Refresh in background
                 _ = Task.Run(async () =>
                 {
@@ -228,8 +248,6 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         }
     }
 
-    
-
     private async Task OnDeleteProductRequestedAsync(object? sender, Guid productId)
     {
         try
@@ -255,6 +273,9 @@ public class ProductListPresenter : BasePresenter<IProductListView>
                     // Note: You'd need to implement a DeleteProductCommand in your application layer
                     View.ShowInfo($"Delete functionality for product '{product.Name}' would be implemented here.");
 
+                    // Invalidate product caches after delete
+                    await _cacheService.RemoveByPatternAsync(CacheKeys.ProductPattern());
+
                     await LoadInitialDataAsync();
                     View.ShowSuccess("Product deleted successfully.");
                 }
@@ -272,14 +293,10 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         }
     }
 
-    
-
     private async Task OnRefreshRequestedAsync(object? sender, EventArgs e)
     {
         await LoadInitialDataAsync();
     }
-
-    
 
     private async Task OnViewProductsByCustomerRequestedAsync(object? sender, Guid userId)
     {
@@ -292,7 +309,18 @@ public class ProductListPresenter : BasePresenter<IProductListView>
         {
             _logger.LogInformation("Loading products for user {CustomerId}", userId);
 
-            var products = await _mediator.Send(new GetProductsByCustomerQuery(userId));
+            var cacheKey = CacheKeys.ProductsByCustomer(userId);
+            var products = await _cacheService.GetAsync<List<ProductInfo>>(cacheKey);
+            if (products == null)
+            {
+                products = (await _mediator.Send(new GetProductsByCustomerQuery(userId))).ToList();
+                await _cacheService.SetAsync(cacheKey, products, CacheTimeouts.Products);
+                _logger.LogInformation("Loaded products from database and cached for user {CustomerId}", userId);
+            }
+            else
+            {
+                _logger.LogInformation("Loaded products from cache for user {CustomerId}", userId);
+            }
 
             // ?? Cache products locally for fast access
             _cachedProducts = products.ToList();

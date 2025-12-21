@@ -44,8 +44,11 @@ flowchart LR
     MainForm -->|"Resolves types, creates factories"| Loader[ManagementLoader]
     Loader -->|"Creates"| View1["View (Form)"]
     Loader -->|"Creates"| Presenter1["Presenter"]
+    Loader -->|"Returns"| Loaded["LoadedManagement"]
     View1 <--> Presenter1
     MainForm -->|"Shows, tracks, disposes"| View1
+    MainForm -->|"Disposes resources via"| Loaded
+    Loaded -->|"Cleans up presenter, view, DI scope"| Dispose["Resource Cleanup & Disposal"]
 ```
 
 ---
@@ -364,25 +367,24 @@ sequenceDiagram
     User->>MF: Triggers action (e.g., menu click)
     MF->>MF: Check if module is already open
     alt Module already open
-        MF->>VF: BringToFront/Activate existing form
-        return
-    else Not open
-        MF->>ML: LoadAsync<TView, TPresenter>()
-        ML->>Scope: CreateScope()
-        ML->>Scope: GetRequiredService<TView>()
-        ML->>VF: (resolved)
-        ML->>Scope: CreateInstance<TPresenter>(VF)
-        ML->>P: Initialize()
-        ML->>LMG: new LoadedManagement(P, VF, Scope, Logger)
-        ML-->>MF: Return LoadedManagement
-        MF->>VF: Set MdiParent
-        MF->>VF: Show()
-        MF->>VF: Subscribe to FormClosed
-        note over VF,MF: User interacts with form
-        VF->>MF: FormClosed event
-        MF->>LMG: Dispose Scope
-        LMG->>Scope: Dispose()
-    end
+            MF->>VF: BringToFront/Activate existing form
+        else
+            MF->>ML: LoadAsync<TView, TPresenter>()
+            ML->>Scope: CreateScope()
+            ML->>Scope: GetRequiredService<TView>()
+            ML->>VF: (resolved)
+            ML->>Scope: CreateInstance<TPresenter>(VF)
+            ML->>P: Initialize()
+            ML->>LMG: new LoadedManagement(P, VF, Scope, Logger)
+            ML-->>MF: Return LoadedManagement
+            MF->>VF: Set MdiParent
+            MF->>VF: Show()
+            MF->>VF: Subscribe to FormClosed
+            note over VF,MF: User interacts with form
+            VF->>MF: FormClosed event
+            MF->>LMG: Dispose Scope
+            LMG->>Scope: Dispose()
+        end
 ```
 
 ---
@@ -515,8 +517,6 @@ form.Show();
 ---
 
 This detailed guide should help you and your team understand, extend, and maintain the management module loading pattern in your application with confidence.
-
----
 # Detailed Guide: ManagementLoader, LoadedManagement, and MainForm Integration
 
 This document provides an in-depth explanation of the classes, types, and patterns used for dynamic form and presenter management in your WinForms application, focusing on the `ManagementLoader`, `LoadedManagement`, and their orchestration from `MainForm`. It is updated for the new architecture, where only one instance of each management form/module is allowed at a time. It includes class descriptions, resource management notes, and diagrams to clarify relationships and lifecycles.
@@ -649,25 +649,24 @@ sequenceDiagram
     User->>MF: Triggers action (e.g., menu click)
     MF->>MF: Check if module is already open
     alt Module already open
-        MF->>VF: BringToFront/Activate existing form
-        return
-    else Not open
-        MF->>ML: LoadAsync<TView, TPresenter>()
-        ML->>Scope: CreateScope()
-        ML->>Scope: GetRequiredService<TView>()
-        ML->>VF: (resolved)
-        ML->>Scope: CreateInstance<TPresenter>(VF)
-        ML->>P: Initialize()
-        ML->>LMG: new LoadedManagement(P, VF, Scope, Logger)
-        ML-->>MF: Return LoadedManagement
-        MF->>VF: Set MdiParent
-        MF->>VF: Show()
-        MF->>VF: Subscribe to FormClosed
-        note over VF,MF: User interacts with form
-        VF->>MF: FormClosed event
-        MF->>LMG: Dispose Scope
-        LMG->>Scope: Dispose()
-    end
+            MF->>VF: BringToFront/Activate existing form
+        else
+            MF->>ML: LoadAsync<TView, TPresenter>()
+            ML->>Scope: CreateScope()
+            ML->>Scope: GetRequiredService<TView>()
+            ML->>VF: (resolved)
+            ML->>Scope: CreateInstance<TPresenter>(VF)
+            ML->>P: Initialize()
+            ML->>LMG: new LoadedManagement(P, VF, Scope, Logger)
+            ML-->>MF: Return LoadedManagement
+            MF->>VF: Set MdiParent
+            MF->>VF: Show()
+            MF->>VF: Subscribe to FormClosed
+            note over VF,MF: User interacts with form
+            VF->>MF: FormClosed event
+            MF->>LMG: Dispose Scope
+            LMG->>Scope: Dispose()
+        end
 ```
 
 ---

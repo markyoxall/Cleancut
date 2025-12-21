@@ -41,4 +41,7 @@ public interface ICustomerListView : MVP.IView
     /// Get the selected user ID
     /// </summary>
     Guid? GetSelectedCustomerId();
+
+    // Apply saved column order and widths
+    void ApplyGridPreferences(List<string>? columnOrder, Dictionary<string, int>? columnWidths);
 }

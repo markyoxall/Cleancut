@@ -11,8 +11,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using AutoMapper;
 using CleanCut.WinApp.Views.Countries;
+using CleanCut.WinApp.Services.Caching;
+using CleanCut.WinApp.Services.Management;
 
 
 namespace CleanCut.WinApp.Infrastructure;
@@ -92,6 +93,14 @@ public static class ServiceConfiguration
 
         // Management loader (testable helper to create presenters/views in a scope)
         services.AddSingleton<Services.Management.IManagementLoader, Services.Management.ManagementLoader>();
+
+        // Register preferences service used by ManagementLoader
+        services.AddSingleton<IUserPreferencesService, UserPreferencesService>();
+
+        // Register cache manager used by presenters to centralize invalidation logic
+        services.AddTransient<CacheManager>();
+        services.AddTransient<ICacheManager>(sp => new LoggingCacheManager(sp.GetRequiredService<CacheManager>(), sp.GetRequiredService<ILogger<LoggingCacheManager>>()));
+
 
         // Presenter factories will be resolved via ActivatorUtilities; view factories registered above
 

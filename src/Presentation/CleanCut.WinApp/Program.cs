@@ -1,4 +1,3 @@
-using CleanCut.Infrastructure.Data.Seeding;
 using CleanCut.WinApp.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

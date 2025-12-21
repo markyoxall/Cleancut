@@ -9,6 +9,7 @@ using CleanCut.WinApp.MVP;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using CleanCut.Application.Queries.Orders.GetAllOrders;
+using CleanCut.Infrastructure.Caching.Constants;
 
 namespace CleanCut.WinApp.Presenters;
 
@@ -18,6 +19,7 @@ public class OrderListPresenter : BasePresenter<IOrderListView>
     private readonly Services.Factories.IViewFactory<IOrderLineItemEditView> _lineItemEditViewFactory;
     private readonly IMediator _mediator;
     private readonly ILogger<OrderListPresenter> _logger;
+    private readonly CleanCut.Application.Common.Interfaces.ICacheService? _cacheService;
 
     private List<OrderInfo> _orders = new();
 
@@ -29,13 +31,15 @@ public class OrderListPresenter : BasePresenter<IOrderListView>
         Services.Factories.IViewFactory<IOrderLineItemListView> lineItemListViewFactory,
         Services.Factories.IViewFactory<IOrderLineItemEditView> lineItemEditViewFactory,
         IMediator mediator,
-        ILogger<OrderListPresenter> logger)
+        ILogger<OrderListPresenter> logger,
+        CleanCut.Application.Common.Interfaces.ICacheService? cacheService = null)
         : base(view)
     {
         _lineItemListViewFactory = lineItemListViewFactory;
         _lineItemEditViewFactory = lineItemEditViewFactory;
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cacheService = cacheService;
     }
 
     public override void Initialize()
@@ -61,11 +65,33 @@ public class OrderListPresenter : BasePresenter<IOrderListView>
         {
             _logger.LogInformation("Loading orders for OrderList view");
             var query = new GetAllOrdersQuery();
-            var orders = await _mediator.Send(query);
-            if (orders == null) orders = Array.Empty<OrderInfo>();
+
+            IReadOnlyList<OrderInfo>? orders = null;
+            if (_cacheService != null)
+            {
+                var cacheKey = CacheKeys.AllOrders();
+                var cached = await _cacheService.GetAsync<List<OrderInfo>>(cacheKey);
+                if (cached != null)
+                {
+                    orders = cached;
+                    _logger.LogInformation("Loaded orders from cache");
+                }
+            }
+
+            if (orders == null)
+            {
+                orders = await _mediator.Send(query);
+                if (_cacheService != null && orders != null)
+                {
+                    await _cacheService.SetAsync(CacheKeys.AllOrders(), orders.ToList(), CacheTimeouts.Orders);
+                    _logger.LogInformation("Loaded orders from database and cached");
+                }
+            }
+
+            var ordersList = orders ?? Array.Empty<OrderInfo>();
 
             // Cache and display
-            _orders = orders.ToList();
+            _orders = ordersList.ToList();
             View.DisplayOrders(_orders);
 
             _logger.LogInformation("Loaded {OrderCount} orders", _orders.Count);

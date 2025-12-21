@@ -8,37 +8,77 @@ using CleanCut.WinApp.Views.Customers;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using CleanCut.Infrastructure.Caching.Constants;
+using CleanCut.WinApp.Services.Caching;
 
 namespace CleanCut.WinApp.Presenters;
 
 /// <summary>
 /// Presenter for Customer List View implementing MVP pattern
 /// </summary>
+using CleanCut.WinApp.Services.Management;
+using System.Threading.Tasks;
+
 public class CustomerListPresenter : BasePresenter<ICustomerListView>
 {
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
     private readonly Services.Factories.IViewFactory<ICustomerEditView> _customerEditViewFactory;
     private readonly ILogger<CustomerListPresenter> _logger;
-    private List<CustomerInfo> _cachedCustomers = new(); // ?? Cache customers locally
+    private readonly CleanCut.Application.Common.Interfaces.ICacheService _cacheService;
+    private readonly ICacheManager _cacheManager;
+    private List<CustomerInfo> _cachedCustomers = new();
 
     public CustomerListPresenter(
         ICustomerListView view,
         IMediator mediator,
         IServiceProvider serviceProvider,
         Services.Factories.IViewFactory<ICustomerEditView> customerEditViewFactory,
-        ILogger<CustomerListPresenter> logger)
+        ILogger<CustomerListPresenter> logger,
+        CleanCut.Application.Common.Interfaces.ICacheService cacheService,
+        ICacheManager cacheManager)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _customerEditViewFactory = customerEditViewFactory ?? throw new ArgumentNullException(nameof(customerEditViewFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+        _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
+
+        // If the view supports SetPresenter, wire it up so the Save Preferences button works
+        if (view is CustomerListForm form)
+        {
+            form.SetPresenter(this);
+        }
+    }
+
+    // Save grid preferences (column order and widths)
+    public async Task SaveGridPreferencesAsync(List<string> columnOrder, Dictionary<string, int> columnWidths)
+    {
+        var newPrefs = new UserPreferences
+        {
+            ColumnOrder = columnOrder,
+            ColumnWidths = columnWidths,
+            CustomSettings = Preferences?.CustomSettings
+        };
+        await UserPreferencesHelper.SavePreferencesAsync(
+            nameof(CustomerListPresenter),
+            newPrefs,
+            AppUserContext.CurrentUserName);
     }
 
     public override void Initialize()
     {
         base.Initialize();
+        // Apply user preferences if available
+        if (Preferences != null)
+        {
+            if (Preferences.ColumnOrder != null || Preferences.ColumnWidths != null)
+            {
+                View.ApplyGridPreferences(Preferences.ColumnOrder, Preferences.ColumnWidths);
+            }
+        }
         // Subscribe to view events (use named handlers so we can unsubscribe)
         View.AddCustomerRequested += OnAddCustomerRequestedHandler;
         View.EditCustomerRequested += OnEditCustomerRequestedHandler;
@@ -94,6 +134,9 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate customer-related caches so other hosts/readers see changes
+                await _cacheManager.InvalidateCustomersAsync();
+
                 await LoadCustomersAsync();
                 View.ShowSuccess("Customer created successfully.");
             }
@@ -145,6 +188,9 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate customer caches after update and refresh
+                await _cacheManager.InvalidateCustomersAsync();
+
                 _ = Task.Run(async () =>
                 {
                     try
@@ -195,6 +241,9 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
                 {
                     View.ShowInfo($"Delete functionality for user '{user.FirstName} {user.LastName}' would be implemented here.");
 
+                    // Invalidate caches affected by delete
+                    await _cacheManager.InvalidateCustomersAsync();
+
                     await LoadCustomersAsync();
                     View.ShowSuccess("Customer deleted successfully.");
                 }
@@ -223,13 +272,25 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         {
             _logger.LogInformation("Loading users");
 
-            var users = await _mediator.Send(new GetAllCustomersQuery());
+            var cacheKey = CacheKeys.AllCustomers();
+            var users = await _cacheService.GetAsync<List<CustomerInfo>>(cacheKey);
+            if (users == null)
+            {
+                users = (await _mediator.Send(new GetAllCustomersQuery())).ToList();
+                await _cacheService.SetAsync(cacheKey, users, CacheTimeouts.Customers);
+                _logger.LogInformation("Loaded users from database and cached");
+            }
+            else
+            {
+                _logger.LogInformation("Loaded users from cache");
+            }
 
             _cachedCustomers = users.ToList();
-
             View.DisplayCustomers(users);
-
             _logger.LogInformation("Loaded {CustomerCount} users", users.Count());
         });
     }
+
+    // Expose preferences for the view to access
+    public UserPreferences? Preferences { get; set; }
 }

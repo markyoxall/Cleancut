@@ -7,6 +7,7 @@ using CleanCut.WinApp.Views.Countries;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using CleanCut.Infrastructure.Caching.Constants;
 
 namespace CleanCut.WinApp.Presenters;
 
@@ -22,6 +23,8 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
 
     private readonly ILogger<CountryListPresenter> _logger;
 
+    private readonly CleanCut.Application.Common.Interfaces.ICacheService _cacheService;
+
     private List<CountryInfo> _cachedCountries= new(); // ?? Cache countries locally
 
     public CountryListPresenter(
@@ -29,13 +32,15 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
         IMediator mediator,
         IServiceProvider serviceProvider,
         Services.Factories.IViewFactory<ICountryEditView> countryEditViewFactory,
-        ILogger<CountryListPresenter> logger)
+        ILogger<CountryListPresenter> logger,
+        CleanCut.Application.Common.Interfaces.ICacheService cacheService)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _countryEditViewFactory = countryEditViewFactory ?? throw new ArgumentNullException(nameof(countryEditViewFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
     }
 
     public override void Initialize()
@@ -87,6 +92,9 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate country caches after create
+                await _cacheService.RemoveByPatternAsync(CacheKeys.CountryPattern());
+
                 await LoadCountriesAsync();
                 View.ShowSuccess("Country created successfully.");
             }
@@ -138,6 +146,9 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
             var result = (editForm as Form)?.ShowDialog();
             if (result == DialogResult.OK)
             {
+                // Invalidate country caches after update
+                await _cacheService.RemoveByPatternAsync(CacheKeys.CountryPattern());
+
                 _ = Task.Run(async () =>
                 {
                     try
@@ -188,6 +199,9 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
                 {
                     View.ShowInfo($"Delete functionality for country '{country.Id} {country.Name}' would be implemented here.");
 
+                    // Invalidate caches on delete
+                    await _cacheService.RemoveByPatternAsync(CacheKeys.CountryPattern());
+
                     await LoadCountriesAsync();
                     View.ShowSuccess("Country deleted successfully.");
                 }
@@ -216,13 +230,25 @@ public class CountryListPresenter : BasePresenter<ICountryListView>
         {
             _logger.LogInformation("Loading countrys");
 
-            var countries = await _mediator.Send(new GetAllCountriesQuery());
+            var cacheKey = CacheKeys.AllCountries();
+            var countries = await _cacheService.GetAsync<List<CountryInfo>>(cacheKey);
+            if (countries == null)
+            {
+                countries = await _mediator.Send(new GetAllCountriesQuery());
+                var list = countries.ToList();
+                await _cacheService.SetAsync(cacheKey, list, CacheTimeouts.Countries);
+                _cachedCountries = list;
+                _logger.LogInformation("Loaded countrys from database and cached");
+            }
+            else
+            {
+                _cachedCountries = countries.ToList();
+                _logger.LogInformation("Loaded countrys from cache");
+            }
 
-            _cachedCountries = countries.ToList();
+            View.DisplayCountries(_cachedCountries);
 
-            View.DisplayCountries(countries);
-
-            _logger.LogInformation("Loaded {CountryCount} countrys", countries.Count());
+            _logger.LogInformation("Loaded {CountryCount} countrys", _cachedCountries.Count());
         });
     }
 

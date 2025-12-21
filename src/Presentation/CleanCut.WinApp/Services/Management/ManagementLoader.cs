@@ -7,11 +7,13 @@ public class ManagementLoader : IManagementLoader
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ManagementLoader> _logger;
+    private readonly IUserPreferencesService _preferencesService;
 
-    public ManagementLoader(IServiceScopeFactory scopeFactory, ILogger<ManagementLoader> logger)
+    public ManagementLoader(IServiceScopeFactory scopeFactory, ILogger<ManagementLoader> logger, IUserPreferencesService preferencesService)
     {
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _preferencesService = preferencesService ?? throw new ArgumentNullException(nameof(preferencesService));
     }
 
     public LoadedManagement<TView, TPresenter> Load<TView, TPresenter>()
@@ -29,10 +31,6 @@ public class ManagementLoader : IManagementLoader
 
         presenter.Initialize();
 
-        // Do not show the form here — caller (e.g. MainForm) is responsible for setting
-        // MdiParent and showing the view so tests can exercise loader without UI side-effects.
-
-        // Resolve a logger for the LoadedManagement if available; fall back to a generic logger.
         var loadedLogger = provider.GetService(typeof(ILogger<LoadedManagement<TView, TPresenter>>)) as ILogger
                            ?? _logger as ILogger
                            ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
@@ -49,21 +47,43 @@ public class ManagementLoader : IManagementLoader
         var scope = _scopeFactory.CreateScope();
         var provider = scope.ServiceProvider;
 
-        // Try to resolve view asynchronously if possible
+        string moduleName = typeof(TPresenter).Name;
+
+        UserPreferences? preferences = null;
+        try
+        {
+            preferences = await _preferencesService.LoadPreferencesAsync(moduleName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load preferences for {Module}", moduleName);
+        }
+
         var view = provider.GetRequiredService<TView>();
 
-        // If presenter has async initialization, call it here (not shown in current codebase)
-        var presenter = ActivatorUtilities.CreateInstance<TPresenter>(provider, view);
+        object? presenter;
+        var ctorWithPrefs = typeof(TPresenter).GetConstructor(new[] { typeof(TView), typeof(UserPreferences) });
+        if (ctorWithPrefs != null)
+        {
+            presenter = ActivatorUtilities.CreateInstance(provider, typeof(TPresenter), view, preferences);
+        }
+        else
+        {
+            presenter = ActivatorUtilities.CreateInstance<TPresenter>(provider, view);
+            // If presenter exposes Preferences property, set it
+            if (presenter is CleanCut.WinApp.Presenters.CustomerListPresenter clp)
+            {
+                clp.Preferences = preferences;
+            }
+        }
 
-        // If presenter has async initialize, await it here (not shown in current codebase)
-        presenter.Initialize();
+        ((CleanCut.WinApp.MVP.BasePresenter<TView>)presenter).Initialize();
 
         var loadedLogger = provider.GetService(typeof(ILogger<LoadedManagement<TView, TPresenter>>)) as ILogger
                            ?? _logger as ILogger
                            ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
 
-        // Simulate async for now (since DI is sync)
-        await Task.Yield();
-        return new LoadedManagement<TView, TPresenter>(presenter, view, scope, loadedLogger);
+        return new LoadedManagement<TView, TPresenter>(
+            (TPresenter)presenter, view, scope, loadedLogger);
     }
 }
