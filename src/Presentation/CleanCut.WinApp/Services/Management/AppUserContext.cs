@@ -7,5 +7,5 @@ namespace CleanCut.WinApp.Services.Management;
 public static class AppUserContext
 {
     // Set this property after user login.
-    public static string CurrentUserName { get; set; } = "default";
+    public static string CurrentUserName { get; set; } = "markymark";
 }

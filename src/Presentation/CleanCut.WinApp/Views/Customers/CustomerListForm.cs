@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
 using CleanCut.Application.DTOs;
 using CleanCut.WinApp.MVP;
 using CleanCut.WinApp.Presenters;
@@ -61,7 +57,7 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
         Controls.Add(_savePrefsButton);
     }
 
-    private async System.Threading.Tasks.Task OnSavePrefsClicked()
+    private async Task OnSavePrefsClicked()
     {
         // Gather current column order and widths based on VisibleIndex
         var columns = new List<DevExpress.XtraGrid.Columns.GridColumn>();
@@ -108,7 +104,7 @@ public partial class CustomerListForm : BaseForm, ICustomerListView
             {
                 msg += "\nWidths: " + string.Join(", ", columnWidths.Select(kvp => $"{kvp.Key}={kvp.Value}"));
             }
-            MessageBox.Show(msg, "Loaded Grid Preferences", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //MessageBox.Show(msg, "Loaded Grid Preferences", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         // Always build columns from scratch before binding data, only from preferences if present

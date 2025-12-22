@@ -22,9 +22,10 @@ namespace CleanCut.WinApp.Services.Management
             _logger = logger;
         }
 
-        public async Task<UserPreferences?> LoadPreferencesAsync(string moduleName, CancellationToken cancellationToken = default)
+        public async Task<UserPreferences?> LoadPreferencesAsync(string moduleName, string appUserName, CancellationToken cancellationToken = default)
         {
-            var entity = await _dbContext.UserPreferences.AsNoTracking().FirstOrDefaultAsync(u => u.ModuleName == moduleName, cancellationToken);
+            var entity = await _dbContext.UserPreferences.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ModuleName == moduleName && u.UserName == appUserName, cancellationToken);
             if (entity == null) return null;
 
             try
@@ -33,7 +34,7 @@ namespace CleanCut.WinApp.Services.Management
             }
             catch (System.Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to deserialize preferences for {Module}", moduleName);
+                _logger.LogWarning(ex, "Failed to deserialize preferences for {Module} and user {User}", moduleName, appUserName);
                 return null;
             }
         }
@@ -42,12 +43,13 @@ namespace CleanCut.WinApp.Services.Management
         {
             var json = System.Text.Json.JsonSerializer.Serialize(preferences, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
-            var existing = await _dbContext.UserPreferences.FirstOrDefaultAsync(u => u.ModuleName == moduleName, cancellationToken);
+            var existing = await _dbContext.UserPreferences.FirstOrDefaultAsync(u => u.ModuleName == moduleName && u.UserName == appUserName, cancellationToken);
             if (existing == null)
             {
                 var entity = new UserPreferenceEntity
                 {
                     ModuleName = moduleName,
+                    UserName = appUserName,
                     PayloadJson = json,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow

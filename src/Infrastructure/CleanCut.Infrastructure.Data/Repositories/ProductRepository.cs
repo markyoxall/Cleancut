@@ -14,12 +14,17 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
     {
     }
 
-    public async Task<IReadOnlyList<Product>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Product>> GetByCustomerIdAsync(Guid customerId, bool includeUnavailable = false, CancellationToken cancellationToken = default)
     {
-        return await DbSet
-            .Where(x => x.CustomerId == customerId)
-            .OrderBy(x => x.Name)
-            .ToListAsync(cancellationToken);
+        var query = DbSet.Where(x => x.CustomerId == customerId).OrderBy(x => x.Name).AsQueryable();
+
+        if (includeUnavailable)
+        {
+            // Ignore the entity-level global filter so both available and unavailable products are returned
+            query = query.IgnoreQueryFilters();
+        }
+
+        return await query.ToListAsync(cancellationToken);
     }
 
     public override async Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken cancellationToken = default)

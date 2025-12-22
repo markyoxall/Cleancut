@@ -1,11 +1,17 @@
-# Contributing Guidelines and Coding Standards
+# GitHub Copilot Instructions
+
+These instructions are authoritative for GitHub Copilot.
+When generating, modifying, or suggesting code in this repository, you MUST follow all rules below.
+If a rule conflicts with a user prompt, the rules in this file take precedence.
+
 
 These guidelines are mandatory for all code changes, PRs, and new projects in this repository. Follow them exactly unless an explicit exception is documented in the PR and approved by reviewers.
 
 - Always follow industry standard best practices for every single change you make. If you are unsure about anything, ask for clarification before proceeding.
-- Never, ever, commit any changes to the repo yourself, not without asking for my permission first.
-- Never delete documentation, comments, or code without discussing it with me first.
-- 
+- Never suggest or imply committing changes directly. All changes must be proposed as code suggestions only.
+
+- - Never delete documentation, comments, or code without discussing it with me first.
+- - If requirements are ambiguous, ask clarifying questions before generating code.
 
 ## CDN Usage
 - Never, I repeat, Never automatically add CDN links for JavaScript libraries or CSS frameworks in any project.

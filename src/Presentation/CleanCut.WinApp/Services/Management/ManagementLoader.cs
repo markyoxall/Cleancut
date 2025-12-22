@@ -37,8 +37,8 @@ public class ManagementLoader : IManagementLoader
     }
 
     public async Task<LoadedManagement<TView, TPresenter>> LoadAsync<TView, TPresenter>()
-        where TView : class, CleanCut.WinApp.MVP.IView
-        where TPresenter : CleanCut.WinApp.MVP.BasePresenter<TView>
+        where TView : class, MVP.IView
+        where TPresenter : MVP.BasePresenter<TView>
     {
         _logger.LogInformation("Loading management (async) {Management}", typeof(TPresenter).Name);
 
@@ -56,7 +56,7 @@ public class ManagementLoader : IManagementLoader
             var preferencesService = provider.GetService<IUserPreferencesService>();
             if (preferencesService != null)
             {
-                preferences = await preferencesService.LoadPreferencesAsync(moduleName);
+                preferences = await preferencesService.LoadPreferencesAsync(moduleName, AppUserContext.CurrentUserName);
             }
         }
         catch (Exception ex)
@@ -76,13 +76,13 @@ public class ManagementLoader : IManagementLoader
         {
             presenter = ActivatorUtilities.CreateInstance<TPresenter>(provider, view);
             // If presenter exposes Preferences property, set it
-            if (presenter is CleanCut.WinApp.Presenters.CustomerListPresenter clp)
+            if (presenter is Presenters.CustomerListPresenter clp)
             {
                 clp.Preferences = preferences;
             }
         }
 
-        ((CleanCut.WinApp.MVP.BasePresenter<TView>)presenter).Initialize();
+        ((MVP.BasePresenter<TView>)presenter).Initialize();
 
         var loadedLogger = provider.GetService(typeof(ILogger<LoadedManagement<TView, TPresenter>>)) as ILogger
                            ?? _logger as ILogger

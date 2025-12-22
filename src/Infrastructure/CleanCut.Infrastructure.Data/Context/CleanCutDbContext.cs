@@ -72,10 +72,11 @@ public class CleanCutDbContext : DbContext
             b.HasIndex(e => e.ExportedAt);
         });
         
-        // Configure user preferences table
+        // Configure user preferences table - composite key: ModuleName + UserName
         modelBuilder.Entity<UserPreferenceEntity>(b =>
         {
-            b.HasKey(e => e.ModuleName);
+            b.HasKey(e => new { e.ModuleName, e.UserName });
+            b.Property(e => e.UserName).IsRequired();
             b.Property(e => e.PayloadJson).IsRequired();
             b.Property(e => e.CreatedAt).IsRequired();
             b.Property(e => e.UpdatedAt).IsRequired();
@@ -83,6 +84,10 @@ public class CleanCutDbContext : DbContext
         
         // Additional global configurations can be added here
         ConfigureGlobalSettings(modelBuilder);
+
+        // Entity-level global query filters (EF Core) - apply at entity level
+        // Default Product queries will only include available products unless explicitly opted-out
+        modelBuilder.Entity<Product>().HasQueryFilter(p => p.IsAvailable);
     }
 
     private static void ConfigureGlobalSettings(ModelBuilder modelBuilder)

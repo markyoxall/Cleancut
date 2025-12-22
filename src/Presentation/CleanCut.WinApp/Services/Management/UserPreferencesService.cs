@@ -24,11 +24,12 @@ namespace CleanCut.WinApp.Services.Management
         }
 
         /// <inheritdoc />
-        public async Task<UserPreferences?> LoadPreferencesAsync(string moduleName, CancellationToken cancellationToken = default)
+        public async Task<UserPreferences?> LoadPreferencesAsync(string moduleName, string appUserName, CancellationToken cancellationToken = default)
         {
             string prefsPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "CleanCut",
+                appUserName,
                 $"{moduleName}.prefs.json");
 
             if (!File.Exists(prefsPath)) return null;
@@ -40,7 +41,7 @@ namespace CleanCut.WinApp.Services.Management
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to load preferences for {Module}", moduleName);
+                _logger.LogWarning(ex, "Failed to load preferences for {Module} and user {User}", moduleName, appUserName);
                 return null;
             }
         }

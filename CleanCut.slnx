@@ -1,9 +1,9 @@
 <Solution>
   <Folder Name="/docs/">
+    <File Path=".github/copilot-instructions.md" />
     <File Path="docs/api-versioning.md" />
     <File Path="docs/AUTHENTICATION_ARCHITECTURE_DOCUMENTATION.md" />
     <File Path="docs/BackgroundServiceImprovements.md" />
-    <File Path="docs/Copilot Guidelines and coding standards.md" />
     <File Path="docs/README.md" />
     <File Path="docs/SECURITY_IMPLEMENTATION.md" />
     <File Path="docs/SECURITY_IMPLEMENTATION_COMPLETE.md" />

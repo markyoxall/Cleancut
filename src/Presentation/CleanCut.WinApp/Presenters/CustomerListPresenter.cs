@@ -32,6 +32,12 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
     private readonly ILogger<CustomerListPresenter> _logger;
     private readonly CleanCut.Application.Common.Interfaces.ICacheService _cacheService;
     private readonly ICacheManager _cacheManager;
+
+    /// <summary>
+    /// Preferences persistence service (injected) used for saving user preferences.
+    /// </summary>
+    private readonly IUserPreferencesService _preferencesService;
+
     private List<CustomerInfo> _cachedCustomers = new();
 
     public CustomerListPresenter(
@@ -41,7 +47,8 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         Services.Factories.IViewFactory<ICustomerEditView> customerEditViewFactory,
         ILogger<CustomerListPresenter> logger,
         CleanCut.Application.Common.Interfaces.ICacheService cacheService,
-        ICacheManager cacheManager)
+        ICacheManager cacheManager,
+        IUserPreferencesService preferencesService)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
@@ -50,6 +57,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
         _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
+        _preferencesService = preferencesService ?? throw new ArgumentNullException(nameof(preferencesService));
 
         // If the view supports SetPresenter, wire it up so the Save Preferences button works
         if (view is CustomerListForm form)
@@ -60,6 +68,7 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
 
     /// <summary>
     /// Save grid preferences for the current presenter.
+    /// Uses the injected IUserPreferencesService so persistence is testable and consistent with loading.
     /// </summary>
     public async Task SaveGridPreferencesAsync(List<string> columnOrder, Dictionary<string, int> columnWidths)
     {
@@ -70,7 +79,8 @@ public class CustomerListPresenter : BasePresenter<ICustomerListView>
             CustomSettings = Preferences?.CustomSettings
         };
 
-        await UserPreferencesHelper.SavePreferencesAsync(
+        // Use DI-based service instead of static helper so tests can mock persistence
+        await _preferencesService.SavePreferencesAsync(
             nameof(CustomerListPresenter),
             newPrefs,
             AppUserContext.CurrentUserName);
