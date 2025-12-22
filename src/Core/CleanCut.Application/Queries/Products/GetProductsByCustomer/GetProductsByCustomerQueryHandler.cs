@@ -21,7 +21,7 @@ public class GetProductsByCustomerQueryHandler : IRequestHandler<GetProductsByCu
 
     public async Task<IReadOnlyList<ProductInfo>> Handle(GetProductsByCustomerQuery request, CancellationToken cancellationToken)
     {
-        var products = await _unitOfWork.Products.GetByCustomerIdAsync(request.CustomerId, cancellationToken);
+        var products = await _unitOfWork.Products.GetByCustomerIdAsync(request.CustomerId, request.IncludeUnavailable, cancellationToken);
         return _mapper.Map<IReadOnlyList<ProductInfo>>(products);
   }
 }

@@ -194,7 +194,8 @@ public class ProductsController : ApiControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<ProductInfo>>> GetProductsByCustomer(
   [Required] Guid customerId, 
-        CancellationToken cancellationToken)
+        [FromQuery] bool includeUnavailable = false,
+        CancellationToken cancellationToken = default)
     {
  // ? Input validation
         if (customerId == Guid.Empty)
@@ -210,7 +211,7 @@ public class ProductsController : ApiControllerBase
         _logger.LogInformation("Getting products for customer {CustomerId} requested by: {RequestedBy}", 
   customerId, User.Identity?.Name);
 
-        var query = new GetProductsByCustomerQuery(customerId);
+        var query = new GetProductsByCustomerQuery(customerId, includeUnavailable);
         var products = await Send(query, cancellationToken);
      
         _logger.LogInformation("Retrieved {Count} products for customer {CustomerId}", products.Count(), customerId);

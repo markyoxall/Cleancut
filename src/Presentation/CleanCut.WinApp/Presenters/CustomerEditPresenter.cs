@@ -6,6 +6,7 @@ using CleanCut.WinApp.Views.Customers;
 using MediatR;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using FluentValidation;
 
 namespace CleanCut.WinApp.Presenters;
 
@@ -18,23 +19,25 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
     private readonly IMapper _mapper;
     private readonly ILogger<CustomerEditPresenter> _logger;
     private readonly Services.ICommandFactory _commandFactory;
+    private readonly IValidator<CustomerEditViewModel>? _validator;
     private CustomerInfo? _existingCustomer;
     private bool _isEditMode;
 
-    public CustomerEditPresenter(ICustomerEditView view, IMediator mediator, IMapper mapper, Services.ICommandFactory commandFactory, ILogger<CustomerEditPresenter> logger) 
+    public CustomerEditPresenter(ICustomerEditView view, IMediator mediator, IMapper mapper, Services.ICommandFactory commandFactory, ILogger<CustomerEditPresenter> logger, IValidator<CustomerEditViewModel>? validator = null)
         : base(view)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _validator = validator;
     }
 
     public void SetEditMode(CustomerInfo user)
     {
         _existingCustomer = user;
         _isEditMode = true;
-        
+
         var editModel = _mapper.Map<CustomerEditViewModel>(user);
         View.SetCustomerData(editModel);
     }
@@ -42,11 +45,11 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
     public override void Initialize()
     {
         base.Initialize();
-        
+
         // Subscribe to view events (use wrapper handlers to avoid async void)
         View.SaveRequested += OnSaveRequestedHandler;
         View.CancelRequested += OnCancelRequested;
-        
+
         if (!_isEditMode)
         {
             View.ClearForm();
@@ -58,7 +61,7 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
         // Unsubscribe from view events
         View.SaveRequested -= OnSaveRequestedHandler;
         View.CancelRequested -= OnCancelRequested;
-        
+
         base.Cleanup();
     }
     private void OnSaveRequestedHandler(object? sender, EventArgs e) => _ = OnSaveRequested(sender, e);
@@ -67,16 +70,37 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
     {
         await ExecuteAsync(async () =>
         {
-            // Validate form
-            var validationErrors = View.ValidateForm();
-            if (validationErrors.Any())
+            // Clear any previous per-field errors
+            try { View.ClearValidationErrors(); } catch { }
+
+            // Prefer FluentValidation if available
+            var userData = View.GetCustomerData();
+            if (_validator != null)
             {
-                var errorMessage = string.Join("\n", validationErrors.Values);
-                View.ShowError($"Please fix the following errors:\n{errorMessage}");
-                return;
+                var validationResult = await _validator.ValidateAsync(userData);
+                if (!validationResult.IsValid)
+                {
+                    var errors = validationResult.Errors
+                        .GroupBy(f => f.PropertyName)
+                        .ToDictionary(g => g.Key, g => string.Join("; ", g.Select(x => x.ErrorMessage)));
+
+                    View.ShowValidationErrors(errors);
+                    View.ShowError("Please fix validation errors before saving.");
+                    return;
+                }
+            }
+            else
+            {
+                // Fallback to existing ValidateForm behavior
+                var validationErrors = View.ValidateForm();
+                if (validationErrors.Any())
+                {
+                    var errorMessage = string.Join("\n", validationErrors.Values);
+                    View.ShowError($"Please fix the following errors:\n{errorMessage}");
+                    return;
+                }
             }
 
-            var userData = View.GetCustomerData();
             var dto = _mapper.Map<CustomerInfo>(userData);
 
             try
@@ -86,7 +110,7 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
                     // Update existing user
                     _logger.LogInformation("Updating user {CustomerId}", _existingCustomer.Id);
                     var updateCommand = _commandFactory.UpdateCustomerCommand(_existingCustomer.Id, userData);
-                    
+
                     await _mediator.Send(updateCommand);
                     _logger.LogInformation("Customer updated successfully");
                 }
@@ -95,7 +119,7 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
                     // Create new user
                     _logger.LogInformation("Creating new user");
                     var createCommand = _commandFactory.CreateCustomerCommand(userData);
-                    
+
                     await _mediator.Send(createCommand);
                     _logger.LogInformation("Customer created successfully");
                 }
@@ -118,7 +142,7 @@ public class CustomerEditPresenter : BasePresenter<ICustomerEditView>
     private void OnCancelRequested(object? sender, EventArgs e)
     {
         _logger.LogInformation("Customer edit cancelled");
-        
+
         if (View is Form form)
         {
             form.DialogResult = DialogResult.Cancel;

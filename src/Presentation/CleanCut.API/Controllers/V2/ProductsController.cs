@@ -129,6 +129,7 @@ Timestamp = DateTime.UtcNow
      Guid customerId, 
   [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10,
+        [FromQuery] bool includeUnavailable = false,
         CancellationToken cancellationToken = default)
     {
         // Validate pagination parameters
@@ -151,7 +152,7 @@ Timestamp = DateTime.UtcNow
          return BadRequest(problemDetails);
         }
 
-   var query = new GetProductsByCustomerQuery(customerId);
+        var query = new GetProductsByCustomerQuery(customerId, includeUnavailable);
         var allProducts = await _mediator.Send(query, cancellationToken);
   
   // Simple pagination for v2

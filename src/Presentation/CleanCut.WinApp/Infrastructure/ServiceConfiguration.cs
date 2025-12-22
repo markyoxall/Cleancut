@@ -118,6 +118,13 @@ public static class ServiceConfiguration
         // and other scoped services are created per scope and disposed correctly.
         services.AddSingleton<IManagementLoader, ManagementLoader>();
 
+        // Register a minimal global exception handler for the WinApp host so the
+        // Program startup code can resolve and use it to route unhandled exceptions.
+        // Use transient so logger dependencies are resolved per request; the handler
+        // is stateless.
+        services.AddTransient<CleanCut.Application.Handlers.GlobalException.IGlobalExceptionHandler, CleanCut.Application.Handlers.GlobalException.WinAppGlobalExceptionHandler>();
+
+
         // Register preferences service choices — use configuration to decide
         var prefStore = configuration.GetValue<string>("Preferences:Store") ?? "file";
 
@@ -135,6 +142,11 @@ public static class ServiceConfiguration
             services.AddSingleton<IUserPreferencesService, UserPreferencesService>();
         }
 
+        // Layout persistence service used by presenters to save/restore grid layouts.
+        // File-based implementation is stateless so register as singleton. If a
+        // database-backed implementation is required, switch to scoped and implement
+        // accordingly.
+        services.AddSingleton<ILayoutPersistenceService, FileLayoutPersistenceService>();
         // Register cache manager used by presenters to centralize invalidation logic
         // Cache manager and its logging wrapper are transient so callers receive a
         // fresh instance; they may internally resolve scoped services from the

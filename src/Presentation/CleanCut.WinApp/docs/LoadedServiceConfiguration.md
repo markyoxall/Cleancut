@@ -521,3 +521,37 @@ sequenceDiagram
 # End of developer reference
 
 This section provides the concrete reference that complements the book-style narrative at the start of the file. Use it as the authoritative source when changing wiring, adding behaviors, or troubleshooting startup DI errors.
+
+---
+
+## Registering the `IUserPreferencesService`
+
+The codebase now uses the `IUserPreferencesService` abstraction for loading and saving UI preferences. Make sure to register a concrete implementation in the WinApp DI container so both `ManagementLoader` and presenters can resolve the service.
+
+Examples (choose one):
+
+- File-based (local AppData per-user):
+
+```csharp
+// In your WinApp service registration (ServiceConfiguration.ConfigureServices or equivalent)
+services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+```
+
+- Database-backed (store preferences in the application database):
+
+```csharp
+// Ensure CleanCutDbContext is registered before this
+services.AddScoped<IUserPreferencesService, DatabaseUserPreferencesService>();
+```
+
+Notes and guidance:
+
+- The `UserPreferencesService` reads and writes files under `Environment.SpecialFolder.ApplicationData` in a per-user subfolder (uses `AppUserContext.CurrentUserName` to scope files). The `DatabaseUserPreferencesService` stores module+user scoped JSON in the `UserPreferences` table (composite key `ModuleName, UserName`).
+
+- If you choose the database-backed implementation, you must add an EF Core migration to create/update the `UserPreferences` table to match the `UserPreferenceEntity` schema (it contains `ModuleName`, `UserName`, `PayloadJson`, `CreatedAt`, `UpdatedAt`).
+
+- `ManagementLoader` calls `LoadPreferencesAsync(moduleName, AppUserContext.CurrentUserName)` when creating presenters. Presenters should persist preferences using the injected `IUserPreferencesService` and `AppUserContext.CurrentUserName` as the user key.
+
+- For testing, prefer registering a test double/mocked `IUserPreferencesService` (or a lightweight in-memory implementation) so unit tests do not touch disk or the DB.
+
+This section ensures the service registrations in your DI container match the updated codebase and documentation referencing `IUserPreferencesService` instead of the removed `UserPreferencesHelper`.

@@ -25,7 +25,7 @@ public class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerComman
     }
 
         // Check if customer has any associated products
- var customerProducts = await _unitOfWork.Products.GetByCustomerIdAsync(request.Id, cancellationToken);
+ var customerProducts = await _unitOfWork.Products.GetByCustomerIdAsync(request.Id, false, cancellationToken);
    if (customerProducts.Any())
    {
             throw new InvalidOperationException($"Cannot delete customer '{customer.FirstName} {customer.LastName}' because they have {customerProducts.Count()} associated products. Please delete or reassign the products first.");

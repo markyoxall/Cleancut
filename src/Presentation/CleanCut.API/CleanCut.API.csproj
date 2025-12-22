@@ -15,7 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
     <!-- Microsoft.OpenApi models required by Swagger/OpenAPI configuration -->
     <!-- Removed explicit Microsoft.OpenApi reference to avoid conflicts with the OpenApi source generator versions -->
   </ItemGroup>

@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Compile Update="Controls\ValidationSummaryControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -13,7 +16,16 @@
     <Compile Update="Views\Countries\CountryEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Views\Countries\CountryEditForm.Validation.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Views\Countries\CountryListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Countries\CountryListForm.Layout.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Customers\CustomerEditForm.Validation.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Views\Customers\PreferencesInputDialog.cs">
@@ -31,6 +43,9 @@
     <Compile Update="Views\Products\ProductEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Views\Products\ProductEditForm.Validation.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Views\Products\ProductListForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -38,6 +53,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Views\Customers\CustomerListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Shared\DevExpressErrorDialogForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Views\Shared\ErrorDialogForm.cs">

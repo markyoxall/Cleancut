@@ -36,6 +36,16 @@ public interface ICustomerEditView : MVP.IView
     /// Clear all form fields
     /// </summary>
     void ClearForm();
+
+    /// <summary>
+    /// Show validation errors mapping field -> message
+    /// </summary>
+    void ShowValidationErrors(Dictionary<string, string> errors);
+
+    /// <summary>
+    /// Clear previously shown validation errors
+    /// </summary>
+    void ClearValidationErrors();
 }
 
 // Model types have been moved to their own files (CustomerEditModel in CustomerEditModel.cs)

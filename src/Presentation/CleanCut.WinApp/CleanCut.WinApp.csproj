@@ -14,6 +14,14 @@
     <None Remove="Diagnostics\**" />
   </ItemGroup>
 
+  <!-- Exclude specific .resx files that cause MSBuild resource name collisions -->
+  <ItemGroup>
+    <EmbeddedResource Remove="Views\Countries\CountryListForm.Layout.resx" />
+    <EmbeddedResource Remove="Views\Customers\CustomerEditForm.resx" />
+    <EmbeddedResource Remove="Views\Products\ProductEditForm.resx" />
+    <EmbeddedResource Remove="Views\Products\ProductEditForm.Validation.resx" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.0.0" />
     <PackageReference Include="DevExpress.Win.Design" Version="25.2.3" />
