@@ -215,7 +215,7 @@ public partial class MainForm : BaseForm
     {
         // Build menu from current factories
         BuildManagementMenu();
-        await InitializeNavigationAsync();
+       // await InitializeNavigationAsync();
     }
 
     private void BuildManagementMenu()

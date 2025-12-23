@@ -124,6 +124,9 @@ public static class ServiceConfiguration
         // is stateless.
         services.AddTransient<CleanCut.Application.Handlers.GlobalException.IGlobalExceptionHandler, CleanCut.Application.Handlers.GlobalException.WinAppGlobalExceptionHandler>();
 
+        // Project path provider - resolves repository/project base path for logs and runtime files
+        services.AddSingleton<IProjectPathProvider, GitAwareProjectPathProvider>();
+
 
         // Register preferences service choices — use configuration to decide
         var prefStore = configuration.GetValue<string>("Preferences:Store") ?? "file";
@@ -227,12 +230,28 @@ public static class ServiceConfiguration
     {
         var startDir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
         DirectoryInfo? projectDir = startDir;
-        while (projectDir is not null &&
-               !File.Exists(Path.Combine(projectDir.FullName, "csproj")))
+
+        // Walk upwards looking for a .csproj file or solution root. Previous
+        // implementation checked for a literal file named "csproj" which is
+        // incorrect and caused the base path to fall back to the build output
+        // folder (bin). That made Serilog write the main log into the binary
+        // folder instead of the project workspace. Use a proper pattern match.
+        while (projectDir is not null)
         {
+            try
+            {
+                if (projectDir.GetFiles("*.csproj").Length > 0)
+                    return projectDir.FullName;
+            }
+            catch
+            {
+                // ignore permission errors and continue walking up
+            }
+
             projectDir = projectDir.Parent;
         }
 
-        return projectDir?.FullName ?? AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
+        // If no project folder found, return the base directory so logging still works
+        return AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
     }
 }

@@ -90,18 +90,37 @@ public class OrderListPresenter : BasePresenter<IOrderListView>
 
             var ordersList = orders ?? Array.Empty<OrderInfo>();
 
-            // Cache and display
+            // Project to OrderListGridItem for grid columns (only valid properties)
+            var displayOrders = ordersList.Select(o => new OrderListGridItem
+            {
+                Id = o.Id,
+                CustomerName = o.CustomerName,
+                OrderDate = o.OrderDate,
+                Status = o.Status.ToString(),
+                TotalAmount = o.TotalAmount
+            }).ToList();
+            View.DisplayOrders(displayOrders);
             _orders = ordersList.ToList();
-            View.DisplayOrders(_orders);
 
             _logger.LogInformation("Loaded {OrderCount} orders", _orders.Count);
         });
     }
 
+    /// <summary>
+    /// Loads the provided orders and projects them to a presentation model for the grid.
+    /// </summary>
     public void Load(IEnumerable<OrderInfo> orders)
     {
-        _orders = new List<OrderInfo>(orders);
-        View.DisplayOrders(_orders);
+        var displayOrders = orders.Select(o => new OrderListGridItem
+        {
+            Id = o.Id,
+            CustomerName = o.CustomerName,
+            OrderDate = o.OrderDate,
+            Status = o.Status.ToString(),
+            TotalAmount = o.TotalAmount
+        }).ToList();
+        View.DisplayOrders(displayOrders);
+        _orders = orders.ToList();
     }
 
     private void ShowOrderLineItems(Guid orderId)

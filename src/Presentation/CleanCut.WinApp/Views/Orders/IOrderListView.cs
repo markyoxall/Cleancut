@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace CleanCut.WinApp.Views.Orders;
 
+/// <summary>
+/// View interface for displaying and interacting with the order list grid.
+/// </summary>
 public interface IOrderListView : MVP.IView
 {
     event EventHandler? AddOrderRequested;
@@ -11,7 +14,7 @@ public interface IOrderListView : MVP.IView
     event EventHandler? RefreshRequested;
     event EventHandler<Guid>? ViewOrdersByCustomerRequested;
     event EventHandler<Guid>? ViewOrderLineItemsRequested;
-    void DisplayOrders(IEnumerable<CleanCut.Application.DTOs.OrderInfo> orders);
+    void DisplayOrders(IEnumerable<OrderListGridItem> orders);
     void ClearOrders();
     Guid? GetSelectedOrderId();
     void SetAvailableCustomers(IEnumerable<CleanCut.Application.DTOs.CustomerInfo> customers);
