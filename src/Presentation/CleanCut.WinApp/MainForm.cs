@@ -49,8 +49,7 @@ public partial class MainForm : BaseForm
             {
                 var projectBase = GetProjectBasePath();
                 var projectPath = Path.Combine(projectBase ?? string.Empty, "appsettings.json");
-                if (File.Exists(projectPath))
-                    configPathToUse = projectPath;
+                if (File.Exists(projectPath)) configPathToUse = projectPath;
             }
 
             if (!File.Exists(configPathToUse))
