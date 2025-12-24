@@ -119,8 +119,7 @@ public partial class MainForm : BaseForm
         var dir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "CleanCut.WinApp.csproj")))
-                return dir.FullName;
+            if (File.Exists(Path.Combine(dir.FullName, "CleanCut.WinApp.csproj"))) return dir.FullName;
             dir = dir.Parent;
         }
         return null;
