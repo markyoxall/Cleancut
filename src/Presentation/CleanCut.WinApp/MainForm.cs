@@ -133,8 +133,7 @@ public partial class MainForm : BaseForm
         try
         {
             var t = Type.GetType(typeName, throwOnError: false);
-            if (t != null)
-                return t;
+            if (t != null) return t;
         }
         catch { }
 
