@@ -49,8 +49,7 @@ public partial class MainForm : BaseForm
             {
                 var projectBase = GetProjectBasePath();
                 var projectPath = Path.Combine(projectBase ?? string.Empty, "appsettings.json");
-                if (File.Exists(projectPath))
-                    configPathToUse = projectPath;
+                if (File.Exists(projectPath)) configPathToUse = projectPath;
             }
 
             if (!File.Exists(configPathToUse))
@@ -120,8 +119,7 @@ public partial class MainForm : BaseForm
         var dir = new DirectoryInfo(AppContext.BaseDirectory ?? Directory.GetCurrentDirectory());
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "CleanCut.WinApp.csproj")))
-                return dir.FullName;
+            if (File.Exists(Path.Combine(dir.FullName, "CleanCut.WinApp.csproj"))) return dir.FullName;
             dir = dir.Parent;
         }
         return null;
