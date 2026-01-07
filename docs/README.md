@@ -76,10 +76,15 @@ graph TB
 - ✅ **Blazor Server Application** with user authentication and API integration
 - ✅ **ASP.NET Core MVC/Razor Pages** traditional web application
 - ✅ **Windows Desktop Application** (WinForms) as public client
+- ✅ **Order Processing Worker** (`OrderProcessingHost`) for RabbitMQ event publishing and email notifications
+- ✅ **Product Export Services** (infrastructure layer) for automated CSV export tasks
+- ✅ **RESTful Web API** as protected resource server
 
 These sample clients demonstrate how multiple front-ends (Blazor, MVC/Razor Pages, and a WinForms desktop app) can share the same API and database. This enables code reuse for business logic, DTOs, validation rules, and data access while illustrating different client-hosting models (web and desktop).
-- ✅ **Background Services / Worker Hosts** for automated tasks (ProductExportHost, hosted workers)
-- ✅ **RESTful Web API** as protected resource server
+
+**Background Worker Architecture:**
+- **OrderProcessingHost** - Standalone worker service that processes orders from Redis retry queue, publishes events to RabbitMQ, and sends customer emails via SMTP
+- **Product Export Services** - Infrastructure layer services (`ProductExportService`, `ProductExportWorker`) for scheduled CSV export of products to file system
 
 - ### **Enterprise Architecture Skills**
 - ✅ **Clean Architecture** implementation with proper dependency inversion
@@ -212,7 +217,7 @@ CleanCut/
 │   │   └── CleanCut.WinApp/          # Windows Desktop App (Public Client)
 │   │
 │   └── Applications/  # Standalone Applications
-│       └── CleanCut.ProductExportHost/ # Background Service with Redis Token Caching
+│       └── CleanCut.OrderProcessingHost/ # Order Processing Worker (RabbitMQ + Email)
 │
 ├── tests/        # Comprehensive Test Suite
 │   ├── UnitTests/      # Layer-specific unit tests
@@ -315,8 +320,8 @@ redis-cli ping  # Should return "PONG"
    # Desktop Client (WinForms)
    # Build and run the `CleanCut.WinApp` project from Visual Studio or run the produced executable. The WinForms client is a public client example that uses the same API and database as the web clients.
    
-   # Terminal 5: Start Background Service (Optional - Product Export with Token Caching)
-   dotnet run --project src/Applications/CleanCut.ProductExportHost
+   # Terminal 5: Start Order Processing Worker (Optional - Order Events + Email)
+   dotnet run --project src/Applications/CleanCut.OrderProcessingHost
    ```
 
 > Note about Blazor vendor/static assets

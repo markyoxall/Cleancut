@@ -27,8 +27,8 @@ var api = builder.AddProject(
     .WithReference(redis);
 
 builder.AddProject(
-        name: "productexport",
-        projectPath: @"..\src\Applications\CleanCut.ProductExportHost\CleanCut.ProductExportHost.csproj")
+        name: "orderprocessing",
+        projectPath: @"..\src\Applications\CleanCut.OrderProcessingHost\CleanCut.OrderProcessingHost.csproj")
     .WithReference(redis);
 
 builder.AddProject(

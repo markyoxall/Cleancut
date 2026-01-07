@@ -14,7 +14,7 @@
   <Folder Name="/solution_items/" />
   <Folder Name="/src/" />
   <Folder Name="/src/Applications/">
-    <Project Path="src/Applications/CleanCut.ProductExportHost/CleanCut.ProductExportHost.csproj" />
+    <Project Path="src/Applications/CleanCut.OrderProcessingHost/CleanCut.OrderProcessingHost.csproj" />
   </Folder>
   <Folder Name="/src/Core/">
     <Project Path="src/Core/CleanCut.Application/CleanCut.Application.csproj" />
