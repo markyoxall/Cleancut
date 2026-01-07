@@ -10,12 +10,16 @@ var redis = builder.AddRedis("redis")
 var identity = builder.AddProject(
         name: "identity",
         projectPath: @"..\src\Infrastructure\CleanCut.Infrastructure.Identity\CleanCut.Infrastructure.Identity.csproj")
-    .WithExternalHttpEndpoints();
+    .WithExternalHttpEndpoints()
+    .WithReference(redis)
+    .WithReference(rabbitmq);
 
 var api = builder.AddProject(
         name: "api",
         projectPath: @"..\src\Presentation\CleanCut.API\CleanCut.API.csproj")
-    .WithExternalHttpEndpoints();
+    .WithExternalHttpEndpoints()
+    .WithReference(redis)
+    .WithReference(rabbitmq);
 
 builder.AddProject(
         name: "productexport",
