@@ -23,6 +23,10 @@
 		</PackageReference>
 	</ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CleanCut.AspireServiceDefault\CleanCut.AspireServiceDefault.csproj" />
+  </ItemGroup>
+
 	<ItemGroup>
 	  <Folder Include="Data\Migrations\" />
 	  <Folder Include="Migrations\" />

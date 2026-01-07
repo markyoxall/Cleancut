@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Caching\CleanCut.Infrastructure.Caching.csproj" />
     <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.Shared\CleanCut.Infrastructure.Shared.csproj" />
     <ProjectReference Include="..\..\Infrastructure\CleanCut.Infrastructure.BackgroundServices\CleanCut.Infrastructure.BackgroundServices.csproj" />
+    <ProjectReference Include="..\..\..\CleanCut.AspireServiceDefault\CleanCut.AspireServiceDefault.csproj" />
   </ItemGroup>
 
 </Project>

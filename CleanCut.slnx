@@ -42,5 +42,8 @@
     <Project Path="tests/UnitTests/CleanCut.Infrastructure.Tests/CleanCut.Infrastructure.Tests.csproj" />
     <Project Path="tests/UnitTests/CleanCut.WinApp.Tests/CleanCut.WinApp.Tests.csproj" />
   </Folder>
+  <Project Path="CleanCut.AspireAppHost/CleanCut.AspireAppHost.csproj" Id="a59efcd0-8ac2-4ebe-abd5-e4aba0f97587" />
+  <Project Path="CleanCut.AspireServiceDefault/CleanCut.AspireServiceDefault.csproj" Id="8f4f5de2-7487-45aa-a55d-9bd8fe6659d8" />
+  <Project Path="DXDevil/DXDevil.csproj" Id="12c6537d-51bd-4a7c-8918-a05afb7b9d16" />
   <Project Path="tools/DIValidator/DIValidator.csproj" />
 </Solution>

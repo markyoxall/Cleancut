@@ -1,0 +1,8 @@
+{
+  "solution": {
+    "path": "CleanCut.slnx",
+    "projects": [
+      "DXDevil\\DXDevil.csproj"
+    ]
+  }
+}
