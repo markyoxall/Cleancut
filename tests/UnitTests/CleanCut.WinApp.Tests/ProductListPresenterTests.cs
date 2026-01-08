@@ -24,7 +24,7 @@ public class ProductListPresenterTests
         var customerId = Guid.NewGuid();
         var sampleCustomers = new List<CustomerInfo>
         {
-            new CustomerInfo { Id = customerId, FirstName = "Alice", LastName = "Smith", Email = "alice@example.com" }
+            new CustomerInfo { Id = customerId, FirstName = "Alice", LastName = "Smith", Email = "alice@example.com", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         var sampleProducts = new List<ProductInfo>

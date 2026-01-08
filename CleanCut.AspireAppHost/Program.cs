@@ -7,36 +7,39 @@ var rabbitmq = builder.AddContainer("rabbitmq", "rabbitmq", "3-management")
     .WithEndpoint(port: 5672, targetPort: 5672, name: "amqp")
     .WithHttpEndpoint(port: 15672, targetPort: 15672, name: "management");
 
-var redis = builder.AddRedis("redis")
-    .WithRedisInsight();
+// Plain Redis container on standard port 6379 - no Aspire magic, just simple Redis
+var redis = builder.AddContainer("redis", "redis", "latest")
+    .WithEndpoint(port: 6379, targetPort: 6379, name: "tcp");
+
+// Add RedisInsight for GUI management of Redis
+// When adding a database in RedisInsight UI, use host: "redis" port: 6379
+builder.AddContainer("redis-insight", "redis/redisinsight", "latest")
+    .WithHttpEndpoint(port: 5540, targetPort: 5540, name: "http");
 
 var mailhog = builder.AddContainer("mailhog", "mailhog/mailhog")
     .WithHttpEndpoint(port: 8025, targetPort: 8025, name: "http")
     .WithEndpoint(port: 1025, targetPort: 1025, name: "smtp");
 
+// Remove .WithReference(redis) from all projects - they'll use appsettings.json instead
 var identity = builder.AddProject(
         name: "identity",
         projectPath: @"..\src\Infrastructure\CleanCut.Infrastructure.Identity\CleanCut.Infrastructure.Identity.csproj")
-    .WithExternalHttpEndpoints()
-    .WithReference(redis);
+    .WithExternalHttpEndpoints();
 
 var api = builder.AddProject(
         name: "api",
         projectPath: @"..\src\Presentation\CleanCut.API\CleanCut.API.csproj")
-    .WithExternalHttpEndpoints()
-    .WithReference(redis);
+    .WithExternalHttpEndpoints();
 
 builder.AddProject(
         name: "orderprocessing",
-        projectPath: @"..\src\Applications\CleanCut.OrderProcessingHost\CleanCut.OrderProcessingHost.csproj")
-    .WithReference(redis);
+        projectPath: @"..\src\Applications\CleanCut.OrderProcessingHost\CleanCut.OrderProcessingHost.csproj");
 
 builder.AddProject(
         name: "blazorwebapp",
         projectPath: @"..\src\Presentation\CleanCut.BlazorWebApp\CleanCut.BlazorWebApp.csproj")
     .WithExternalHttpEndpoints()
     .WithReference(identity)
-    .WithReference(api)
-    .WithReference(redis);
+    .WithReference(api);
 
 builder.Build().Run();

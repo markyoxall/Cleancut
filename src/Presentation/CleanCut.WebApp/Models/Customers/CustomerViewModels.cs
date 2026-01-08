@@ -52,7 +52,15 @@ public class CustomerEditViewModel
 /// </summary>
 public class CustomerDetailsViewModel
 {
-    public CustomerInfo Customer { get; set; } = new();
+    public CustomerInfo Customer { get; set; } = new() 
+    { 
+        Id = Guid.Empty, 
+        FirstName = string.Empty, 
+        LastName = string.Empty, 
+        Email = string.Empty, 
+        IsActive = false, 
+        CreatedAt = DateTime.MinValue 
+    };
     public List<ProductInfo> CustomerProducts { get; set; } = new();
     public int TotalProducts { get; set; }
 }

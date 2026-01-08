@@ -26,7 +26,7 @@ public class CustomerListPresenterTests
         var mockMediator = new Mock<IMediator>();
         var sampleCustomers = new List<CustomerInfo>
         {
-            new CustomerInfo { Id = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Email = "john@example.com" }
+            new CustomerInfo { Id = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Email = "john@example.com", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         mockMediator.Setup(m => m.Send(It.IsAny<object>(), default)).ReturnsAsync(sampleCustomers);

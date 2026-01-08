@@ -1,6 +1,6 @@
 using CleanCut.Domain.Common;
 using CleanCut.Domain.Events;
-using System.Net.Mail;
+using CleanCut.Domain.ValueObjects;
 
 namespace CleanCut.Domain.Entities;
 
@@ -9,67 +9,118 @@ namespace CleanCut.Domain.Entities;
 /// </summary>
 public class Customer : BaseEntity
 {
-    public string FirstName { get; private set; } = string.Empty;
-    public string LastName { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string _email = string.Empty;
+
+    public PersonName? Name { get; private set; }
+    public EmailAddress? Email { get; private set; }
     public bool IsActive { get; private set; } = true;
 
-    // Private constructor for EF Core
-    private Customer() { }
-
-    public Customer(string firstName, string lastName, string email)
+    // EF Core backing fields
+    public string FirstName
     {
-        if (string.IsNullOrWhiteSpace(firstName))
-            throw new ArgumentException("First name cannot be empty", nameof(firstName));
-        
-        if (string.IsNullOrWhiteSpace(lastName))
-            throw new ArgumentException("Last name cannot be empty", nameof(lastName));
-        
-        if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email cannot be empty", nameof(email));
-        
-        if (!IsValidEmail(email))
-            throw new ArgumentException("Invalid email format", nameof(email));
+        get => _firstName;
+        private set => _firstName = value;
+    }
 
-        FirstName = firstName.Trim();
-        LastName = lastName.Trim();
-        Email = email.Trim().ToLowerInvariant();
-        
+    public string LastName
+    {
+        get => _lastName;
+        private set => _lastName = value;
+    }
+
+    private string EmailValue
+    {
+        get => _email;
+        set => _email = value;
+    }
+
+    // Private constructor for EF Core
+    private Customer() 
+    {
+        // EF Core will populate backing fields, then we reconstruct value objects
+    }
+
+    // Public property accessor that reconstructs value objects from backing fields
+    private void EnsureValueObjects()
+    {
+        if (Name == null && !string.IsNullOrEmpty(_firstName) && !string.IsNullOrEmpty(_lastName))
+        {
+            var nameResult = PersonName.Create(_firstName, _lastName);
+            if (nameResult.IsSuccess)
+                Name = nameResult.Value;
+        }
+
+        if (Email == null && !string.IsNullOrEmpty(_email))
+        {
+            var emailResult = EmailAddress.Create(_email);
+            if (emailResult.IsSuccess)
+                Email = emailResult.Value;
+        }
+    }
+
+    private Customer(PersonName name, EmailAddress email)
+    {
+        Name = name;
+        Email = email;
+        _firstName = name.FirstName;
+        _lastName = name.LastName;
+        _email = email.Value;
+
         // Raise domain event
         AddDomainEvent(new CustomerCreatedEvent(this));
     }
 
-    public string GetFullName() => $"{FirstName} {LastName}";
-
-    public void UpdateName(string firstName, string lastName)
+    /// <summary>
+    /// Factory method to create a Customer with validation
+    /// </summary>
+    public static Result<Customer> Create(string firstName, string lastName, string email)
     {
-        if (string.IsNullOrWhiteSpace(firstName))
-            throw new ArgumentException("First name cannot be empty", nameof(firstName));
-        
-        if (string.IsNullOrWhiteSpace(lastName))
-            throw new ArgumentException("Last name cannot be empty", nameof(lastName));
+        var nameResult = PersonName.Create(firstName, lastName);
+        if (!nameResult.IsSuccess)
+            return Result<Customer>.Failure(nameResult.Error);
 
-        FirstName = firstName.Trim();
-        LastName = lastName.Trim();
-        SetUpdatedAt();
-        
-        // Raise domain event
-        AddDomainEvent(new CustomerUpdatedEvent(this, "Name"));
+        var emailResult = EmailAddress.Create(email);
+        if (!emailResult.IsSuccess)
+            return Result<Customer>.Failure(emailResult.Error);
+
+        return Result<Customer>.Success(new Customer(nameResult.Value!, emailResult.Value!));
     }
 
-    public void UpdateEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email cannot be empty", nameof(email));
-        
-        if (!IsValidEmail(email))
-            throw new ArgumentException("Invalid email format", nameof(email));
+    public string GetFullName() => Name?.FullName ?? $"{FirstName} {LastName}".Trim();
 
-        Email = email.Trim().ToLowerInvariant();
+    public Result UpdateName(string firstName, string lastName)
+    {
+        var nameResult = PersonName.Create(firstName, lastName);
+        if (!nameResult.IsSuccess)
+            return Result.Failure(nameResult.Error);
+
+        Name = nameResult.Value;
+        _firstName = nameResult.Value.FirstName;
+        _lastName = nameResult.Value.LastName;
         SetUpdatedAt();
-        
+
+        // Raise domain event
+        AddDomainEvent(new CustomerUpdatedEvent(this, "Name"));
+
+        return Result.Success();
+    }
+
+    public Result UpdateEmail(string email)
+    {
+        var emailResult = EmailAddress.Create(email);
+        if (!emailResult.IsSuccess)
+            return Result.Failure(emailResult.Error);
+
+        Email = emailResult.Value;
+        _email = emailResult.Value.Value;
+        SetUpdatedAt();
+
         // Raise domain event
         AddDomainEvent(new CustomerUpdatedEvent(this, "Email"));
+
+        return Result.Success();
     }
 
     public void Deactivate()
@@ -81,25 +132,12 @@ public class Customer : BaseEntity
         AddDomainEvent(new CustomerUpdatedEvent(this, "Status"));
     }
 
-    public void Activate()
-    {
-        IsActive = true;
-        SetUpdatedAt();
-        
-        // Raise domain event
-        AddDomainEvent(new CustomerUpdatedEvent(this, "Status"));
-    }
+        public void Activate()
+        {
+            IsActive = true;
+            SetUpdatedAt();
 
-    private static bool IsValidEmail(string email)
-    {
-        try
-        {
-            var addr = new System.Net.Mail.MailAddress(email);
-            return addr.Address == email;
-        }
-        catch
-        {
-            return false;
+            // Raise domain event
+            AddDomainEvent(new CustomerUpdatedEvent(this, "Status"));
         }
     }
-}

@@ -81,12 +81,12 @@ public static class DatabaseSeeder
         var users = new List<Customer>();
 
         // Add the original users with known GUIDs for testing
-        var originalUser = new Customer("John", "Doe", "john.doe@example.com");
+        var originalUser = Customer.Create("John", "Doe", "john.doe@example.com").Value!;
         SetEntityId(originalUser, Guid.Parse("11111111-1111-1111-1111-111111111111"));
         users.Add(originalUser);
 
-        users.Add(new Customer("Jane", "Smith", "jane.smith@example.com"));
-        users.Add(new Customer("Bob", "Johnson", "bob.johnson@example.com"));
+        users.Add(Customer.Create("Jane", "Smith", "jane.smith@example.com").Value!);
+        users.Add(Customer.Create("Bob", "Johnson", "bob.johnson@example.com").Value!);
 
         // Add comprehensive user data
         var userTemplates = new[]
@@ -144,7 +144,9 @@ public static class DatabaseSeeder
         {
             try
             {
-                users.Add(new Customer(firstName, lastName, email));
+                var customerResult = Customer.Create(firstName, lastName, email);
+                if (customerResult.IsSuccess)
+                    users.Add(customerResult.Value!);
             }
             catch (Exception ex)
             {
@@ -300,7 +302,7 @@ public static class DatabaseSeeder
             for (int i = 0; i < instanceCount; i++)
             {
                 var randomUser = users[random.Next(users.Count)];
-                var priceVariation = 1.0m + (decimal)(random.NextDouble() * 0.4 - 0.2); // ±20% price variation
+                var priceVariation = 1.0m + (decimal)(random.NextDouble() * 0.4 - 0.2); // Â±20% price variation
                 var adjustedPrice = Math.Round(basePrice * priceVariation, 2);
                 
                 var productName = instanceCount > 1 ? $"{name} {GetProductVariant(i)}" : name;

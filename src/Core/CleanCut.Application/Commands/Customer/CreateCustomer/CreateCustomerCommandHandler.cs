@@ -29,8 +29,14 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
             throw new InvalidOperationException($"Customer with email '{request.Email}' already exists");
         }
 
-        // Create new customer
-        var customer = new Customer(request.FirstName, request.LastName, request.Email);
+        // Create new customer using factory method with value object validation
+        var customerResult = Customer.Create(request.FirstName, request.LastName, request.Email);
+        if (!customerResult.IsSuccess)
+        {
+            throw new InvalidOperationException(customerResult.Error);
+        }
+
+        var customer = customerResult.Value!;
 
         // Add to repository
         await _unitOfWork.Customers.AddAsync(customer, cancellationToken);

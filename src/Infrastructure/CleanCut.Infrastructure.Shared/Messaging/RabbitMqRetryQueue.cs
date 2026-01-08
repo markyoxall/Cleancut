@@ -23,29 +23,51 @@ public class RabbitMqRetryQueue : IRabbitMqRetryQueue
         _queueKey = configuration["RabbitMQ:RetryQueueKey"] ?? "cleancut:retry:orders";
         _idsKey = _queueKey + ":ids";
 
-        try
+        // Support multiple configuration styles:
+        // 1. Manual/default configuration (ConnectionStrings:Redis or Redis:ConnectionString)
+        // 2. Aspire-injected connection string (ConnectionStrings:redis - lowercase)
+        var redisConn = configuration.GetConnectionString("Redis");
+        if (string.IsNullOrWhiteSpace(redisConn))
         {
-            // Support both configuration styles: "Redis:ConnectionString" and ConnectionStrings:Redis
-            var redisConn = configuration["Redis:ConnectionString"];
-            if (string.IsNullOrWhiteSpace(redisConn))
-            {
-                redisConn = configuration.GetConnectionString("Redis");
-            }
+            redisConn = configuration["Redis:ConnectionString"];
+        }
+        if (string.IsNullOrWhiteSpace(redisConn))
+        {
+            redisConn = configuration.GetConnectionString("redis");
+        }
 
-            if (!string.IsNullOrWhiteSpace(redisConn))
+        if (!string.IsNullOrWhiteSpace(redisConn))
+        {
+            _logger.LogInformation("Attempting to connect to Redis using connection string: {ConnectionString}", redisConn);
+
+            try
             {
-                _redis = ConnectionMultiplexer.Connect(redisConn);
+                // Add abortConnect=false to allow background reconnection attempts
+                var configOptions = ConfigurationOptions.Parse(redisConn);
+                configOptions.AbortOnConnectFail = false;
+
+                _redis = ConnectionMultiplexer.Connect(configOptions);
                 _db = _redis.GetDatabase();
-                _logger.LogInformation("Connected to Redis for retry queue using connection string: {Conn}", redisConn);
+
+                if (_redis.IsConnected)
+                {
+                    _logger.LogInformation("Connected to Redis for retry queue at {Endpoint}", configOptions.EndPoints[0]);
+                }
+                else
+                {
+                    _logger.LogWarning("Redis configured at {Endpoint} but not currently available. Will retry in background. Using in-memory queue until connected.", configOptions.EndPoints[0]);
+                }
                 return;
             }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Failed to initialize Redis connection: {Message}. Using in-memory retry queue.", ex.Message);
+            }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogWarning(ex, "Failed to connect to Redis; falling back to in-memory retry queue");
+            _logger.LogInformation("Redis not configured. Using in-memory retry queue.");
         }
-
-        _logger.LogInformation("Using in-memory retry queue (Redis not configured)");
     }
 
     public async Task EnqueueAsync(OrderInfo order, CancellationToken cancellationToken = default)
