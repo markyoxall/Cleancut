@@ -15,7 +15,8 @@ public static class DependencyInjection
         var rabbitSection = configuration.GetSection("RabbitMQ");
         var rabbitOptions = new RabbitMqOptions
         {
-            Hostname = rabbitSection["Hostname"] ?? "localhost",
+            // Default to the Aspire container hostname so services started by Aspire can resolve it
+            Hostname = rabbitSection["Hostname"] ?? "rabbitmq",
             Port = int.TryParse(rabbitSection["Port"], out var p) ? p : 5672,
             VirtualHost = rabbitSection["VirtualHost"] ?? "/",
             Username = rabbitSection["Username"] ?? "guest",
@@ -41,9 +42,8 @@ public static class DependencyInjection
 
         // Order export is registered by the background services project
 
-        // Messaging services
+        // Messaging services (simple, minimal configuration)
         services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
-        services.AddSingleton<IRabbitMqRetryQueue, RabbitMqRetryQueue>();
         // Integration event publisher (generic)
         services.AddSingleton<CleanCut.Application.Common.Interfaces.IIntegrationEventPublisher, IntegrationEventPublisher>();
         // Note: exchange initialization removed to keep startup simple; create exchange via management UI or a separate initializer if needed

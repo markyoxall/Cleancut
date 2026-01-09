@@ -62,6 +62,9 @@ builder.Services.AddSharedInfrastructure(builder.Configuration);
 // Add background services from infrastructure (EmailAndRabbitWorker)
 CleanCut.Infrastructure.BackgroundServices.Extensions.ServiceCollectionExtensions.AddBackgroundServices(builder.Services, builder.Configuration);
 
+// Register the placeholder Worker so its ExecuteAsync runs (keeps the template heartbeat)
+builder.Services.AddHostedService<Worker>();
+
 var host = builder.Build();
 
 // Log startup information

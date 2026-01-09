@@ -34,8 +34,9 @@ public class RabbitMqConsumerWorker : BackgroundService
         _logger.LogInformation("RabbitMqConsumerWorker starting - will send emails directly");
 
         // Wait for RabbitMQ container to be fully ready
-        _logger.LogInformation("Waiting 15 seconds for RabbitMQ to be ready...");
-        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+        // Increase initial wait to reduce race with container startup
+        _logger.LogInformation("Waiting 30 seconds for RabbitMQ to be ready...");
+        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
         try
         {
@@ -81,8 +82,10 @@ public class RabbitMqConsumerWorker : BackgroundService
                         }
                         else
                         {
-                            _logger.LogWarning("Order {OrderId} has no customer email, skipping email. Acknowledging message.", order.Id);
-                            await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                            // Orders should always include a customer email. Treat missing email as a processing error
+                            // and NACK the message without requeue so it can be inspected (avoid infinite requeue loops).
+                            _logger.LogError("Order {OrderId} has no customer email; NACKing message for inspection.", order.Id);
+                            await _channel.BasicNackAsync(ea.DeliveryTag, false, false);
                         }
                     }
                     else
@@ -148,7 +151,7 @@ public class RabbitMqConsumerWorker : BackgroundService
     private async Task InitializeRabbitMqAsync(CancellationToken ct)
     {
         var retryCount = 0;
-        var maxRetries = 10;
+        var maxRetries = 15;
 
         _logger.LogInformation("Starting RabbitMQ connection initialization (up to {MaxRetries} attempts)", maxRetries);
 
@@ -169,35 +172,6 @@ public class RabbitMqConsumerWorker : BackgroundService
                     RequestedConnectionTimeout = TimeSpan.FromSeconds(30),
                     AutomaticRecoveryEnabled = true
                 };
-
-                // Diagnostics: resolve DNS and perform a quick TCP connect to give clearer failure reason
-                try
-                {
-                    var addresses = await System.Net.Dns.GetHostAddressesAsync(_options.Hostname, ct).ConfigureAwait(false);
-                    _logger.LogDebug("Resolved RabbitMQ hostname '{Host}' to: {Addresses}", _options.Hostname, string.Join(',', addresses));
-                }
-                catch (Exception dnsEx)
-                {
-                    _logger.LogWarning(dnsEx, "Failed to resolve RabbitMQ hostname {Host}", _options.Hostname);
-                }
-
-                try
-                {
-                    using var tcp = new System.Net.Sockets.TcpClient();
-                    var connectTask = tcp.ConnectAsync(_options.Hostname, _options.Port);
-                    var completed = await Task.WhenAny(connectTask, Task.Delay(TimeSpan.FromSeconds(5), ct)).ConfigureAwait(false);
-                    if (completed != connectTask || !tcp.Connected)
-                    {
-                        _logger.LogWarning("TCP connect to RabbitMQ {Host}:{Port} timed out or failed", _options.Hostname, _options.Port);
-                        throw new System.TimeoutException($"TCP connect to {_options.Hostname}:{_options.Port} timed out");
-                    }
-                    _logger.LogDebug("TCP connect to RabbitMQ {Host}:{Port} succeeded", _options.Hostname, _options.Port);
-                }
-                catch (Exception tcpEx)
-                {
-                    _logger.LogWarning(tcpEx, "TCP check failed for RabbitMQ {Host}:{Port}", _options.Hostname, _options.Port);
-                    throw;
-                }
 
                 factory.ClientProvidedName = "CleanCut.Consumer";
 
@@ -224,8 +198,10 @@ public class RabbitMqConsumerWorker : BackgroundService
 
                 if (retryCount < maxRetries)
                 {
-                    _logger.LogInformation("Retrying in 5 seconds...");
-                    await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                    // Exponential backoff with a cap to avoid tight retry loops when RabbitMQ is still initializing
+                    var backoffSeconds = Math.Min(30, 5 * retryCount);
+                    _logger.LogInformation("Retrying in {Seconds} seconds...", backoffSeconds);
+                    await Task.Delay(TimeSpan.FromSeconds(backoffSeconds), ct);
                 }
             }
         }

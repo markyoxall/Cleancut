@@ -8,7 +8,10 @@ namespace CleanCut.Infrastructure.Shared.Messaging;
 
 public class RabbitMqOptions
 {
-    public string Hostname { get; set; } = "localhost";
+    // Default to the container name used by Aspire so services running inside Aspire network
+    // will resolve RabbitMQ by the container hostname. Developers running locally outside
+    // Aspire may override this via configuration (appsettings or env vars).
+    public string Hostname { get; set; } = "rabbitmq";
     public int Port { get; set; } = 5672;
     public string VirtualHost { get; set; } = "/";
     public string Username { get; set; } = "guest";
@@ -37,25 +40,18 @@ public class RabbitMqPublisher : IRabbitMqPublisher, IDisposable
 
     public async Task PublishOrderCreatedAsync(OrderInfo order, CancellationToken cancellationToken = default)
     {
-        try
+        if (!await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false))
         {
-            if (!await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false))
-            {
-                _logger.LogWarning("RabbitMQ not available; skipping publish for Order {OrderId}", order.Id);
-                return;
-            }
-
-            var payload = JsonSerializer.Serialize(order, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-            var body = Encoding.UTF8.GetBytes(payload);
-
-            // Use async-first publish (no properties)
-            await _channel!.BasicPublishAsync(exchange: _options.Exchange, routingKey: _options.OrderCreatedRoutingKey, body: body).ConfigureAwait(false);
-            _logger.LogInformation("Published OrderCreated for OrderId={OrderId}", order.Id);
+            _logger.LogWarning("RabbitMQ not available; skipping publish for Order {OrderId}", order.Id);
+            return;
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to publish OrderCreated for OrderId={OrderId}", order.Id);
-        }
+
+        var payload = JsonSerializer.Serialize(order, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var body = Encoding.UTF8.GetBytes(payload);
+
+        // Use async-first publish (no properties)
+        await _channel!.BasicPublishAsync(exchange: _options.Exchange, routingKey: _options.OrderCreatedRoutingKey, body: body).ConfigureAwait(false);
+        _logger.LogInformation("Published OrderCreated for OrderId={OrderId}", order.Id);
     }
 
     public async Task<bool> TryPublishOrderCreatedAsync(OrderInfo order, CancellationToken cancellationToken = default)

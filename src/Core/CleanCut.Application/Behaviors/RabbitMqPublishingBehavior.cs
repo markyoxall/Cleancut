@@ -34,6 +34,7 @@ public class RabbitMqPublishingBehavior<TRequest, TResponse> : IPipelineBehavior
             // If the response is an OrderInfo, publish to RabbitMQ
             if (response is CleanCut.Application.DTOs.OrderInfo orderInfo)
             {
+                _logger.LogInformation("RabbitMqPublishingBehavior: publishing OrderCreated for {OrderId}", orderInfo.Id);
                 await _publisher.PublishOrderCreatedAsync(orderInfo, cancellationToken);
             }
         }
