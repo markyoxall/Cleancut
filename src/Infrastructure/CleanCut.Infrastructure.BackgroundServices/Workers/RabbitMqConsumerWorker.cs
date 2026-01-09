@@ -20,7 +20,7 @@ public class RabbitMqConsumerWorker : BackgroundService
     private readonly ILogger<RabbitMqConsumerWorker> _logger;
     private readonly RabbitMqOptions _options;
     private IConnection? _connection;
-    private IChannel? _channel;
+    private RabbitMQ.Client.IChannel? _channel;
 
     public RabbitMqConsumerWorker(IEmailSender emailSender, RabbitMqOptions options, ILogger<RabbitMqConsumerWorker> logger)
     {
@@ -170,9 +170,41 @@ public class RabbitMqConsumerWorker : BackgroundService
                     AutomaticRecoveryEnabled = true
                 };
 
+                // Diagnostics: resolve DNS and perform a quick TCP connect to give clearer failure reason
+                try
+                {
+                    var addresses = await System.Net.Dns.GetHostAddressesAsync(_options.Hostname, ct).ConfigureAwait(false);
+                    _logger.LogDebug("Resolved RabbitMQ hostname '{Host}' to: {Addresses}", _options.Hostname, string.Join(',', addresses));
+                }
+                catch (Exception dnsEx)
+                {
+                    _logger.LogWarning(dnsEx, "Failed to resolve RabbitMQ hostname {Host}", _options.Hostname);
+                }
+
+                try
+                {
+                    using var tcp = new System.Net.Sockets.TcpClient();
+                    var connectTask = tcp.ConnectAsync(_options.Hostname, _options.Port);
+                    var completed = await Task.WhenAny(connectTask, Task.Delay(TimeSpan.FromSeconds(5), ct)).ConfigureAwait(false);
+                    if (completed != connectTask || !tcp.Connected)
+                    {
+                        _logger.LogWarning("TCP connect to RabbitMQ {Host}:{Port} timed out or failed", _options.Hostname, _options.Port);
+                        throw new System.TimeoutException($"TCP connect to {_options.Hostname}:{_options.Port} timed out");
+                    }
+                    _logger.LogDebug("TCP connect to RabbitMQ {Host}:{Port} succeeded", _options.Hostname, _options.Port);
+                }
+                catch (Exception tcpEx)
+                {
+                    _logger.LogWarning(tcpEx, "TCP check failed for RabbitMQ {Host}:{Port}", _options.Hostname, _options.Port);
+                    throw;
+                }
+
+                factory.ClientProvidedName = "CleanCut.Consumer";
+
                 _connection = await factory.CreateConnectionAsync(ct);
                 _logger.LogInformation("RabbitMQ connection established, creating channel...");
 
+                // Use CreateChannelAsync to obtain IChannel (project uses IChannel API)
                 _channel = await _connection.CreateChannelAsync(cancellationToken: ct);
                 _logger.LogInformation("Channel created, declaring exchange and queue...");
 
