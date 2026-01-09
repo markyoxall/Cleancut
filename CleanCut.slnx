@@ -11,7 +11,16 @@
     <File Path="README-containers.md" />
     <File Path="reset_git_history.ps1" />
   </Folder>
-  <Folder Name="/solution_items/" />
+  <Folder Name="/solution_items/">
+    <File Path="solution_items/.azure-pipelines.yml" />
+    <File Path="solution_items/azure-pipelines.yml" />
+    <File Path="solution_items/Directory.Packages.props" />
+    <File Path="solution_items/test-migration.ps1" />
+    <File Path="solution_items/test-new-service.bat" />
+    <File Path="solution_items/UpdateDatabase_Dev.ps1" />
+    <File Path="solution_items/UpdateDatabase_LocalDB.ps1" />
+    <File Path="solution_items/verify-services.ps1" />
+  </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Applications/">
     <Project Path="src/Applications/CleanCut.OrderProcessingHost/CleanCut.OrderProcessingHost.csproj" />
