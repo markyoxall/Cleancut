@@ -13,7 +13,7 @@ public static class DependencyInjectionExtensions
         services.AddSharedInfrastructure(configuration);
 
         // Register hosted workers
-        services.AddHostedService<EmailAndRabbitWorker>();
+        services.AddHostedService<OrderEmailWorker>();
         services.AddHostedService<RabbitMqRetryWorker>();
 
         return services;

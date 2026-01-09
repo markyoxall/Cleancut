@@ -41,12 +41,12 @@ No alternative guidance or speculation is allowed.
 ---
 
 ## Repository Rules and Governance
-These guidelines are **mandatory** for all code changes, PRs, and new projects in this repository.  
+These guidelines are **mandatory** for all code changes, PRs, and new projects in this repository.
 Follow them exactly unless a reviewer explicitly approves an exception.
 
 - Always follow industry-standard best practices.
-- If unsure about anything, ask for clarification BEFORE proceeding.
-- Copilot MUST only provide suggestions — **never imply direct commits**.
+<!-- - If unsure about anything, ask for clarification BEFORE proceeding.
+- Copilot MUST only provide suggestions — **never imply direct commits**. -->
 
 ---
 
@@ -199,6 +199,6 @@ Copilot MUST choose the safest compliant approach and state any assumptions.
 ---
 
 ## Final Compliance Statement
-Copilot MUST always comply with this policy.  
+Copilot MUST always comply with this policy.
 Deviation is NOT allowed unless explicitly approved.
 

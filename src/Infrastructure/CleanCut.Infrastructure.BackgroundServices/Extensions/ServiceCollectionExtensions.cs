@@ -3,6 +3,7 @@ using CleanCut.Infrastructure.BackgroundServices.ExternalApi;
 using CleanCut.Infrastructure.BackgroundServices.FileExport;
 using CleanCut.Infrastructure.BackgroundServices.ProductExport;
 using CleanCut.Infrastructure.BackgroundServices.OrderExport;
+using CleanCut.Infrastructure.BackgroundServices.Workers;
 using CleanCut.Infrastructure.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,15 +72,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICsvExportService, CsvExportService>();
         services.AddScoped<IProductExportService, ProductExportService>();
 
-        // Order export services
-        services.AddScoped<CleanCut.Infrastructure.BackgroundServices.OrderExport.IOrderExportService, CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportService>();
-        services.Configure<CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportConfiguration>(configuration.GetSection("OrderExport"));
-        services.AddHostedService<CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportWorker>();
+        // Order export services (DISABLED - database access issues)
+        // services.AddScoped<CleanCut.Infrastructure.BackgroundServices.OrderExport.IOrderExportService, CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportService>();
+        // services.Configure<CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportConfiguration>(configuration.GetSection("OrderExport"));
+        // services.AddHostedService<CleanCut.Infrastructure.BackgroundServices.OrderExport.OrderExportWorker>();
 
-        // Register the background worker
+        // Register RabbitMQ consumer to listen for order.created events and send emails
+        services.AddHostedService<RabbitMqConsumerWorker>();
+
+        // Register the background worker for product export
         services.AddHostedService<ProductExportWorker>();
 
-  return services;
+        return services;
     }
 
     /// <summary>

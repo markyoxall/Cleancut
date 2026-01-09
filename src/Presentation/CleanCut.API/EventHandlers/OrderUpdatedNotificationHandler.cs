@@ -1,23 +1,24 @@
 using CleanCut.Application.Events;
 using MediatR;
-using CleanCut.API.Services;
-using Microsoft.AspNetCore.SignalR;
-using CleanCut.API.Hubs;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
+using CleanCut.Application.Common.Interfaces;
 
 namespace CleanCut.API.EventHandlers;
 
+/// <summary>
+/// Handles OrderUpdated domain event and publishes to RabbitMQ
+/// </summary>
 public class OrderUpdatedNotificationHandler : INotificationHandler<OrderUpdatedNotification>
 {
-    private readonly IIntegrationEventProcessor _processor;
-    private readonly IHubContext<NotificationsHub> _hub;
+    private readonly IIntegrationEventPublisher _publisher;
     private readonly ILogger<OrderUpdatedNotificationHandler> _logger;
 
-    public OrderUpdatedNotificationHandler(IIntegrationEventProcessor processor, IHubContext<NotificationsHub> hub, ILogger<OrderUpdatedNotificationHandler> logger)
+    public OrderUpdatedNotificationHandler(
+        IIntegrationEventPublisher publisher,
+        ILogger<OrderUpdatedNotificationHandler> logger)
     {
-        _processor = processor;
-        _hub = hub;
+        _publisher = publisher;
         _logger = logger;
     }
 
@@ -25,7 +26,7 @@ public class OrderUpdatedNotificationHandler : INotificationHandler<OrderUpdated
     {
         var order = notification.DomainEvent.Order;
 
-        var dto = new CleanCut.Application.DTOs.OrderInfo
+        var dto = new OrderInfo
         {
             Id = order.Id,
             CustomerId = order.CustomerId,
@@ -35,15 +36,7 @@ public class OrderUpdatedNotificationHandler : INotificationHandler<OrderUpdated
             TotalAmount = order.TotalAmount
         };
 
-        await _processor.ProcessAsync("order.updated", dto, cancellationToken);
-
-        try
-        {
-            await _hub.Clients.All.SendAsync("OrderUpdated", dto, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "SignalR broadcast failed for order {OrderId}", order.Id);
-        }
+        await _publisher.PublishAsync("order.updated", dto, cancellationToken);
+        _logger.LogInformation("✅ Published order.updated for {OrderId}", order.Id);
     }
 }

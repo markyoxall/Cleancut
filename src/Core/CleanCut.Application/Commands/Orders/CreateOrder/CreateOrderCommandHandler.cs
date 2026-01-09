@@ -18,25 +18,19 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IProductRepository _productRepository;
-    private readonly IRabbitMqPublisher? _publisher;
-    private readonly IRabbitMqRetryQueue? _retryQueue;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
         ICustomerRepository customerRepository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        IProductRepository productRepository,
-        IRabbitMqPublisher? publisher = null,
-        IRabbitMqRetryQueue? retryQueue = null)
+        IProductRepository productRepository)
     {
         _orderRepository = orderRepository;
-        _customerRepository = customerRepository; // keep existing variable
+        _customerRepository = customerRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _productRepository = productRepository;
-        _publisher = publisher;
-        _retryQueue = retryQueue;
     }
 
     public async Task<OrderInfo> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -78,44 +72,13 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
         await _orderRepository.AddAsync(order, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Map to DTO
+        // Map to DTO with complete information
         var orderInfo = _mapper.Map<OrderInfo>(order);
         orderInfo.CustomerName = customer.GetFullName();
         orderInfo.CustomerEmail = customer.Email;
 
-        // Try to publish immediately first (best-effort). If publish fails, enqueue for background retry.
-        var published = false;
-        if (_publisher != null)
-        {
-            try
-            {
-                // Use TryPublish which returns success/failure without enqueuing
-                published = await _publisher.TryPublishOrderCreatedAsync(orderInfo, cancellationToken);
-            }
-            catch
-            {
-                published = false;
-            }
-        }
-
-        // Enqueue for background processing (email + RabbitMQ publish).
-        // Always enqueue so the background worker is responsible for sending the email
-        // and for ensuring the message is published reliably. The retry queue deduplicates
-        // by order id (Redis set) so this is safe to call even if publish already succeeded.
-        if (_retryQueue != null)
-        {
-            try
-            {
-                await _retryQueue.EnqueueAsync(orderInfo, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                // Log and continue - order creation already persisted; background publisher will retry later
-                // Use ILogger if available via DI; avoid throwing from handler.
-                // ... no ILogger in this handler, so swallow silently to keep behavior unchanged.
-            }
-        }
-
+        // Domain events will handle RabbitMQ publishing
+        // No direct publishing here - separation of concerns
         return orderInfo;
     }
 }

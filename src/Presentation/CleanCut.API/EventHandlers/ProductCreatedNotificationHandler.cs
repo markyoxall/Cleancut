@@ -1,23 +1,24 @@
 using CleanCut.Application.Events;
 using MediatR;
-using CleanCut.API.Services;
-using Microsoft.AspNetCore.SignalR;
-using CleanCut.API.Hubs;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
+using CleanCut.Application.Common.Interfaces;
 
 namespace CleanCut.API.EventHandlers;
 
+/// <summary>
+/// Handles ProductCreated domain event and publishes to RabbitMQ
+/// </summary>
 public class ProductCreatedNotificationHandler : INotificationHandler<ProductCreatedNotification>
 {
-    private readonly IIntegrationEventProcessor _processor;
-    private readonly IHubContext<NotificationsHub> _hub;
+    private readonly IIntegrationEventPublisher _publisher;
     private readonly ILogger<ProductCreatedNotificationHandler> _logger;
 
-    public ProductCreatedNotificationHandler(IIntegrationEventProcessor processor, IHubContext<NotificationsHub> hub, ILogger<ProductCreatedNotificationHandler> logger)
+    public ProductCreatedNotificationHandler(
+        IIntegrationEventPublisher publisher,
+        ILogger<ProductCreatedNotificationHandler> logger)
     {
-        _processor = processor;
-        _hub = hub;
+        _publisher = publisher;
         _logger = logger;
     }
 
@@ -25,7 +26,7 @@ public class ProductCreatedNotificationHandler : INotificationHandler<ProductCre
     {
         var product = notification.DomainEvent.Product;
 
-        var dto = new CleanCut.Application.DTOs.ProductInfo
+        var dto = new ProductInfo
         {
             Id = product.Id,
             Name = product.Name,
@@ -34,15 +35,7 @@ public class ProductCreatedNotificationHandler : INotificationHandler<ProductCre
             IsAvailable = product.IsAvailable
         };
 
-        await _processor.ProcessAsync("product.created", dto, cancellationToken);
-
-        try
-        {
-            await _hub.Clients.All.SendAsync("ProductCreated", dto, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "SignalR broadcast failed for product {ProductId}", product.Id);
-        }
+        await _publisher.PublishAsync("product.created", dto, cancellationToken);
+        _logger.LogInformation("✅ Published product.created for {ProductId}", product.Id);
     }
 }

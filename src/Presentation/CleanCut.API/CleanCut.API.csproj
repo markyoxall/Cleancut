@@ -29,4 +29,9 @@
     <ProjectReference Include="..\..\..\CleanCut.AspireServiceDefault\CleanCut.AspireServiceDefault.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Hubs\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>

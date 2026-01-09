@@ -1,23 +1,21 @@
 using CleanCut.Application.Events;
 using MediatR;
-using CleanCut.API.Services;
-using Microsoft.AspNetCore.SignalR;
-using CleanCut.API.Hubs;
 using CleanCut.Application.DTOs;
 using Microsoft.Extensions.Logging;
+using CleanCut.Application.Common.Interfaces;
 
 namespace CleanCut.API.EventHandlers;
 
 public class CountryCreatedNotificationHandler : INotificationHandler<CountryCreatedNotification>
 {
-    private readonly IIntegrationEventProcessor _processor;
-    private readonly IHubContext<NotificationsHub> _hub;
+    private readonly IIntegrationEventPublisher _publisher;
     private readonly ILogger<CountryCreatedNotificationHandler> _logger;
 
-    public CountryCreatedNotificationHandler(IIntegrationEventProcessor processor, IHubContext<NotificationsHub> hub, ILogger<CountryCreatedNotificationHandler> logger)
+    public CountryCreatedNotificationHandler(
+        IIntegrationEventPublisher publisher,
+        ILogger<CountryCreatedNotificationHandler> logger)
     {
-        _processor = processor;
-        _hub = hub;
+        _publisher = publisher;
         _logger = logger;
     }
 
@@ -25,22 +23,14 @@ public class CountryCreatedNotificationHandler : INotificationHandler<CountryCre
     {
         var country = notification.DomainEvent.Country;
 
-        var dto = new CleanCut.Application.DTOs.CountryInfo
+        var dto = new CountryInfo
         {
             Id = country.Id,
             Name = country.Name,
             Code = country.Code
         };
 
-        await _processor.ProcessAsync("country.created", dto, cancellationToken);
-
-        try
-        {
-            await _hub.Clients.All.SendAsync("CountryCreated", dto, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "SignalR broadcast failed for country {CountryId}", country.Id);
-        }
+        await _publisher.PublishAsync("country.created", dto, cancellationToken);
+        _logger.LogInformation("Published country.created for {CountryId}", country.Id);
     }
 }

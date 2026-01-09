@@ -7,8 +7,6 @@ using CleanCut.Application.Queries.Customers.GetCustomer;
 using CleanCut.Application.Queries.Customers.GetAllCustomers;
 using CleanCut.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
-using CleanCut.API.Hubs;
 
 namespace CleanCut.API.Controllers;
 

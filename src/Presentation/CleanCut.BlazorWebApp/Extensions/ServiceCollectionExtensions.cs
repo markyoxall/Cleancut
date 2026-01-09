@@ -97,94 +97,15 @@ services.AddScoped<AuthenticatedHttpMessageHandler>();
 
         // Register feature state services and UI state
         // Use singleton for state so SignalR connection is shared and state survives across circuits
-        services.AddSingleton<ICustomersState, CustomersState>();
-        services.AddScoped<IProductsState, ProductsState>();
-        services.AddScoped<ICountriesState, CountriesState>();
+                services.AddSingleton<ICustomersState, CustomersState>();
+                services.AddScoped<IProductsState, ProductsState>();
+                services.AddScoped<ICountriesState, CountriesState>();
 
-        // Provide factories to resolve scoped states from singleton registrations
-        services.AddSingleton<Func<IProductsState>>(sp => () => sp.CreateScope().ServiceProvider.GetRequiredService<IProductsState>());
-        services.AddSingleton<Func<ICountriesState>>(sp => () => sp.CreateScope().ServiceProvider.GetRequiredService<ICountriesState>());
-        services.AddScoped<IUiStateService, UiStateService>();
+                // Provide factories to resolve scoped states from singleton registrations
+                services.AddSingleton<Func<IProductsState>>(sp => () => sp.CreateScope().ServiceProvider.GetRequiredService<IProductsState>());
+                services.AddSingleton<Func<ICountriesState>>(sp => () => sp.CreateScope().ServiceProvider.GetRequiredService<ICountriesState>());
+                services.AddScoped<IUiStateService, UiStateService>();
 
-        // SignalR notifications client - singleton so the connection is shared
-        services.AddSingleton<CleanCut.BlazorWebApp.Services.Notifications.INotificationsClient, CleanCut.BlazorWebApp.Services.Notifications.SignalRNotificationsClient>();
-
-        // Wire notifications to state services after the DI container is built via factory
-        services.AddSingleton(sp =>
-        {
-            var client = sp.GetRequiredService<CleanCut.BlazorWebApp.Services.Notifications.INotificationsClient>();
-            var customersState = sp.GetRequiredService<ICustomersState>();
-            var productsStateFactory = sp.GetRequiredService<Func<IProductsState>>();
-            var countriesStateFactory = sp.GetRequiredService<Func<ICountriesState>>();
-
-            // Customers: invalidate and reload
-            client.CustomerUpdated += async dto =>
-            {
-                try
-                {
-                    customersState.Invalidate();
-                    await customersState.LoadAsync(force: true);
-                }
-                catch { }
-            };
-
-            // Products
-            client.ProductCreated += async dto =>
-            {
-                try
-                {
-                    var productsState = productsStateFactory();
-                    productsState.Invalidate();
-                    await productsState.LoadAllAsync(force: true);
-                }
-                catch { }
-            };
-
-            client.ProductUpdated += async dto =>
-            {
-                try
-                {
-                    var productsState = productsStateFactory();
-                    productsState.Invalidate();
-                    await productsState.LoadAllAsync(force: true);
-                }
-                catch { }
-            };
-
-            // Countries
-                client.CountryCreated += async dto =>
-            {
-                try
-                {
-                    var countriesState = countriesStateFactory();
-                    countriesState.Invalidate();
-                    await countriesState.LoadAsync(force: true);
-                }
-                catch { }
-            };
-
-                client.CountryUpdated += async dto =>
-            {
-                try
-                {
-                    var countriesState = countriesStateFactory();
-                    countriesState.Invalidate();
-                    await countriesState.LoadAsync(force: true);
-                }
-                catch { }
-            };
-
-            // Orders - if you have Orders state, adapt accordingly
-            client.OrderCreated += async dto => { /* no-op by default */ };
-            client.OrderUpdated += async dto => { /* no-op by default */ };
-            client.OrderStatusChanged += async dto => { /* no-op by default */ };
-
-            // Start the client
-            _ = client.StartAsync();
-
-            return client;
-        });
-
-   return services;
-    }
-}
+           return services;
+            }
+        }

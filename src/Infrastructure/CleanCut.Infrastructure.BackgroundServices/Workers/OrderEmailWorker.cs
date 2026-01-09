@@ -6,27 +6,26 @@ using Microsoft.Extensions.Logging;
 namespace CleanCut.Infrastructure.BackgroundServices.Workers;
 
 /// <summary>
-/// Background worker that sends emails and publishes order-created messages to RabbitMQ.
-/// It consumes a lightweight in-memory queue (suitable for demo). For production, replace with durable queue.
+/// Background worker that sends order confirmation emails.
+/// Consumes orders from the Redis email queue (populated by RabbitMqConsumerWorker) and sends emails.
+/// Single Responsibility: Only handles email sending, not RabbitMQ publishing.
 /// </summary>
-public class EmailAndRabbitWorker : BackgroundService
+public class OrderEmailWorker : BackgroundService
 {
     private readonly IEmailSender _emailSender;
-    private readonly IRabbitMqPublisher? _publisher;
     private readonly IRabbitMqRetryQueue _retryQueue;
-    private readonly ILogger<EmailAndRabbitWorker> _logger;
+    private readonly ILogger<OrderEmailWorker> _logger;
 
-    public EmailAndRabbitWorker(IEmailSender emailSender, IRabbitMqPublisher? publisher, IRabbitMqRetryQueue retryQueue, ILogger<EmailAndRabbitWorker> logger)
+    public OrderEmailWorker(IEmailSender emailSender, IRabbitMqRetryQueue retryQueue, ILogger<OrderEmailWorker> logger)
     {
         _emailSender = emailSender;
-        _publisher = publisher;
         _retryQueue = retryQueue;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("EmailAndRabbitWorker started");
+        _logger.LogInformation("OrderEmailWorker started");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -39,34 +38,7 @@ public class EmailAndRabbitWorker : BackgroundService
                     continue;
                 }
 
-                // Publish to RabbitMQ first (best-effort). If publish fails, re-enqueue and do NOT send email.
-                var published = false;
-                if (_publisher != null)
-                {
-                    try
-                    {
-                        published = await _publisher.TryPublishOrderCreatedAsync(order, stoppingToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Exception while trying to publish order {OrderId}", order.Id);
-                        published = false;
-                    }
-
-                    if (!published)
-                    {
-                        await _retryQueue.EnqueueAsync(order, stoppingToken);
-                        _logger.LogWarning("Publish failed, re-enqueued order {OrderId}", order.Id);
-                        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-                        continue; // skip sending email until publish succeeds
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Published order {OrderId} to RabbitMQ", order.Id);
-                    }
-                }
-
-                // Send email only after successful publish (prevents emails being sent repeatedly if RabbitMQ is down)
+                // Send email directly - no RabbitMQ publishing (consumer already handled that)
                 if (!string.IsNullOrEmpty(order.CustomerEmail))
                 {
                     try
@@ -91,13 +63,20 @@ public class EmailAndRabbitWorker : BackgroundService
                         sb.Append("</table>");
 
                         var body = sb.ToString();
-                        await _emailSender.SendEmailAsync(order.CustomerEmail, "Order received", body, stoppingToken);
+                        await _emailSender.SendEmailAsync(order.CustomerEmail, "Order Confirmation", body, stoppingToken);
+                        _logger.LogInformation("Sent order confirmation email to {Email} for order {OrderId}", order.CustomerEmail, order.Id);
                     }
                     catch (Exception ex)
                     {
-                        // Log and continue - do not re-enqueue the publish or email to avoid duplicate publishes/emails
-                        _logger.LogWarning(ex, "Failed to send email for order {OrderId}", order.Id);
+                        // Log and re-enqueue on email failure to retry later
+                        _logger.LogWarning(ex, "Failed to send email for order {OrderId}, re-enqueuing", order.Id);
+                        await _retryQueue.EnqueueAsync(order, stoppingToken);
+                        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                     }
+                }
+                else
+                {
+                    _logger.LogWarning("Order {OrderId} has no customer email, skipping email", order.Id);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -106,11 +85,11 @@ public class EmailAndRabbitWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in EmailAndRabbitWorker loop");
+                _logger.LogError(ex, "Error in OrderEmailWorker loop");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
 
-        _logger.LogInformation("EmailAndRabbitWorker stopping");
+        _logger.LogInformation("OrderEmailWorker stopping");
     }
 }
